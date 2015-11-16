@@ -1,4 +1,4 @@
-function stats = init(imdb, getBatch, varargin)
+function init(obj, imdb, getBatch, varargin)
 
 opts.expDir = fullfile('data','exp') ;
 opts.continue = false ;
@@ -33,7 +33,6 @@ if ~evaluateMode
     error('DEROUTPUTS must be specified when training.\n') ;
   end
 end
-stats = [] ;
 
 % setup GPUs
 numGpus = numel(opts.gpus) ;
@@ -42,9 +41,13 @@ if numGpus > 1
     parpool('local',numGpus) ;
     spmd, gpuDevice(opts.gpus(labindex)), end
   end
-  if exist(opts.memoryMapFile)
+  if exist(opts.memoryMapFile, 'file')
     delete(opts.memoryMapFile) ;
   end
 elseif numGpus == 1
   gpuDevice(opts.gpus)
 end
+
+% Set new fields
+obj.nnOpts = opts;
+obj.state = state;

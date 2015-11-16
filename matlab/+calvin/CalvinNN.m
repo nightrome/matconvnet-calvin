@@ -9,18 +9,19 @@ classdef CalvinNN < handle
     properties
         net
         imdb
-        opts
+        nnOpts
+        stats
     end
     
     methods
-        function obj = CalvinNN(imdb, opts)
-            % obj = CalvinNN(imdb, [opts])
+        function obj = CalvinNN(imdb, nnOpts)
+            % obj = CalvinNN(imdb, [nnOpts])
             
             % Set fields
             obj.imdb = imdb;
             
             % Init GPUs etc
-            obj.init(imdb, imdb.getBatch, opts);
+            obj.init(imdb, imdb.getBatch, nnOpts);
             
             % Load network and convert to DAG format
             obj.loadNetwork();
@@ -32,8 +33,9 @@ classdef CalvinNN < handle
         function loadNetwork(obj)
             netIn = load(obj.imdb.netPath);
             
-            if true, %TODO: determine whether it's a DAG
-                obj.net = convertNetwork(netIn, obj.imdb, obj.opts);
+            % Convert net to DAG if necessary
+            if isa(netIn, 'dagnn.DagNN'),
+                obj.net = convertNetwork(netIn, obj.imdb, obj.nnOpts);
             else
                 obj.net = netIn;
             end;
@@ -41,7 +43,7 @@ classdef CalvinNN < handle
     end
     
     methods (Static)        
-        obj = convertNetwork(net, imdb, opts);
+        obj = convertNetwork(net, imdb, nnOpts);
     end
 end
 
