@@ -1,43 +1,43 @@
-function[] = train(net)
+function train(obj)
 
-modelPath = @(ep) fullfile(opts.expDir, sprintf('net-epoch-%d.mat', ep));
-modelFigPath = fullfile(opts.expDir, 'net-train.pdf') ;
+modelPath = @(ep) fullfile(obj.nnOpts.expDir, sprintf('net-epoch-%d.mat', ep));
+modelFigPath = fullfile(obj.nnOpts.expDir, 'net-train.pdf') ;
 
-start = opts.continue * findLastCheckpoint(opts.expDir) ;
+start = obj.nnOpts.continue * findLastCheckpoint(obj.nnOpts.expDir) ;
 if start >= 1
   fprintf('resuming by loading epoch %d\n', start) ;
-  [net, stats] = loadState(modelPath(start)) ;
+  [obj.net, obj.stats] = loadState(modelPath(start)) ;
 end
 
-for epoch=start+1:opts.numEpochs
+for epoch=start+1:obj.nnOpts.numEpochs
 
   % train one epoch
   state.epoch = epoch ;
-  state.learningRate = opts.learningRate(min(epoch, numel(opts.learningRate))) ;
-  state.train = opts.train(randperm(numel(opts.train))) ; % shuffle
-  state.val = opts.val ;
+  state.learningRate = obj.nnOpts.learningRate(min(epoch, numel(obj.nnOpts.learningRate))) ;
+  state.train = obj.nnOpts.train(randperm(numel(obj.nnOpts.train))) ; % shuffle
+  state.val = obj.nnOpts.val ;
   state.imdb = imdb ;
 
   if numGpus <= 1
-    stats.train(epoch) = process_epoch(net, state, opts, 'train') ;
-    stats.val(epoch) = process_epoch(net, state, opts, 'val') ;
+    obj.stats.train(epoch) = process_epoch(obj.net, state, obj.nnOpts, 'train') ;
+    obj.stats.val(epoch) = process_epoch(obj.net, state, obj.nnOpts, 'val') ;
   else
-    savedNet = net.saveobj() ;
+    savedNet = obj.net.saveobj() ;
     spmd
       net_ = dagnn.DagNN.loadobj(savedNet) ;
-      stats_.train = process_epoch(net_, state, opts, 'train') ;
-      stats_.val = process_epoch(net_, state, opts, 'val') ;
+      stats_.train = process_epoch(net_, state, obj.nnOpts, 'train') ;
+      stats_.val = process_epoch(net_, state, obj.nnOpts, 'val') ;
       if labindex == 1, savedNet_ = net_.saveobj() ; end
     end
-    net = dagnn.DagNN.loadobj(savedNet_{1}) ;
+    obj.net = dagnn.DagNN.loadobj(savedNet_{1}) ;
     stats__ = accumulateStats(stats_) ;
-    stats.train(epoch) = stats__.train ;
-    stats.val(epoch) = stats__.val ;
+    obj.stats.train(epoch) = stats__.train ;
+    obj.stats.val(epoch) = stats__.val ;
   end
 
   % save
   if ~evaluateMode
-    saveState(modelPath(epoch), net, stats) ;
+    saveState(modelPath(epoch), obj.net, obj.stats) ;
   end
 
   figure(1) ; clf ;
@@ -45,7 +45,7 @@ for epoch=start+1:opts.numEpochs
   leg = {} ;
   for s = {'train', 'val'}
     s = char(s) ;
-    for f = setdiff(fieldnames(stats.train)', {'num', 'time'})
+    for f = setdiff(fieldnames(obj.stats.train)', {'num', 'time'})
       f = char(f) ;
       leg{end+1} = sprintf('%s (%s)', f, s) ;
       tmp = [stats.(s).(f)] ;

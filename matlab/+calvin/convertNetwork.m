@@ -9,7 +9,7 @@ function[obj] = convertNetwork(net, imdb, nnOpts)
 % Use the default routine to convert an image class. network to FRCN
 obj = dagnn.DagNN.fromSimpleNN(net);
 
-% Remove unused fields from normalization
+% Remove unused/incorrect fields from normalization
 obj.meta.normalization = rmfield(obj.meta.normalization, 'keepAspect');
 obj.meta.normalization = rmfield(obj.meta.normalization, 'border');
 obj.meta.normalization = rmfield(obj.meta.normalization, 'imageSize');
