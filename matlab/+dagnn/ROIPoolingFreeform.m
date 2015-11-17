@@ -3,7 +3,7 @@ classdef ROIPoolingFreeform < dagnn.Filter
     % It applies a mask to the roi-pooled activations, taking either fg, bg
     % or both of the image.
     %
-    % inputs are: rois, masks, batchAux
+    % inputs are: rois, masks, roiPool
     % outputs are: rois
     %
     % Copyright by Holger Caesar, 2015
@@ -18,12 +18,12 @@ classdef ROIPoolingFreeform < dagnn.Filter
     methods
         function outputs = forward(obj, inputs, params) %#ok<INUSD>
             assert(numel(inputs) == 3);
-            [outputs{1}, obj.mask] = roiPooling_freeform_forward(inputs{3}.roiPool, inputs{1}, inputs{2});
+            [outputs{1}, obj.mask] = roiPooling_freeform_forward(inputs{3}, inputs{1}, inputs{2});
         end
         
         function [derInputs, derParams] = backward(obj, inputs, params, derOutputs) %#ok<INUSL>
             assert(numel(derOutputs) == 1);
-            derInputs{1} = roiPooling_freeform_backward(inputs{3}.roiPool, derOutputs{1});
+            derInputs{1} = roiPooling_freeform_backward(inputs{3}, derOutputs{1});
             derInputs{2} = [];
             derInputs{3} = [];
             derParams = {} ;
