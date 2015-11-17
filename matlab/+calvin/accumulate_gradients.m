@@ -1,5 +1,6 @@
 function state = accumulate_gradients(state, net, opts, batchSize, mmap)
-% -------------------------------------------------------------------------
+% state = accumulate_gradients(state, net, opts, batchSize, mmap)
+
 for i=1:numel(net.params)
   thisDecay = opts.weightDecay * net.params(i).weightDecay ;
   thisLR = state.learningRate * net.params(i).learningRate ;
