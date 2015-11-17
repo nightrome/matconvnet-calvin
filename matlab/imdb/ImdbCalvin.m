@@ -13,7 +13,7 @@ classdef ImdbCalvin
     end
     
     methods (Abstract)
-        data = getBatch(obj, batch);
+        batchData = getBatch(obj, batchIdx);
     end
 end
 

@@ -20,8 +20,8 @@ classdef CalvinNN < handle
             % Set fields
             obj.imdb = imdb;
             
-            % Init GPUs etc
-            obj.init(imdb, imdb.labelCount, nnOpts);
+            % Init options and GPUs
+            obj.init(nnOpts);
             
             % Load network and convert to DAG format
             obj.loadNetwork();
@@ -32,11 +32,15 @@ classdef CalvinNN < handle
             
             % Convert net to DAG if necessary
             if isa(netIn, 'dagnn.DagNN'),
-                obj.net = convertNetwork(netIn, obj.imdb, obj.nnOpts);
+                obj.net = convertNetwork(netIn, obj.imdb.labelCount, obj.nnOpts);
             else
                 obj.net = netIn;
             end;
         end
+        
+        % Declaration for methods that are in separate files
+        init(obj, varargin);
+        train(obj);
     end
     
     methods (Static)

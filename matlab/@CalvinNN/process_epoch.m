@@ -1,14 +1,14 @@
-function stats = process_epoch(net, state, imdb, opts, mode)
-% stats = process_epoch(net, state, imdb, opts, mode)
+function stats = process_epoch(net, state, imdb, nnOpts, mode)
+% stats = process_epoch(net, state, imdb, nnOpts, mode)
 
 % Check options
-assrt(~opts.prefetch, 'Error: Prefetch is not suppoted in Matconvnet-Calvin!');
+assrt(~nnOpts.prefetch, 'Error: Prefetch is not suppoted in Matconvnet-Calvin!');
 
 if strcmp(mode,'train')
     state.momentum = num2cell(zeros(1, numel(net.params))) ;
 end
 
-numGpus = numel(opts.gpus) ;
+numGpus = numel(nnOpts.gpus) ;
 if numGpus >= 1
     net.move('gpu') ;
     if strcmp(mode,'train')
@@ -16,7 +16,7 @@ if numGpus >= 1
     end
 end
 if numGpus > 1
-    mmap = map_gradients(opts.memoryMapFile, net, numGpus) ;
+    mmap = map_gradients(nnOpts.memoryMapFile, net, numGpus) ;
 else
     mmap = [] ;
 end
@@ -24,17 +24,17 @@ end
 stats.time = 0 ;
 stats.scores = [] ;
 subset = state.(mode) ;
-start = tic ;
+start = tic;
 num = 0 ;
 
-for t=1:opts.batchSize:numel(subset)
-    batchSize = min(opts.batchSize, numel(subset) - t + 1) ;
+for t=1:nnOpts.batchSize:numel(subset)
+    batchSize = min(nnOpts.batchSize, numel(subset) - t + 1) ;
     
-    for s=1:opts.numSubBatches
+    for s=1:nnOpts.numSubBatches
         % get this image batch and prefetch the next
         batchStart = t + (labindex-1) + (s-1) * numlabs ;
-        batchEnd = min(t+opts.batchSize-1, numel(subset)) ;
-        batch = subset(batchStart : opts.numSubBatches * numlabs : batchEnd) ;
+        batchEnd = min(t+nnOpts.batchSize-1, numel(subset)) ;
+        batch = subset(batchStart : nnOpts.numSubBatches * numlabs : batchEnd) ;
         num = num + numel(batch) ;
         if numel(batch) == 0, continue ; end
         
@@ -42,14 +42,14 @@ for t=1:opts.batchSize:numel(subset)
         
         if strcmp(mode, 'train')
             net.accumulateParamDers = (s ~= 1) ;
-            net.eval(inputs, opts.derOutputs) ;
+            net.eval(inputs, nnOpts.derOutputs) ;
         else
             net.eval(inputs) ;
         end
     end
     
     % extract learning stats
-    stats = opts.extractStatsFn(net) ;
+    stats = nnOpts.extractStatsFn(net) ;
     
     % accumulate gradient
     if strcmp(mode, 'train')
@@ -57,7 +57,7 @@ for t=1:opts.batchSize:numel(subset)
             write_gradients(mmap, net) ;
             labBarrier() ;
         end
-        state = accumulate_gradients(state, net, opts, batchSize, mmap) ;
+        state = accumulate_gradients(state, net, nnOpts, batchSize, mmap) ;
     end
     
     % print learning statistics
@@ -68,7 +68,7 @@ for t=1:opts.batchSize:numel(subset)
     fprintf('%s: epoch %02d: %3d/%3d: %.1f Hz', ...
         mode, ...
         state.epoch, ...
-        fix(t/opts.batchSize)+1, ceil(numel(subset)/opts.batchSize), ...
+        fix(t/nnOpts.batchSize)+1, ceil(numel(subset)/nnOpts.batchSize), ...
         stats.num/stats.time * max(numGpus, 1)) ;
     for f = setdiff(fieldnames(stats)', {'num', 'time'})
         f = char(f) ;
