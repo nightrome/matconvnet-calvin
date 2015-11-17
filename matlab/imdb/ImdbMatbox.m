@@ -21,7 +21,7 @@
 %
 % Jasper Uijlings - 2015
 
-classdef ImdbMatbox < ImdbAbstract
+classdef ImdbMatbox < ImdbCalvin
     properties(SetAccess = protected, GetAccess = public)
         imageDir
         matBoxDir
