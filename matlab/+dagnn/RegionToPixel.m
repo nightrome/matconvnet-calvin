@@ -2,6 +2,9 @@ classdef RegionToPixel < dagnn.Filter
     % Go from a region level to a pixel level.
     % (to be able to compute a loss there)
     %
+    % inputs are: scoresAll, batchAux
+    % outputs are: scoresSP, labelsSP
+    %
     % Copyright by Holger Caesar, 2015
     
     properties
@@ -13,8 +16,7 @@ classdef RegionToPixel < dagnn.Filter
     
     methods
         function outputs = forward(obj, inputs, params) %#ok<INUSD>
-            % inputs are: scoresAll, batchAux
-            % outputs are: scoresSP, labelsSP
+            
             assert(numel(inputs) == 2);
             [outputs{1}, labels, obj.mask] = e2s2_train_regiontopixel_forward(inputs{1}, inputs{2});
             
@@ -32,11 +34,10 @@ classdef RegionToPixel < dagnn.Filter
             % weighting of 'boxCount', as introduced in the forward
             % pass.
             
-            % inputs are: boxCount
-            assert(numel(inputs) == 1);
+            assert(numel(derOutputs) == 1);
             
             % Get inputs
-            boxCount = inputs{1};
+            boxCount = size(inputs{1}, 4);
             dzdx = derOutputs{1};
             
             % Move inputs from GPU if necessary
@@ -55,7 +56,71 @@ classdef RegionToPixel < dagnn.Filter
             
             % Store gradients
             derInputs{1} = dzdxout;
+            derInputs{2} = [];
             derParams = {};
+        end
+        
+        function backwardAdvanced(obj, layer)
+            %BACKWARDADVANCED Advanced driver for backward computation
+            %  BACKWARDADVANCED(OBJ, LAYER) is the advanced interface to compute
+            %  the backward step of the layer.
+            %
+            %  The advanced interface can be changed in order to extend DagNN
+            %  non-trivially, or to optimise certain blocks.
+            %
+            % Calvin: This layer needs to be modified as the output "label"
+            % does not have a derivative and therefore backpropagation
+            % would be skipped in the normal function.
+            
+            in = layer.inputIndexes ;
+            out = layer.outputIndexes ;
+            par = layer.paramIndexes ;
+            net = obj.net ;
+            
+            % Modification:
+            out = out(1);
+            
+            inputs = {net.vars(in).value} ;
+            derOutputs = {net.vars(out).der} ;
+            for i = 1:numel(derOutputs)
+                if isempty(derOutputs{i}), return ; end
+            end
+            
+            if net.conserveMemory
+                % clear output variables (value and derivative)
+                % unless precious
+                for i = out
+                    if net.vars(i).precious, continue ; end
+                    net.vars(i).der = [] ;
+                    net.vars(i).value = [] ;
+                end
+            end
+            
+            % compute derivatives of inputs and paramerters
+            [derInputs, derParams] = obj.backward ...
+                (inputs, {net.params(par).value}, derOutputs) ;
+            
+            % accumuate derivatives
+            for i = 1:numel(in)
+                v = in(i) ;
+                if net.numPendingVarRefs(v) == 0 || isempty(net.vars(v).der)
+                    net.vars(v).der = derInputs{i} ;
+                elseif ~isempty(derInputs{i})
+                    net.vars(v).der = net.vars(v).der + derInputs{i} ;
+                end
+                net.numPendingVarRefs(v) = net.numPendingVarRefs(v) + 1 ;
+            end
+            
+            for i = 1:numel(par)
+                p = par(i) ;
+                if (net.numPendingParamRefs(p) == 0 && ~net.accumulateParamDers) ...
+                        || isempty(net.params(p).der)
+                    net.params(p).der = derParams{i} ;
+                else
+                    net.params(p).der = net.params(p).der + derParams{i} ;
+                end
+                net.numPendingParamRefs(p) = net.numPendingParamRefs(p) + 1 ;
+            end
         end
         
         function kernelSize = getKernelSize(obj) %#ok<MANU>

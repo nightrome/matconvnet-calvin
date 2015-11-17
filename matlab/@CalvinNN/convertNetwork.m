@@ -25,7 +25,7 @@ net.insertLayer('relu7', 'fc8', 'dropout7', dropout7Layer);
 softmaxlossLayer = dagnn.Loss('loss', 'softmaxlog');
 net.replaceLayer('prob', 'softmaxloss', softmaxlossLayer, 'label');
 
-% Adapt number of classes in softmaxloss layer from 1000 to labelCount
+% Adapt number of classes in softmaxloss layer from 1000 to numClasses
 fc8Idx = net.getLayerIndex('fc8');
 net.layers(fc8Idx).block.size(4) = obj.imdb.numClasses;
 newParams = net.layers(fc8Idx).block.initParams();
@@ -47,6 +47,9 @@ if isfield(obj.nnOpts, 'roiPool') && obj.nnOpts.roiPool.use,
         net.insertLayer('roiPool5', 'fc6', 'roiPoolFreeform5', roiPoolFreeformLayer, 'batchAux');
     end;
 end;
+
+%TODO: Init layers (momentum, weightDecay etc.)
+
 
 % Rename input and output
 net.renameVar('x0', 'input');
