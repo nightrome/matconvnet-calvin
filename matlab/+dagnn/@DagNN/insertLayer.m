@@ -55,7 +55,7 @@ for i = 1 : numel(variables),
     oldVariable = variables{i};
     
     if regexp(oldVariable, 'x\d+'),
-        freeVariable = obj.getFreeVariable();
+        freeVariable = getFreeVariable(obj);
         variables{i} = freeVariable;
     end;
 end;

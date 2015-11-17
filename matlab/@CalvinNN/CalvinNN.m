@@ -28,17 +28,18 @@ classdef CalvinNN < handle
         end
         
         function loadNetwork(obj)
-            netIn = load(obj.imdb.netPath);
+            netIn = load(obj.nnOpts.netPath);
             
             % Convert net to DAG if necessary
-            if isa(netIn, 'dagnn.DagNN'),
-                obj.net = convertNetwork(netIn, obj.imdb.labelCount, obj.nnOpts);
+            if ~isa(netIn, 'dagnn.DagNN'),
+                obj.convertNetwork(netIn);
             else
                 obj.net = netIn;
             end;
         end
         
         % Declaration for methods that are in separate files
+        convertNetwork(obj, net);
         init(obj, varargin);
         train(obj);
     end
@@ -46,14 +47,12 @@ classdef CalvinNN < handle
     methods (Static)
         state = accumulate_gradients(state, net, opts, batchSize, mmap);
         stats = accumulateStats(stats_);
-        net = convertNetwork(net, imdb, nnOpts);
         stats = extractStats(net);
         epoch = findLastCheckpoint(modelDir);
         [net, stats] = loadState(fileName);
         mmap = map_gradients(fname, net, numGpus);
-        stats = process_epoch(net, state, opts, mode);
+        stats = process_epoch(net, state, imdb, opts, mode);
         saveState(fileName, net, stats);
         write_gradients(mmap, net);
     end
 end
-
