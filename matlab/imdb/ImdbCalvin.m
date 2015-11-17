@@ -15,17 +15,7 @@ classdef ImdbCalvin < handle
     end
     
     methods (Abstract)
-        batchData = getBatch(obj, batchIdx, net);
-    end
-    
-    methods
-        function setDatasetMode(obj, datasetMode)
-            if ~ismember(datasetMode, {'train', 'val', 'test'})
-                error('Unknown datasetMode');
-            end
-            
-            obj.datasetMode = datasetMode;
-        end
+        batchData = getBatch(obj, batchInds, net);
     end
 end
 

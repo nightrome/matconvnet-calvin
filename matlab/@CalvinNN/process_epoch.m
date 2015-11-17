@@ -38,11 +38,11 @@ for t=1:nnOpts.batchSize:numel(subset),
         % get this image batch and prefetch the next
         batchStart = t + (labindex-1) + (s-1) * numlabs;
         batchEnd = min(t+nnOpts.batchSize-1, numel(subset));
-        batch = subset(batchStart : nnOpts.numSubBatches * numlabs : batchEnd);
-        num = num + numel(batch);
-        if numel(batch) == 0, continue; end
+        batchInds = subset(batchStart : nnOpts.numSubBatches * numlabs : batchEnd);
+        num = num + numel(batchInds);
+        if numel(batchInds) == 0, continue; end
         
-        inputs = imdb.getBatch(imdb, net, nnOpts, batch);
+        inputs = imdb.getBatch(batchInds, net);
         
         if strcmp(mode, 'train')
             net.accumulateParamDers = (s ~= 1);
