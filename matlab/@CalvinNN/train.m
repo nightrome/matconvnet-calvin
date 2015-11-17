@@ -29,8 +29,8 @@ for epoch=start+1:obj.nnOpts.numEpochs
     % train one epoch
     state.epoch = epoch;
     state.learningRate = obj.nnOpts.learningRate(min(epoch, numel(obj.nnOpts.learningRate)));
-    state.train = obj.imdb.train(randperm(numel(obj.imdb.train))); % shuffle
-    state.val = obj.imdb.val;
+    state.train = randperm(numel(obj.imdb.imagesTrain)); % shuffle
+    state.val = 1:numel(obj.imdb.imagesVal);
     
     if numGpus <= 1
         obj.stats.train(epoch) = CalvinNN.process_epoch(obj.net, state, obj.imdb, obj.nnOpts, 'train');

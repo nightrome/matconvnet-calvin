@@ -4,6 +4,9 @@ function stats = process_epoch(net, state, imdb, nnOpts, mode)
 % Check options
 assert(~nnOpts.prefetch, 'Error: Prefetch is not supported in Matconvnet-Calvin!');
 
+% Set datasetMode in imdb
+imdb.datasetMode = mode;
+
 if strcmp(mode,'train')
     state.momentum = num2cell(zeros(1, numel(net.params)));
 end
@@ -23,7 +26,7 @@ end
 
 stats.time = 0;
 stats.scores = [];
-subset = imdb.(mode);
+subset = state.(mode);
 assert(~isempty(subset));
 start = tic;
 num = 0;

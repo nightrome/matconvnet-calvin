@@ -1,4 +1,4 @@
-classdef ImdbCalvin
+classdef ImdbCalvin < handle
     %IMDBCALVIN
     % Base image database that holds information about the
     % dataset and various retrieval functions, such as getBatch(..).
@@ -7,6 +7,7 @@ classdef ImdbCalvin
     
     properties
         numClasses
+        datasetMode % train, val or test
 
         imagesTrain
         imagesVal
