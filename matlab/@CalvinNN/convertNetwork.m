@@ -1,5 +1,5 @@
-function[net] = convertNetwork(net, labelCount, nnOpts)
-% [net] = convertNetwork(net, labelCount, nnOpts)
+function convertNetwork(obj, net)
+% convertNetwork(obj, net)
 %
 % Converts a Matconvnet network into the equivalent Fast R-CNN network,
 % expressed as a Directed Acyclic Graph.
@@ -27,22 +27,23 @@ net.replaceLayer('prob', 'softmaxloss', softmaxlossLayer, 'label');
 
 % Adapt number of classes in softmaxloss layer from 1000 to labelCount
 fc8Idx = net.getLayerIndex('fc8');
-net.layers(fc8Idx).block.size(4) = labelCount;
+net.layers(fc8Idx).block.size(4) = obj.imdb.labelCount;
 newParams = net.layers(fc8Idx).block.initParams();
 net.params(net.layers(fc8Idx).paramIndexes(1)).value = newParams{1};
 net.params(net.layers(fc8Idx).paramIndexes(2)).value = newParams{2};
 
 % Modify network for Fast R-CNN's ROI pooling
-if isfield(nnOpts, 'roiPool') && nnOpts.roiPool.use,
+if isfield(obj.nnOpts, 'roiPool') && obj.nnOpts.roiPool.use,
     % Replace max-pooling layer by ROI pooling
     fc6Idx = net.getLayerIndex('fc6');
     roiPoolSize = net.layers(fc6Idx).block.size(1:2);
-    roiPoolLayer = ROIPooling('poolSize', roiPoolSize);
+    roiPoolLayer = dagnn.ROIPooling('poolSize', roiPoolSize);
     net.replaceLayer('pool5', 'roiPool5', roiPoolLayer, {'oriImSize', 'boxes'}, {'roiPool5Mask'});
+    obj.nnOpts.roiPool.roiPoolSize = roiPoolSize; % Store roiPoolSize for getBatch and the layers
     
     % If required, insert freeform pooling layer after roipool
-    if isfield(nnOpts.roiPool, 'roiPoolFreeform') && nnOpts.roiPool.roiPoolFreeform,
-        roiPoolFreeformLayer = ROIPoolingFreeform();
+    if isfield(obj.nnOpts.roiPool, 'roiPoolFreeform') && obj.nnOpts.roiPool.roiPoolFreeform,
+        roiPoolFreeformLayer = dagnn.ROIPoolingFreeform();
         net.insertLayer('roiPool5', 'fc6', 'roiPoolFreeform5', roiPoolFreeformLayer, 'batchAux');
     end;
 end;
@@ -51,6 +52,5 @@ end;
 net.renameVar('x0', 'input');
 net.renameVar(net.layers(net.getLayerIndex('softmaxloss')).outputs, 'objective');
 
-
-
-
+% Update class fields
+obj.net = net;

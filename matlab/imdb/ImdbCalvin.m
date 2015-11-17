@@ -6,14 +6,15 @@ classdef ImdbCalvin
     % Copyright by Holger Caesar, 2015
     
     properties
-        labelCount;
-        train;
-        val;
-        test;
+        numClasses
+
+        imagesTrain
+        imagesVal
+        imagesTest
     end
     
     methods (Abstract)
-        batchData = getBatch(obj, batchIdx);
+        batchData = getBatch(obj, imdb, net, nnOpts, batchIdx);
     end
 end
 

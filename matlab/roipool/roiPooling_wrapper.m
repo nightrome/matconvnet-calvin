@@ -1,5 +1,5 @@
-function[rois, masks, dzdxout] = roiPooling(convIm, oriImSize, boxes, roiPoolSize, isForward, masks, dzdx)
-% [rois, masks, dzdxout] = roiPooling(convIm, oriImSize, boxes, roiPoolSize, isForward, masks, dzdx)
+function[rois, masks, dzdxout] = roiPooling_wrapper(convIm, oriImSize, boxes, roiPoolSize, isForward, masks, dzdx)
+% [rois, masks, dzdxout] = roiPooling_wrapper(convIm, oriImSize, boxes, roiPoolSize, isForward, masks, dzdx)
 %
 % Region of Interest pooling layer for Fast R-CNN.
 % Implements both the forward and backward pass, depending on the input
@@ -7,10 +7,10 @@ function[rois, masks, dzdxout] = roiPooling(convIm, oriImSize, boxes, roiPoolSiz
 % downsized convolutional image.
 %
 % Forward:
-% [rois, mask] = roiPooling(convIm, oriImSize, boxes, roiPoolSize)
+% [rois, mask] = roiPooling_wrapper(convIm, oriImSize, boxes, roiPoolSize)
 %
 % Backward:
-% [~, ~, dzdx] = roiPooling(convImSize, oriImSize, boxes, roiPoolSize, masks, dzdx)
+% [~, ~, dzdx] = roiPooling_wrapper(convImSize, oriImSize, boxes, roiPoolSize, masks, dzdx)
 %
 % Copyright by Holger Caesar, 2015
 
