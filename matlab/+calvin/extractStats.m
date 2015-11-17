@@ -1,5 +1,6 @@
 function stats = extractStats(net)
-% -------------------------------------------------------------------------
+% stats = extractStats(net)
+
 sel = find(cellfun(@(x) isa(x,'dagnn.Loss'), {net.layers.block})) ;
 stats = struct() ;
 for i = 1:numel(sel)

@@ -21,13 +21,10 @@ classdef CalvinNN < handle
             obj.imdb = imdb;
             
             % Init GPUs etc
-            obj.init(imdb, imdb.getBatch, nnOpts);
+            obj.init(imdb, imdb.labelCount, nnOpts);
             
             % Load network and convert to DAG format
             obj.loadNetwork();
-            
-            % Perform training and validation
-            obj.train();
         end
         
         function loadNetwork(obj)
@@ -42,8 +39,17 @@ classdef CalvinNN < handle
         end
     end
     
-    methods (Static)        
+    methods (Static)
+        state = accumulate_gradients(state, net, opts, batchSize, mmap);
+        stats = accumulateStats(stats_);
         net = convertNetwork(net, imdb, nnOpts);
+        stats = extractStats(net);
+        epoch = findLastCheckpoint(modelDir);
+        [net, stats] = loadState(fileName);
+        mmap = map_gradients(fname, net, numGpus);
+        stats = process_epoch(net, state, opts, mode);
+        saveState(fileName, net, stats);
+        write_gradients(mmap, net);
     end
 end
 

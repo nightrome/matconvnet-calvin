@@ -1,4 +1,5 @@
-function init(obj, imdb, getBatch, varargin)
+function init(obj, imdb, varargin)
+% init(obj, imdb, varargin)
 
 opts.expDir = fullfile('data','exp') ;
 opts.continue = false ;
@@ -26,7 +27,6 @@ if isnan(opts.train), opts.train = [] ; end
 %                                                            Initialization
 % -------------------------------------------------------------------------
 
-state.getBatch = getBatch ;
 evaluateMode = isempty(opts.train) ;
 if ~evaluateMode
   if isempty(opts.derOutputs)

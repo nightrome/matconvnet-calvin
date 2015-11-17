@@ -1,5 +1,6 @@
 function mmap = map_gradients(fname, net, numGpus)
-% -------------------------------------------------------------------------
+% mmap = map_gradients(fname, net, numGpus)
+
 format = {} ;
 for i=1:numel(net.params)
   format(end+1,1:3) = {'single', size(net.params(i).value), net.params(i).name} ;

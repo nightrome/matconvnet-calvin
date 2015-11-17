@@ -1,5 +1,5 @@
 function stats = accumulateStats(stats_)
-% -------------------------------------------------------------------------
+% stats = accumulateStats(stats_)
 
 stats = struct() ;
 
