@@ -18,7 +18,7 @@ classdef RegionToPixel < dagnn.Filter
         function outputs = forward(obj, inputs, params) %#ok<INUSD>
             
             assert(numel(inputs) == 2);
-            [outputs{1}, labels, obj.mask] = e2s2_train_regiontopixel_forward(inputs{1}, inputs{2});
+            [outputs{1}, labels, obj.mask] = regionToPixel_forward(inputs{1}, inputs{2});
             
             % TODO: remove this and introduce sample-level weights in the
             % loss
@@ -47,7 +47,7 @@ classdef RegionToPixel < dagnn.Filter
             end;
             
             % Map SP gradients to RP+GT gradients
-            dzdxout = e2s2_train_regiontopixel_backward(boxCount, obj.mask, dzdx);
+            dzdxout = regionToPixel_backward(boxCount, obj.mask, dzdx);
             
             % Move outputs to GPU if necessary
             if gpuMode,

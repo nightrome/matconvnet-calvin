@@ -16,8 +16,6 @@ defnnOpts.memoryMapFile = fullfile(tempdir, 'matconvnet.bin');
 defnnOpts.extractStatsFn = @CalvinNN.extractStats;
 
 % Matconvnet-calvin options
-defnnOpts.minImageSize = 600;
-defnnOpts.maxImageSize = 1000;
 defnnOpts.evaluateMode = false;
 defnnOpts.netPath = '';
 defnnOpts.roiPool.use = true;

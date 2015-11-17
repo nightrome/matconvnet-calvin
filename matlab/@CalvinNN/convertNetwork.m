@@ -44,7 +44,7 @@ if isfield(obj.nnOpts, 'roiPool') && obj.nnOpts.roiPool.use,
     % If required, insert freeform pooling layer after roipool
     if isfield(obj.nnOpts.roiPool, 'roiPoolFreeform') && obj.nnOpts.roiPool.roiPoolFreeform,
         roiPoolFreeformLayer = dagnn.ROIPoolingFreeform();
-        net.insertLayer('roiPool5', 'fc6', 'roiPoolFreeform5', roiPoolFreeformLayer, 'batchAux');
+        net.insertLayer('roiPool5', 'fc6', 'roiPoolFreeform5', roiPoolFreeformLayer, 'roiPool');
     end;
 end;
 
