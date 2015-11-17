@@ -15,7 +15,7 @@ classdef ImdbCalvin < handle
     end
     
     methods (Abstract)
-        batchData = getBatch(obj, imdb, net, nnOpts, batchIdx);
+        batchData = getBatch(obj, batchInds, net);
     end
 end
 
