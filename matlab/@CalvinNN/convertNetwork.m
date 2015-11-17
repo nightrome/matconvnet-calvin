@@ -33,7 +33,7 @@ net.params(net.layers(fc8Idx).paramIndexes(1)).value = newParams{1};
 net.params(net.layers(fc8Idx).paramIndexes(2)).value = newParams{2};
 
 % Modify network for Fast R-CNN's ROI pooling
-if isfield(nnOpts, 'roiPool'),
+if isfield(nnOpts, 'roiPool') && nnOpts.roiPool.use,
     % Replace max-pooling layer by ROI pooling
     fc6Idx = net.getLayerIndex('fc6');
     roiPoolSize = net.layers(fc6Idx).block.size(1:2);

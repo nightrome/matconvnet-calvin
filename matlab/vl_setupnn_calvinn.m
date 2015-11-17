@@ -16,3 +16,4 @@ addpath(fullfile(root, 'matlab', 'xtest')) ;
 
 % New includes necessary for matconvnet-calvin
 addpath(fullfile(root, 'matlab', 'roipool'));
+addpath(fullfile(root, 'matlab', 'imdb'));
