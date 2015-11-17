@@ -43,7 +43,7 @@ classdef CalvinNN < handle
     end
     
     methods (Static)        
-        obj = convertNetwork(net, imdb, nnOpts);
+        net = convertNetwork(net, imdb, nnOpts);
     end
 end
 
