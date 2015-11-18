@@ -1,5 +1,8 @@
 function train(obj)
 % train(obj)
+%
+% TODO: Currently this method doesn't allow for testing.
+% Either change it or implement a differenct method for that. 
 
 % setup GPUs
 numGpus = numel(obj.nnOpts.gpus);
@@ -32,7 +35,7 @@ for epoch=start+1:obj.nnOpts.numEpochs
     
     % Do training and validation
     theSets = {'train', 'val'};
-    for datasetModeI = 1:2
+    for datasetModeI = 1:numel(theSets),
         datasetMode = theSets{datasetModeI};
         % Set datasetMode in imdb
         obj.imdb.setDatasetMode(datasetMode);
@@ -40,7 +43,6 @@ for epoch=start+1:obj.nnOpts.numEpochs
         
         if numGpus <= 1
             obj.stats.(datasetMode)(epoch) = CalvinNN.process_epoch(obj.net, state, obj.imdb, obj.nnOpts, datasetMode);
-%             obj.stats.val(epoch) = CalvinNN.process_epoch(obj.net, state, obj.imdb, obj.nnOpts, 'val');
         else
             savedNet = obj.net.saveobj();
             spmd
@@ -51,7 +53,6 @@ for epoch=start+1:obj.nnOpts.numEpochs
             obj.net = dagnn.DagNN.loadobj(savedNet_{1});
             stats__ = CalvinNN.accumulateStats(stats_);
             obj.stats.(datasetMode)(epoch) = stats__.(datasetMode);
-%             obj.stats.(datasetMode)(epoch) = stats__.val;
         end
     end
     
