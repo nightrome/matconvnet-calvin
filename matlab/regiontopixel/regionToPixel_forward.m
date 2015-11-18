@@ -1,5 +1,5 @@
-function[scoresSP, labelsTargetSP, mapSP] = regionToPixel_forward(scoresAll, batchAux, inverseLabelFreqs, oldWeightMode, replicateUnpureSPs)
-% [scoresSP, labelsTargetSP, mapSP] = regionToPixel_forward(scoresAll, batchAux, inverseLabelFreqs, oldWeightMode, replicateUnpureSPs)
+function[scoresSP, labelsTargetSP, mapSP] = regionToPixel_forward(scoresAll, regionToPixelAux, inverseLabelFreqs, oldWeightMode, replicateUnpureSPs)
+% [scoresSP, labelsTargetSP, mapSP] = regionToPixel_forward(scoresAll, regionToPixelAux, inverseLabelFreqs, oldWeightMode, replicateUnpureSPs)
 %
 % Go from a region level to a pixel level.
 % (to be able to compute a loss there)
@@ -13,7 +13,7 @@ assert(gather(~any(isnan(scoresAll(:)) | isinf(scoresAll(:)))));
 scoresAll = reshape(scoresAll, [size(scoresAll, 3), size(scoresAll, 4)]);
 
 % Get additional batch info
-overlapListAll = batchAux.overlapListAll;
+overlapListAll = regionToPixelAux.overlapListAll;
 
 % Init
 labelCount = size(scoresAll, 1);
@@ -34,16 +34,16 @@ for spIdx = 1 : spCount,
 end;
 
 % Compute sample target labels and weights
-isTest = ~(isfield(batchAux, 'spLabelHistos') && ~isempty(batchAux.spLabelHistos));
+isTest = ~(isfield(regionToPixelAux, 'spLabelHistos') && ~isempty(regionToPixelAux.spLabelHistos));
 if isTest,
     % Set dummy outputs
     labelsTargetSP = [];
     mapSP = [];
 else
     % Get input fields
-    labelPixelFreqs = batchAux.labelPixelFreqs;
-    spLabelHistos   = batchAux.spLabelHistos;
-    imageCountTrn   = batchAux.imageCountTrn;
+    labelPixelFreqs = regionToPixelAux.labelPixelFreqs;
+    spLabelHistos   = regionToPixelAux.spLabelHistos;
+    imageCountTrn   = regionToPixelAux.imageCountTrn;
     
     % Check inputs
     assert(all(size(labelPixelFreqs) == [labelCount, 1]));

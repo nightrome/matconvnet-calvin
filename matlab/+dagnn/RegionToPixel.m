@@ -2,8 +2,8 @@ classdef RegionToPixel < dagnn.Filter
     % Go from a region level to a pixel level.
     % (to be able to compute a loss there)
     %
-    % inputs are: scoresAll, batchAux
-    % outputs are: scoresSP, labelsSP
+    % inputs are: scoresAll, regionToPixelAux
+    % outputs are: scoresSP, labelsSP, weightsSP
     %
     % Copyright by Holger Caesar, 2015
     
@@ -22,10 +22,11 @@ classdef RegionToPixel < dagnn.Filter
             assert(numel(inputs) == 2);
             [outputs{1}, labels, obj.mask] = regionToPixel_forward(inputs{1}, inputs{2}, obj.inverseLabelFreqs, obj.oldWeightMode, obj.replicateUnpureSPs);
             
-            % TODO: remove this and introduce sample-level weights in the
-            % loss
+            % Split labels into labels and instance weights
+            weights = labels(:, :, 2, :);
             labels(:, :, 2, :) = [];
             outputs{2} = labels;
+            outputs{3} = weights;
         end
         
         function [derInputs, derParams] = backward(obj, inputs, params, derOutputs) %#ok<INUSL>

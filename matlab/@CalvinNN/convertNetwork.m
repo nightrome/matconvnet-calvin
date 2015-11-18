@@ -22,8 +22,8 @@ net.insertLayer('relu6', 'fc7', 'dropout6', dropout6Layer);
 net.insertLayer('relu7', 'fc8', 'dropout7', dropout7Layer);
 
 % Replace softmax with softmaxloss for training
-softmaxlossLayer = dagnn.Loss('loss', 'softmaxlog');
-net.replaceLayer('prob', 'softmaxloss', softmaxlossLayer, 'label');
+softmaxlossBlock = dagnn.Loss('loss', 'softmaxlog');
+net.replaceLayer('prob', 'softmaxloss', softmaxlossBlock, 'label');
 
 % Adapt number of classes in softmaxloss layer from 1000 to numClasses
 fc8Idx = net.getLayerIndex('fc8');
@@ -37,13 +37,13 @@ if isfield(obj.nnOpts, 'roiPool') && obj.nnOpts.roiPool.use,
     % Replace max-pooling layer by ROI pooling
     fc6Idx = net.getLayerIndex('fc6');
     roiPoolSize = net.layers(fc6Idx).block.size(1:2);
-    roiPoolLayer = dagnn.ROIPooling('poolSize', roiPoolSize);
-    net.replaceLayer('pool5', 'roipool5', roiPoolLayer, {'oriImSize', 'boxes'}, {'roiPool5Mask'});
+    roiPoolBlock = dagnn.ROIPooling('poolSize', roiPoolSize);
+    net.replaceLayer('pool5', 'roipool5', roiPoolBlock, {'oriImSize', 'boxes'}, {'roiPool5Mask'});
     
     % If required, insert freeform pooling layer after roipool
     if isfield(obj.nnOpts.roiPool, 'freeform') && obj.nnOpts.roiPool.freeform.use,
-        roiPoolFreeformLayer = dagnn.ROIPoolingFreeform('combineFgBox', true);
-        net.insertLayer('roipool5', 'fc6', 'roipoolfreeform5', roiPoolFreeformLayer, 'blobMasks');
+        roiPoolFreeformBlock = dagnn.ROIPoolingFreeform('combineFgBox', true);
+        net.insertLayer('roipool5', 'fc6', 'roipoolfreeform5', roiPoolFreeformBlock, 'blobMasks');
     end;
 end;
 

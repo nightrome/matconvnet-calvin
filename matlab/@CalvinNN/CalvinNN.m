@@ -31,10 +31,10 @@ classdef CalvinNN < handle
             netIn = load(obj.nnOpts.netPath);
             
             % Convert net to DAG if necessary
-            if ~isa(netIn, 'dagnn.DagNN'),
+            if ~isa(netIn.net, 'dagnn.DagNN'),
                 obj.convertNetwork(netIn);
             else
-                obj.net = netIn;
+                obj.net = netIn.net;
             end;
         end
         
