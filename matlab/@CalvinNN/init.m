@@ -17,7 +17,6 @@ defnnOpts.extractStatsFn = @CalvinNN.extractStats;
 
 % Matconvnet-calvin options
 defnnOpts.evaluateMode = false;
-defnnOpts.netPath = '';
 defnnOpts.roiPool.use = true;
 defnnOpts.roiPool.roiPoolFreeform = false;
 
