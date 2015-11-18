@@ -16,17 +16,18 @@ classdef ImdbCalvin < handle
     
     methods (Abstract)
         % This is the main method which needs to be implemented.
-        % It is used by CalviNN.train()
+        % It is used by CalvinNN.train()
         batchData = getBatch(obj, batchInds, net);
         
         % Necessary 
-        numBatches = getNumBatches(obj);
+        numBatches = getNumBatches(obj, datasetMode);
     end
     
     methods
-        % 'train', 'val', or 'test' set
+        
         function setDatasetMode(obj, datasetMode)
-            if ~ismember(datasetMode, {'train', 'val', 'test'})
+            % 'train', 'val', or 'test' set
+            if ~ismember(datasetMode, {'train', 'val', 'test'}),
                 error('Unknown datasetMode');
             end
             
