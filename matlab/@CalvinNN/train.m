@@ -1,8 +1,9 @@
 function train(obj)
 % train(obj)
 %
-% TODO: Currently this method doesn't allow for testing.
-% Either change it or implement a differenct method for that. 
+% TODO: 
+% - Currently this method doesn't allow for testing. Either change it or implement a differenct method for that. 
+% - Currently we cannot change the learning rate after 13 epochs.
 
 % setup GPUs
 numGpus = numel(obj.nnOpts.gpus);

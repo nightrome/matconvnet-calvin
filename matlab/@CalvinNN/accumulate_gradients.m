@@ -1,5 +1,12 @@
 function state = accumulate_gradients(state, net, opts, batchSize, mmap)
 % state = accumulate_gradients(state, net, opts, batchSize, mmap)
+%
+% Perform a Stochastic Gradient Descent update step of the network weights
+% using momentum and weight decay.
+%
+% Copyright by Matconvnet
+% Modified by Jasper Uijlings, 2015
+% Modified by Holger Caesar, 2015
 
 for i=1:numel(net.params)
   thisDecay = opts.weightDecay * net.params(i).weightDecay;
