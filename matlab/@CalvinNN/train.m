@@ -29,24 +29,30 @@ for epoch=start+1:obj.nnOpts.numEpochs
     % train one epoch
     state.epoch = epoch;
     state.learningRate = obj.nnOpts.learningRate(min(epoch, numel(obj.nnOpts.learningRate)));
-    state.train = randperm(numel(obj.imdb.getNumBatches('train'))); % shuffle
-    state.val = 1:numel(obj.imdb.getNumBatches('val'));
     
-    if numGpus <= 1
-        obj.stats.train(epoch) = CalvinNN.process_epoch(obj.net, state, obj.imdb, obj.nnOpts, 'train');
-        obj.stats.val(epoch) = CalvinNN.process_epoch(obj.net, state, obj.imdb, obj.nnOpts, 'val');
-    else
-        savedNet = obj.net.saveobj();
-        spmd
-            net_ = dagnn.DagNN.loadobj(savedNet);
-            stats_.train = CalvinNN.process_epoch(net_, state, obj.imdb, obj.nnOpts, 'train');
-            stats_.val = CalvinNN.process_epoch(net_, state, obj.imdb, obj.nnOpts, 'val');
-            if labindex == 1, savedNet_ = net_.saveobj(); end
+    % Do training and validation
+    theSets = {'train', 'val'};
+    for datasetModeI = 1:2
+        datasetMode = theSets{datasetModeI};
+        % Set datasetMode in imdb
+        obj.imdb.setDatasetMode(datasetMode);
+        state.allBatchInds = obj.imdb.getAllBatchInds();
+        
+        if numGpus <= 1
+            obj.stats.(datasetMode)(epoch) = CalvinNN.process_epoch(obj.net, state, obj.imdb, obj.nnOpts, datasetMode);
+%             obj.stats.val(epoch) = CalvinNN.process_epoch(obj.net, state, obj.imdb, obj.nnOpts, 'val');
+        else
+            savedNet = obj.net.saveobj();
+            spmd
+                net_ = dagnn.DagNN.loadobj(savedNet);
+                stats_.(datasetMode) = CalvinNN.process_epoch(net_, state, obj.imdb, obj.nnOpts, datasetMode);
+                if labindex == 1, savedNet_ = net_.saveobj(); end
+            end
+            obj.net = dagnn.DagNN.loadobj(savedNet_{1});
+            stats__ = CalvinNN.accumulateStats(stats_);
+            obj.stats.(datasetMode)(epoch) = stats__.(datasetMode);
+%             obj.stats.(datasetMode)(epoch) = stats__.val;
         end
-        obj.net = dagnn.DagNN.loadobj(savedNet_{1});
-        stats__ = CalvinNN.accumulateStats(stats_);
-        obj.stats.train(epoch) = stats__.train;
-        obj.stats.val(epoch) = stats__.val;
     end
     
     % save

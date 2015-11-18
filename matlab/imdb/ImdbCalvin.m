@@ -9,18 +9,13 @@ classdef ImdbCalvin < handle
         numClasses
         datasetMode % train, val or test
 
-        imagesTrain
-        imagesVal
-        imagesTest
+        data        % data.train data.val data.test
     end
     
     methods (Abstract)
         % This is the main method which needs to be implemented.
         % It is used by CalvinNN.train()
         batchData = getBatch(obj, batchInds, net);
-        
-        % Necessary 
-        numBatches = getNumBatches(obj, datasetMode);
     end
     
     methods
@@ -32,6 +27,16 @@ classdef ImdbCalvin < handle
             end
             
             obj.datasetMode = datasetMode;
+        end
+        
+        function allBatchIds = getAllBatchIds(obj)
+            % Obtain the indices and ordering of all batches (for this epoch)
+            switch obj.datasetMode
+                case 'train'
+                    allBatchIds = randperm(size(obj.data.train,1));
+                otherwise
+                    allBatchIds = 1:size(obj.data.(obj.datasetMode),1);
+            end
         end
     end
 end
