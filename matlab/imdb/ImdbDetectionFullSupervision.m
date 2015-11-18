@@ -1,6 +1,6 @@
 classdef ImdbDetectionFullSupervision < ImdbMatbox
     methods
-        function batchData = getBatch(obj, batchIdx, ~)
+        function [inputs, numElements] = getBatch(obj, batchIdx, ~)
             
         end
     end

@@ -47,9 +47,6 @@ if isfield(obj.nnOpts, 'roiPool') && obj.nnOpts.roiPool.use,
     end;
 end;
 
-%TODO: Init layers (momentum, weightDecay etc.)
-
-
 % Rename input and output
 net.renameVar('x0', 'input');
 net.renameVar(net.layers(net.getLayerIndex('softmaxloss')).outputs, 'objective');

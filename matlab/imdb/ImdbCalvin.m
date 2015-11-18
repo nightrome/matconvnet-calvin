@@ -15,7 +15,7 @@ classdef ImdbCalvin < handle
     methods (Abstract)
         % This is the main method which needs to be implemented.
         % It is used by CalvinNN.train()
-        batchData = getBatch(obj, batchInds, net);
+        [inputs, numElements] = getBatch(obj, batchInds, net);
     end
     
     methods

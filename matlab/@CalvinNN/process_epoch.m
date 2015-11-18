@@ -30,6 +30,7 @@ num = 0;
 
 for t=1:nnOpts.batchSize:numel(allBatchInds),
     batchSize = min(nnOpts.batchSize, numel(allBatchInds) - t + 1);
+    batchNumElements = 0;
     
     for s=1:nnOpts.numSubBatches,
         % get this image batch and prefetch the next
@@ -39,7 +40,11 @@ for t=1:nnOpts.batchSize:numel(allBatchInds),
         num = num + numel(batchInds);
         if numel(batchInds) == 0, continue; end
         
-        inputs = imdb.getBatch(batchInds, net);
+        [inputs, numElements] = imdb.getBatch(batchInds, net);
+        % Skip empty subbatches
+        if numElements == 0,
+            continue;
+        end;
         
         if strcmp(mode, 'train')
             net.accumulateParamDers = (s ~= 1);
@@ -47,6 +52,8 @@ for t=1:nnOpts.batchSize:numel(allBatchInds),
         else
             net.eval(inputs);
         end
+        
+        batchNumElements = batchNumElements + numElements;
     end
     
     % extract learning stats
@@ -58,7 +65,7 @@ for t=1:nnOpts.batchSize:numel(allBatchInds),
             CalvinNN.write_gradients(mmap, net);
             labBarrier();
         end
-        state = CalvinNN.accumulate_gradients(state, net, nnOpts, batchSize, mmap);
+        state = CalvinNN.accumulate_gradients(state, net, nnOpts, batchNumElements, mmap);
     end
     
     % print learning statistics
