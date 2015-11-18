@@ -1,4 +1,4 @@
-classdef ROIPoolingFreeform < dagnn.Filter
+classdef ROIPoolingFreeform < dagnn.Layer
     % This layer has to be used AFTER the ROIPoolingFreeform.
     % It applies a mask to the roi-pooled activations, taking either fg, bg
     % or both of the image.
@@ -28,17 +28,6 @@ classdef ROIPoolingFreeform < dagnn.Filter
             derInputs{2} = [];
             derInputs{3} = [];
             derParams = {} ;
-        end
-        
-        function kernelSize = getKernelSize(obj) %#ok<MANU>
-            % TODO: check whether this works
-            kernelSize = [nan, nan];
-        end
-        
-        function outputSizes = getOutputSizes(obj, inputSizes)
-            %TODO: Check whether this is correct
-            outputSizes = getOutputSizes@dagnn.Filter(obj, inputSizes) ;
-            outputSizes{1}(3) = inputSizes{1}(3) ;
         end
         
         function obj = ROIPoolingFreeform(varargin)

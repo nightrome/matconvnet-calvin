@@ -1,4 +1,4 @@
-classdef ROIPooling < dagnn.Filter
+classdef ROIPooling < dagnn.Layer
     % Region of interest pooling layer.
     %
     % inputs are: convMaps, oriImSize, boxes
@@ -92,16 +92,6 @@ classdef ROIPooling < dagnn.Filter
                 end
                 net.numPendingParamRefs(p) = net.numPendingParamRefs(p) + 1;
             end
-        end
-        
-        function kernelSize = getKernelSize(obj)
-            kernelSize = obj.poolSize;
-        end
-        
-        function outputSizes = getOutputSizes(obj, inputSizes)
-            %TODO: Check whether this is correct
-            outputSizes = getOutputSizes@dagnn.Filter(obj, inputSizes);
-            outputSizes{1}(3) = inputSizes{1}(3);
         end
         
         function obj = ROIPooling(varargin)

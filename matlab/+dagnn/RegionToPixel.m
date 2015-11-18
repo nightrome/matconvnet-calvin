@@ -1,4 +1,4 @@
-classdef RegionToPixel < dagnn.Filter
+classdef RegionToPixel < dagnn.Layer
     % Go from a region level to a pixel level.
     % (to be able to compute a loss there)
     %
@@ -124,16 +124,6 @@ classdef RegionToPixel < dagnn.Filter
                 end
                 net.numPendingParamRefs(p) = net.numPendingParamRefs(p) + 1 ;
             end
-        end
-        
-        function kernelSize = getKernelSize(obj) %#ok<MANU>
-            kernelSize = [1, 1];
-        end
-        
-        function outputSizes = getOutputSizes(obj, inputSizes)
-            %TODO: Check whether this is correct
-            outputSizes = getOutputSizes@dagnn.Filter(obj, inputSizes);
-            outputSizes{1}(3) = inputSizes{1}(3);
         end
         
         function obj = RegionToPixel(varargin)
