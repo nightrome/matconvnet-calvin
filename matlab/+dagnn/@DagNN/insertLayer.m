@@ -1,5 +1,5 @@
-function insertLayer(obj, leftLayerName, rightLayerName, newLayerName, newLayer, addInputs, addOutputs, newParams)
-% insertLayer(obj, leftLayerName, rightLayerName, newLayerName, newLayer, [addInputs], [addOutputs], [newParams])
+function insertLayer(obj, leftLayerName, rightLayerName, newLayerName, newBlock, addInputs, addOutputs, newParams)
+% insertLayer(obj, leftLayerName, rightLayerName, newLayerName, newBlock, [addInputs], [addOutputs], [newParams])
 %
 % Takes a DAG and inserts a new layer before an existing layer.
 % The outputs of the previous layer and inputs of the following layer are
@@ -42,7 +42,7 @@ if ~exist('newParams', 'var') || isempty(newParams),
 end;
 
 % Add the new layer
-obj.addLayer(newLayerName, newLayer, newInputs, newOutputs, newParams);
+obj.addLayer(newLayerName, newBlock, newInputs, newOutputs, newParams);
 
 function[variables] = replaceVariables(obj, variables)
 % [variables] = replaceVariables(obj, variables)
