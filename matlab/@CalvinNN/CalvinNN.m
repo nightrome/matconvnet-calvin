@@ -14,7 +14,7 @@ classdef CalvinNN < handle
     end
     
     methods
-        function obj = CalvinNN(imdb, nnOpts)
+        function obj = CalvinNN(net, imdb, nnOpts)
             % obj = CalvinNN(imdb, [nnOpts])
             
             % Set fields
@@ -24,17 +24,22 @@ classdef CalvinNN < handle
             obj.init(nnOpts);
             
             % Load network and convert to DAG format
-            obj.loadNetwork();
+            obj.loadNetwork(net);
         end
         
-        function loadNetwork(obj)
-            netIn = load(obj.nnOpts.netPath);
+        function loadNetwork(obj, netIn)
+            % Load the network from file if necessary
+            if ischar(netIn),
+                netIn = load(netIn);
+            end;
             
-            % Convert net to DAG if necessary
-            if ~isa(netIn, 'dagnn.DagNN'),
+            % Store the network
+            if isfield(netIn, 'net') && isa(netIn.net, 'dagnn.DagNN'),
+                % The network is already a DAG
+                obj.net = netIn.net;
+            elseif isfield(netIn, 'layers'),
+                % Convert a simpleNN network to DAG format
                 obj.convertNetwork(netIn);
-            else
-                obj.net = netIn;
             end;
         end
         

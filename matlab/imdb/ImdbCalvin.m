@@ -29,7 +29,7 @@ classdef ImdbCalvin < handle
             obj.datasetMode = datasetMode;
         end
         
-        function allBatchIds = getAllBatchIds(obj)
+        function allBatchIds = getAllBatchInds(obj)
             % Obtain the indices and ordering of all batches (for this epoch)
             switch obj.datasetMode
                 case 'train'
