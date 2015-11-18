@@ -54,10 +54,5 @@ end;
 net.renameVar('x0', 'input');
 net.renameVar(net.layers(net.getLayerIndex('softmaxloss')).outputs, 'objective');
 
-% Enable GPU mode if specified
-if ~isempty(obj.nnOpts.gpus),
-    net.move('gpu');
-end;
-
 % Update class fields
 obj.net = net;
