@@ -2,7 +2,7 @@ function train(obj)
 % train(obj)
 %
 % TODO: 
-% - Currently this method doesn't allow for testing. Either change it or implement a differenct method for that. 
+% - Currently this method doesn't allow for testing. Either change it or implement a different method for that. 
 % - Currently we cannot change the learning rate after 13 epochs.
 
 % setup GPUs
@@ -66,12 +66,12 @@ for epoch=start+1:obj.nnOpts.numEpochs
     values = [];
     leg = {};
     for s = {'train', 'val'}
-        s = char(s);
+        s = char(s); %#ok<FXSET>
         for f = setdiff(fieldnames(obj.stats.train)', {'num', 'time'})
-            f = char(f);
-            leg{end+1} = sprintf('%s (%s)', f, s);
+            f = char(f); %#ok<FXSET>
+            leg{end+1} = sprintf('%s (%s)', f, s); %#ok<AGROW>
             tmp = [obj.stats.(s).(f)];
-            values(end+1,:) = tmp(1,:)';
+            values(end+1,:) = tmp(1,:)'; %#ok<AGROW>
         end
     end
     subplot(1,2,1); plot(1:epoch, values');
