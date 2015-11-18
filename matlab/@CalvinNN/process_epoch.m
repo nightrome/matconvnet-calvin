@@ -4,9 +4,6 @@ function stats = process_epoch(net, state, imdb, nnOpts, mode)
 % Check options
 assert(~nnOpts.prefetch, 'Error: Prefetch is not supported in Matconvnet-Calvin!');
 
-% Set datasetMode in imdb
-imdb.datasetMode = mode;
-
 if strcmp(mode,'train')
     state.momentum = num2cell(zeros(1, numel(net.params)));
 end
@@ -26,19 +23,19 @@ end
 
 stats.time = 0;
 stats.scores = [];
-subset = state.(mode);
-assert(~isempty(subset));
+allBatchInds = state.allBatchInds;
+assert(~isempty(allBatchInds));
 start = tic;
 num = 0;
 
-for t=1:nnOpts.batchSize:numel(subset),
-    batchSize = min(nnOpts.batchSize, numel(subset) - t + 1);
+for t=1:nnOpts.batchSize:numel(allBatchInds),
+    batchSize = min(nnOpts.batchSize, numel(allBatchInds) - t + 1);
     
     for s=1:nnOpts.numSubBatches,
         % get this image batch and prefetch the next
         batchStart = t + (labindex-1) + (s-1) * numlabs;
-        batchEnd = min(t+nnOpts.batchSize-1, numel(subset));
-        batchInds = subset(batchStart : nnOpts.numSubBatches * numlabs : batchEnd);
+        batchEnd = min(t+nnOpts.batchSize-1, numel(allBatchInds));
+        batchInds = allBatchInds(batchStart : nnOpts.numSubBatches * numlabs : batchEnd);
         num = num + numel(batchInds);
         if numel(batchInds) == 0, continue; end
         
@@ -71,7 +68,7 @@ for t=1:nnOpts.batchSize:numel(subset),
     fprintf('%s: epoch %02d: %3d/%3d: %.1f Hz', ...
         mode, ...
         state.epoch, ...
-        fix(t/nnOpts.batchSize)+1, ceil(numel(subset)/nnOpts.batchSize), ...
+        fix(t/nnOpts.batchSize)+1, ceil(numel(allBatchInds)/nnOpts.batchSize), ...
         stats.num/stats.time * max(numGpus, 1));
     for f = setdiff(fieldnames(stats)', {'num', 'time'})
         f = char(f);
