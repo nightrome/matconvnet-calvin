@@ -2,7 +2,7 @@ classdef RegionToPixel < dagnn.Filter
     % Go from a region level to a pixel level.
     % (to be able to compute a loss there)
     %
-    % inputs are: scoresAll, batchAux
+    % inputs are: scoresAll, regionToPixelAux
     % outputs are: scoresSP, labelsSP
     %
     % Copyright by Holger Caesar, 2015
