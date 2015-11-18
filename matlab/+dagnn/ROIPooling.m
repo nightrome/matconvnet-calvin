@@ -28,7 +28,7 @@ classdef ROIPooling < dagnn.Filter
             [~, ~, derInputs{1}] = roiPooling_wrapper(size(inputs{1}), inputs{2}, inputs{3}, obj.poolSize, false, obj.mask, derOutputs{1});
             derInputs{2} = [];
             derInputs{3} = [];
-            derParams = {} ;
+            derParams = {};
         end
         
         function backwardAdvanced(obj, layer)
@@ -43,69 +43,69 @@ classdef ROIPooling < dagnn.Filter
             % does not have a derivative and therefore backpropagation
             % would be skipped in the normal function.
             
-            in = layer.inputIndexes ;
-            out = layer.outputIndexes ;
-            par = layer.paramIndexes ;
-            net = obj.net ;
+            in = layer.inputIndexes;
+            out = layer.outputIndexes;
+            par = layer.paramIndexes;
+            net = obj.net;
             
             % Modification:
             out = out(1);
             
-            inputs = {net.vars(in).value} ;
-            derOutputs = {net.vars(out).der} ;
+            inputs = {net.vars(in).value};
+            derOutputs = {net.vars(out).der};
             for i = 1:numel(derOutputs)
-                if isempty(derOutputs{i}), return ; end
+                if isempty(derOutputs{i}), return; end
             end
             
             if net.conserveMemory
                 % clear output variables (value and derivative)
                 % unless precious
                 for i = out
-                    if net.vars(i).precious, continue ; end
-                    net.vars(i).der = [] ;
-                    net.vars(i).value = [] ;
+                    if net.vars(i).precious, continue; end
+                    net.vars(i).der = [];
+                    net.vars(i).value = [];
                 end
             end
             
             % compute derivatives of inputs and paramerters
             [derInputs, derParams] = obj.backward ...
-                (inputs, {net.params(par).value}, derOutputs) ;
+                (inputs, {net.params(par).value}, derOutputs);
             
             % accumuate derivatives
             for i = 1:numel(in)
-                v = in(i) ;
+                v = in(i);
                 if net.numPendingVarRefs(v) == 0 || isempty(net.vars(v).der)
-                    net.vars(v).der = derInputs{i} ;
+                    net.vars(v).der = derInputs{i};
                 elseif ~isempty(derInputs{i})
-                    net.vars(v).der = net.vars(v).der + derInputs{i} ;
+                    net.vars(v).der = net.vars(v).der + derInputs{i};
                 end
-                net.numPendingVarRefs(v) = net.numPendingVarRefs(v) + 1 ;
+                net.numPendingVarRefs(v) = net.numPendingVarRefs(v) + 1;
             end
             
             for i = 1:numel(par)
-                p = par(i) ;
+                p = par(i);
                 if (net.numPendingParamRefs(p) == 0 && ~net.accumulateParamDers) ...
                         || isempty(net.params(p).der)
-                    net.params(p).der = derParams{i} ;
+                    net.params(p).der = derParams{i};
                 else
-                    net.params(p).der = net.params(p).der + derParams{i} ;
+                    net.params(p).der = net.params(p).der + derParams{i};
                 end
-                net.numPendingParamRefs(p) = net.numPendingParamRefs(p) + 1 ;
+                net.numPendingParamRefs(p) = net.numPendingParamRefs(p) + 1;
             end
         end
         
         function kernelSize = getKernelSize(obj)
-            kernelSize = obj.poolSize ;
+            kernelSize = obj.poolSize;
         end
         
         function outputSizes = getOutputSizes(obj, inputSizes)
             %TODO: Check whether this is correct
-            outputSizes = getOutputSizes@dagnn.Filter(obj, inputSizes) ;
-            outputSizes{1}(3) = inputSizes{1}(3) ;
+            outputSizes = getOutputSizes@dagnn.Filter(obj, inputSizes);
+            outputSizes{1}(3) = inputSizes{1}(3);
         end
         
         function obj = ROIPooling(varargin)
-            obj.load(varargin) ;
+            obj.load(varargin);
         end
     end
 end

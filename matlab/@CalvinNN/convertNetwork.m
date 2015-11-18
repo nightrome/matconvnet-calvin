@@ -38,13 +38,12 @@ if isfield(obj.nnOpts, 'roiPool') && obj.nnOpts.roiPool.use,
     fc6Idx = net.getLayerIndex('fc6');
     roiPoolSize = net.layers(fc6Idx).block.size(1:2);
     roiPoolLayer = dagnn.ROIPooling('poolSize', roiPoolSize);
-    net.replaceLayer('pool5', 'roiPool5', roiPoolLayer, {'oriImSize', 'boxes'}, {'roiPool5Mask'});
-    obj.nnOpts.roiPool.roiPoolSize = roiPoolSize; % Store roiPoolSize for getBatch and the layers
+    net.replaceLayer('pool5', 'roipool5', roiPoolLayer, {'oriImSize', 'boxes'}, {'roiPool5Mask'});
     
     % If required, insert freeform pooling layer after roipool
-    if isfield(obj.nnOpts.roiPool, 'roiPoolFreeform') && obj.nnOpts.roiPool.roiPoolFreeform,
-        roiPoolFreeformLayer = dagnn.ROIPoolingFreeform();
-        net.insertLayer('roiPool5', 'fc6', 'roiPoolFreeform5', roiPoolFreeformLayer, 'roiPool');
+    if isfield(obj.nnOpts.roiPool, 'freeform') && obj.nnOpts.roiPool.freeform.use,
+        roiPoolFreeformLayer = dagnn.ROIPoolingFreeform('combineFgBox', true);
+        net.insertLayer('roipool5', 'fc6', 'roipoolfreeform5', roiPoolFreeformLayer, 'blobMasks');
     end;
 end;
 

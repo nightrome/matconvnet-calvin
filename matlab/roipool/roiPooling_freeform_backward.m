@@ -1,5 +1,5 @@
-function[dzdxout] = roiPooling_freeform_backward(roiPool, dzdx)
-% [dzdxout] = roiPooling_freeform_backward(roiPool, dzdx)
+function[dzdxout] = roiPooling_freeform_backward(dzdx, combineFgBox)
+% [dzdxout] = roiPooling_freeform_backward(dzdx, combineFgBox)
 %
 % Freeform pooling backward pass.
 %
@@ -8,11 +8,7 @@ function[dzdxout] = roiPooling_freeform_backward(roiPool, dzdx)
 %
 % Copyright by Holger Caesar, 2015
 
-% Get inputs
-roiPoolFreeform = roiPool.roiPoolFreeform;
-roiPoolFreeformUseFgAll = roiPool.roiPoolFreeformUseFgAll;
-
-if roiPoolFreeform && roiPoolFreeformUseFgAll,
+if combineFgBox,
     % Sum the gradients from fg and entire box
     half = size(dzdx, 3) / 2;
     dzdxFg  = dzdx(:, :, 1:half, :);

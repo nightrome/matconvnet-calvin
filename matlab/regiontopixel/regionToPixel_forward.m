@@ -1,5 +1,5 @@
-function[scoresSP, labelsTargetSP, mapSP] = regiontopixel_forward(scoresAll, batchAux)
-% [scoresSP, labelsTargetSP, mapSP] = regiontopixel_forward(scoresAll, batchAux)
+function[scoresSP, labelsTargetSP, mapSP] = regionToPixel_forward(scoresAll, batchAux, inverseLabelFreqs, oldWeightMode, replicateUnpureSPs)
+% [scoresSP, labelsTargetSP, mapSP] = regionToPixel_forward(scoresAll, batchAux, inverseLabelFreqs, oldWeightMode, replicateUnpureSPs)
 %
 % Go from a region level to a pixel level.
 % (to be able to compute a loss there)
@@ -44,10 +44,6 @@ else
     labelPixelFreqs = batchAux.labelPixelFreqs;
     spLabelHistos   = batchAux.spLabelHistos;
     imageCountTrn   = batchAux.imageCountTrn;
-    e2s2 = batchAux.e2s2;
-    inverseLabelFreqs = e2s2.inverseLabelFreqs;
-    oldWeightMode = e2s2.oldWeightMode;
-    replicateUnpureSPs = e2s2.replicateUnpureSPs;
     
     % Check inputs
     assert(all(size(labelPixelFreqs) == [labelCount, 1]));

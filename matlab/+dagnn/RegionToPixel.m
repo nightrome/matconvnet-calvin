@@ -8,6 +8,9 @@ classdef RegionToPixel < dagnn.Filter
     % Copyright by Holger Caesar, 2015
     
     properties
+        inverseLabelFreqs = true;
+        oldWeightMode = true;
+        replicateUnpureSPs = true;
     end
     
     properties (Transient)
@@ -16,9 +19,8 @@ classdef RegionToPixel < dagnn.Filter
     
     methods
         function outputs = forward(obj, inputs, params) %#ok<INUSD>
-            
             assert(numel(inputs) == 2);
-            [outputs{1}, labels, obj.mask] = regionToPixel_forward(inputs{1}, inputs{2});
+            [outputs{1}, labels, obj.mask] = regionToPixel_forward(inputs{1}, inputs{2}, obj.inverseLabelFreqs, obj.oldWeightMode, obj.replicateUnpureSPs);
             
             % TODO: remove this and introduce sample-level weights in the
             % loss
