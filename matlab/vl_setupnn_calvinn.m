@@ -1,4 +1,8 @@
 function vl_setupnn_calvinn()
+% Calvin way of setting up matconvnet
+
+% Call standard setup
+vl_setupnn();
 
 root = vl_rootnn();
 
