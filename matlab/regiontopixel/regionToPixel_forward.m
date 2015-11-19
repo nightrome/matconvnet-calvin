@@ -1,5 +1,5 @@
-function[scoresSP, labelsTargetSP, mapSP] = regionToPixel_forward(scoresAll, regionToPixelAux, inverseLabelFreqs, oldWeightMode, replicateUnpureSPs)
-% [scoresSP, labelsTargetSP, mapSP] = regionToPixel_forward(scoresAll, regionToPixelAux, inverseLabelFreqs, oldWeightMode, replicateUnpureSPs)
+function[scoresSP, labelsSP, weightsSP, mapSP] = regionToPixel_forward(scoresAll, regionToPixelAux, inverseLabelFreqs, oldWeightMode, replicateUnpureSPs, isTest)
+% [scoresSP, labelsSP, weightsSP, mapSP] = regionToPixel_forward(scoresAll, regionToPixelAux, inverseLabelFreqs, oldWeightMode, replicateUnpureSPs, isTest)
 %
 % Go from a region level to a pixel level.
 % (to be able to compute a loss there)
@@ -40,10 +40,10 @@ for spIdx = 1 : spCount,
 end;
 
 % Compute sample target labels and weights
-isTest = ~(isfield(regionToPixelAux, 'spLabelHistos') && ~isempty(regionToPixelAux.spLabelHistos));
 if isTest,
     % Set dummy outputs
-    labelsTargetSP = [];
+    labelsSP = [];
+    weightsSP = [];
     mapSP = [];
 else
     % Get input fields
@@ -81,17 +81,17 @@ else
         end;
         scoresSP = cell2mat(scoresSPRepl)';
         mapSP = cell2mat(mapSPRepl)';
-        labelsTargetSP = cell2mat(labelsTargetSPRepl);
+        labelsSP = cell2mat(labelsTargetSPRepl);
         pixelSizesSP = cell2mat(pixelSizesSPRepl);
     else
-        [~, labelsTargetSP] = max(spLabelHistos, [], 2);
+        [~, labelsSP] = max(spLabelHistos, [], 2);
         pixelSizesSP = sum(spLabelHistos, 2);
     end;
     
     % Renormalize label weights to have on average a weight == boxCount
     if oldWeightMode,
         if inverseLabelFreqs,
-             weightsSP = (pixelSizesSP * imageCountTrn) ./ (labelPixelFreqs(labelsTargetSP) * labelCount);
+             weightsSP = (pixelSizesSP * imageCountTrn) ./ (labelPixelFreqs(labelsSP) * labelCount);
              weightsSP = weightsSP ./ sum(weightsSP);
         else
             pixelWeightsSP = pixelSizesSP ./ sum(pixelSizesSP);
@@ -99,7 +99,7 @@ else
         end;
     else
         if inverseLabelFreqs,
-            weightsSP = (pixelSizesSP * imageCountTrn) ./ (labelPixelFreqs(labelsTargetSP) * labelCount);
+            weightsSP = (pixelSizesSP * imageCountTrn) ./ (labelPixelFreqs(labelsSP) * labelCount);
         else
             weightsSP = (pixelSizesSP * imageCountTrn)  / sum(labelPixelFreqs);
         end;
@@ -107,9 +107,8 @@ else
     weightsSP = weightsSP * boxCount;
     
     % Reshape and append label weights
-    labelsTargetSP = reshape(labelsTargetSP, 1, 1, 1, []);
+    labelsSP = reshape(labelsSP, 1, 1, 1, []);
     weightsSP = reshape(weightsSP, 1, 1, 1, []);
-    labelsTargetSP = cat(3, labelsTargetSP, weightsSP);
     
     % Final checks (only in train, in test NANs are fine)
     assert(~any(isnan(scoresSP(:)) | isinf(scoresSP(:))));
