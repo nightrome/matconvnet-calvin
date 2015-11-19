@@ -20,13 +20,14 @@ classdef RegionToPixel < dagnn.Layer
     methods
         function outputs = forward(obj, inputs, params) %#ok<INUSD>
             assert(numel(inputs) == 2);
-            [outputs{1}, labels, obj.mask] = regionToPixel_forward(inputs{1}, inputs{2}, obj.inverseLabelFreqs, obj.oldWeightMode, obj.replicateUnpureSPs);
+            isTest = strcmp(obj.net.mode, 'test');
+            [scoresSP, labelsSP, weightsSP, obj.mask] = regionToPixel_forward(inputs{1}, inputs{2}, obj.inverseLabelFreqs, obj.oldWeightMode, obj.replicateUnpureSPs, isTest);
             
             % Split labels into labels and instance weights
-            weights = labels(:, :, 2, :);
-            labels(:, :, 2, :) = [];
-            outputs{2} = labels;
-            outputs{3} = weights;
+            outputs = cell(3, 1);
+            outputs{1} = scoresSP;
+            outputs{2} = labelsSP;
+            outputs{3} = weightsSP;
         end
         
         function [derInputs, derParams] = backward(obj, inputs, params, derOutputs) %#ok<INUSL>
