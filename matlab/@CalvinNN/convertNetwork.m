@@ -32,21 +32,6 @@ newParams = net.layers(fc8Idx).block.initParams();
 net.params(net.layers(fc8Idx).paramIndexes(1)).value = newParams{1};
 net.params(net.layers(fc8Idx).paramIndexes(2)).value = newParams{2};
 
-% Modify network for Fast R-CNN's ROI pooling
-if isfield(obj.nnOpts, 'roiPool') && obj.nnOpts.roiPool.use,
-    % Replace max-pooling layer by ROI pooling
-    fc6Idx = net.getLayerIndex('fc6');
-    roiPoolSize = net.layers(fc6Idx).block.size(1:2);
-    roiPoolBlock = dagnn.ROIPooling('poolSize', roiPoolSize);
-    net.replaceLayer('pool5', 'roipool5', roiPoolBlock, {'oriImSize', 'boxes'}, {'roiPool5Mask'});
-    
-    % If required, insert freeform pooling layer after roipool
-    if isfield(obj.nnOpts.roiPool, 'freeform') && obj.nnOpts.roiPool.freeform.use,
-        roiPoolFreeformBlock = dagnn.ROIPoolingFreeform('combineFgBox', true);
-        net.insertLayer('roipool5', 'fc6', 'roipoolfreeform5', roiPoolFreeformBlock, 'blobMasks');
-    end;
-end;
-
 % Rename input and output
 net.renameVar('x0', 'input');
 net.renameVar(net.layers(net.getLayerIndex('softmaxloss')).outputs, 'objective');

@@ -1,4 +1,4 @@
-classdef ROIPoolingFreeform < dagnn.Layer
+classdef RoiPoolingFreeform < dagnn.Layer
     % This layer has to be used AFTER the ROIPoolingFreeform.
     % It applies a mask to the roi-pooled activations, taking either fg, bg
     % or both of the image.
@@ -30,7 +30,7 @@ classdef ROIPoolingFreeform < dagnn.Layer
             derParams = {} ;
         end
         
-        function obj = ROIPoolingFreeform(varargin)
+        function obj = RoiPoolingFreeform(varargin)
             obj.load(varargin) ;
         end
     end
