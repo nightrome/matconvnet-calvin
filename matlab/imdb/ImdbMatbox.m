@@ -79,7 +79,7 @@ classdef ImdbMatbox < ImdbCalvin
             % Get number of classes
             obj.setDatasetMode('train');
             gStruct = obj.LoadGStruct(1);
-            obj.numClasses = size(gStruct.overlap, 2);
+            obj.numClasses = size(gStruct.overlap, 2) + 1; % Plus 1 for background class
         end
         
         
