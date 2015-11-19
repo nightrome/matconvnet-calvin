@@ -4,14 +4,27 @@ function train(obj)
 % TODO: 
 % - Currently this method doesn't allow for testing. Either change it or implement a different method for that. 
 % - Currently we cannot change the learning rate after 13 epochs.
+% - Only <=2 GPUs at the same time seem to work
 
 % setup GPUs
 numGpus = numel(obj.nnOpts.gpus);
 if numGpus > 1,
-    if isempty(gcp('nocreate')),
+    pool = gcp('nocreate');
+    
+    % Delete parpool with wrong size
+    if ~isempty(pool) && pool.NumWorkers ~= numGpus,
+        delete(gcp);
+    end;
+    
+    % Create new parpool
+    if isempty(pool) || ~pool.isvalid(),
         parpool('local',numGpus);
-        spmd, gpuDevice(obj.nnOpts.gpus(labindex)), end
     end
+    
+    % Assign GPUs
+    spmd, gpuDevice(obj.nnOpts.gpus(labindex)), end
+    
+    % Delete previous memory mapping files
     if exist(obj.nnOpts.memoryMapFile, 'file')
         delete(obj.nnOpts.memoryMapFile);
     end
