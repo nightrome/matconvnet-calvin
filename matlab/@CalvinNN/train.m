@@ -8,10 +8,20 @@ function train(obj)
 % setup GPUs
 numGpus = numel(obj.nnOpts.gpus);
 if numGpus > 1,
-    if isempty(gcp('nocreate')),
+    pool = gcp('nocreate');
+    
+    % Delete parpool with wrong size
+    if ~isempty(pool) && pool.NumWorkers ~= numGpus,
+        delete(gcp);
+    end;
+    
+    % Create new parpool
+    if isempty(pool) || ~pool.isvalid(),
         parpool('local',numGpus);
         spmd, gpuDevice(obj.nnOpts.gpus(labindex)), end
     end
+    
+    % Delete previous memory mapping files
     if exist(obj.nnOpts.memoryMapFile, 'file')
         delete(obj.nnOpts.memoryMapFile);
     end
