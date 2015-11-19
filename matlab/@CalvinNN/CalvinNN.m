@@ -45,6 +45,7 @@ classdef CalvinNN < handle
         
         % Declaration for methods that are in separate files
         convertNetwork(obj, net);
+        convertNetworkToFastRcnn(obj);
         init(obj, varargin);
         train(obj);
     end

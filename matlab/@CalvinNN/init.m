@@ -17,8 +17,6 @@ defnnOpts.extractStatsFn = @CalvinNN.extractStats;
 
 % Matconvnet-calvin options
 defnnOpts.evaluateMode = false;
-defnnOpts.roiPool.use = true;
-defnnOpts.roiPool.roiPoolFreeform = false;
 
 % defnnOpts = vl_argparse(nnOpts, varargin);
 % Merge settings

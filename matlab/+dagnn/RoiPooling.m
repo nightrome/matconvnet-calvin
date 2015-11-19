@@ -1,4 +1,4 @@
-classdef ROIPooling < dagnn.Layer
+classdef RoiPooling < dagnn.Layer
     % Region of interest pooling layer.
     %
     % inputs are: convMaps, oriImSize, boxes
@@ -94,7 +94,7 @@ classdef ROIPooling < dagnn.Layer
             end
         end
         
-        function obj = ROIPooling(varargin)
+        function obj = RoiPooling(varargin)
             obj.load(varargin);
         end
     end
