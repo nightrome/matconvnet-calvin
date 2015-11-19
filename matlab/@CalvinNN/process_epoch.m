@@ -16,7 +16,7 @@ if numGpus >= 1
     end
 end
 if numGpus > 1
-    mmap = map_gradients(nnOpts.memoryMapFile, net, numGpus);
+    mmap = CalvinNN.map_gradients(nnOpts.memoryMapFile, net, numGpus);
 else
     mmap = [];
 end
@@ -29,8 +29,6 @@ start = tic;
 num = 0;
 
 for t=1:nnOpts.batchSize:numel(allBatchInds),
-    %TODO: can be removed!
-    %     batchSize = min(nnOpts.batchSize, numel(allBatchInds) - t + 1);
     batchNumElements = 0;
     
     for s=1:nnOpts.numSubBatches,
