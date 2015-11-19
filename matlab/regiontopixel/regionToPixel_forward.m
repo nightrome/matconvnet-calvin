@@ -6,8 +6,14 @@ function[scoresSP, labelsTargetSP, mapSP] = regionToPixel_forward(scoresAll, reg
 %
 % Copyright by Holger Caesar, 2015
 
+% Move to CPU
+gpuMode = isa(scoresAll, 'gpuArray');
+if gpuMode,
+    scoresAll = gather(scoresAll);
+end;
+
 % Check inputs
-assert(gather(~any(isnan(scoresAll(:)) | isinf(scoresAll(:)))));
+assert(~any(isnan(scoresAll(:)) | isinf(scoresAll(:))));
 
 % Reshape scores
 scoresAll = reshape(scoresAll, [size(scoresAll, 3), size(scoresAll, 4)]);
@@ -19,7 +25,7 @@ overlapListAll = regionToPixelAux.overlapListAll;
 labelCount = size(scoresAll, 1);
 spCount = size(overlapListAll, 2);
 boxCount = size(scoresAll, 2);
-scoresSP = nan(labelCount, spCount, 'like', scoresAll); % Note that zeros will be counted anyways!
+scoresSP = nan(labelCount, spCount, 'single'); % Note that zeros will be counted anyways!
 mapSP = nan(labelCount, spCount);
 
 % Compute maximum scores and map/mask for the backward pass
@@ -55,7 +61,7 @@ else
     scoresSP = scoresSP(:, nonEmptySPs);
     mapSP = mapSP(:, nonEmptySPs);
     spLabelHistos = spLabelHistos(nonEmptySPs, :);
-    spCount = gather(sum(nonEmptySPs));
+    spCount = sum(nonEmptySPs);
     assert(spCount >= 1);
     
     % Replicate regions with multiple labels
@@ -68,7 +74,7 @@ else
         for spIdx = 1 : spCount,
             replInds = find(spLabelHistos(spIdx, :))';
             replCount = numel(replInds);
-            scoresSPRepl{spIdx} = repmat(gather(scoresSP(:, spIdx)'), [replCount, 1]);
+            scoresSPRepl{spIdx} = repmat(scoresSP(:, spIdx)', [replCount, 1]);
             mapSPRepl{spIdx} = repmat(mapSP(:, spIdx)', [replCount, 1]);
             labelsTargetSPRepl{spIdx} = replInds;
             pixelSizesSPRepl{spIdx} = spLabelHistos(spIdx, replInds)';
@@ -106,13 +112,13 @@ else
     labelsTargetSP = cat(3, labelsTargetSP, weightsSP);
     
     % Final checks (only in train, in test NANs are fine)
-    assert(gather(~any(isnan(scoresSP(:)) | isinf(scoresSP(:)))));
+    assert(~any(isnan(scoresSP(:)) | isinf(scoresSP(:))));
 end;
 
 % Reshape the scores
 scoresSP = reshape(scoresSP, [1, 1, size(scoresSP)]);
 
 % Convert outputs back to GPU if necessary
-if isa(scoresAll, 'gpuArray'),
+if gpuMode,
     scoresSP = gpuArray(scoresSP);
 end;
