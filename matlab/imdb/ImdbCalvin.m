@@ -10,6 +10,8 @@ classdef ImdbCalvin < handle
         datasetMode % train, val or test
 
         data        % data.train data.val data.test
+        
+        gpuMode     % Boolean: true if gpuMode is on.
     end
     
     methods (Abstract)

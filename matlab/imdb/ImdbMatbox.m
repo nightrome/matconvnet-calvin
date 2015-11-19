@@ -25,6 +25,8 @@ classdef ImdbMatbox < ImdbCalvin
     properties(SetAccess = protected, GetAccess = public)
         imageDir
         matBoxDir
+        imExt
+        meanIm
         targetClasses = [];
         flipLR = true;
         posFraction = 0.25;
@@ -44,7 +46,7 @@ classdef ImdbMatbox < ImdbCalvin
             obj.meanIm = single(meanIm);
             
             % Split into train/val/test
-            if ~iscell(datasetIdx == 3)
+            if ~iscell(datasetIdx)
                 % We have three numbers specifying the random split
                 if sum(datasetIdx) ~= 1
                     error('Complete dataset should be divided');
@@ -69,12 +71,13 @@ classdef ImdbMatbox < ImdbCalvin
                     error('Complete dataset should be divided');
                 end
                 
-                obj.imagesTrain = filenames(datasetIdx{1});
-                obj.imagesVal = filenames(datasetIdx{1});
-                obj.imagesTest = filenames(datasetIdx{1});
+                obj.data.train = filenames(datasetIdx{1});
+                obj.data.val = filenames(datasetIdx{2});
+                obj.data.test = filenames(datasetIdx{3});
             end
             
             % Get number of classes
+            obj.setDatasetMode('train');
             gStruct = obj.LoadGStruct(1);
             obj.numClasses = size(gStruct.overlap, 2);
         end
@@ -93,10 +96,10 @@ classdef ImdbMatbox < ImdbCalvin
         
         % Load gStruct
         function gStruct = LoadGStruct(obj,imI)
-            gStruct = load([obj.matBoxDir obj.filenames{imI} '.mat']);
+            gStruct = load([obj.matBoxDir obj.data.(obj.datasetMode){imI} '.mat']);
             
             % Make sure that no GT boxes/labels/etc are given when using test phase
-            if strcmp(obj.setType, 'test')
+            if strcmp(obj.datasetMode, 'test')
                 goodIds = ~(gStruct.gt);
                 gStruct.gt = gStruct.gt(goodIds);
                 gStruct.overlap = zeros(size(gStruct.overlap(goodIds,:)), 'single');
