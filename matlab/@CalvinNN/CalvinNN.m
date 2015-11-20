@@ -58,6 +58,7 @@ classdef CalvinNN < handle
         init(obj, varargin);
         saveState(obj, fileName);
         train(obj);
+        test(obj, targetEpoch);
     end
     
     methods (Access = protected)

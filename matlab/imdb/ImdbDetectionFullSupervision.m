@@ -18,19 +18,30 @@ classdef ImdbDetectionFullSupervision < ImdbMatbox
             
             % Sample boxes
             gStruct = obj.LoadGStruct(batchInds);
-            [boxes, labels] = obj.SamplePosAndNegFromGstruct(gStruct, obj.boxesPerIm);
             
-            
-            % Assign elements to cell array for use in training the network
-            numElements = obj.boxesPerIm;
-            batchData{8} = oriImSize;
-            batchData{7} = 'oriImSize';
-            batchData{6} = boxes;
-            batchData{5} = 'boxes';
-            batchData{4} = labels;
-            batchData{3} = 'label';
-            batchData{2} = image;
-            batchData{1} = 'input';
+            if ismember(obj.datasetMode, {'train', 'val'})
+                [boxes, labels] = obj.SamplePosAndNegFromGstruct(gStruct, obj.boxesPerIm);
+
+                % Assign elements to cell array for use in training the network
+                numElements = obj.boxesPerIm;
+                batchData{8} = oriImSize;
+                batchData{7} = 'oriImSize';
+                batchData{6} = boxes;
+                batchData{5} = 'boxes';
+                batchData{4} = labels;
+                batchData{3} = 'label';
+                batchData{2} = image;
+                batchData{1} = 'input';
+            else
+                % Test set. Get all boxes
+                numElements = size(gStruct.boxes,1);
+                batchData{6} = oriImSize;
+                batchData{5} = 'oriImSize';
+                batchData{4} = gStruct.boxes;
+                batchData{3} = 'boxes';
+                batchData{2} = image;
+                batchData{1} = 'input';
+            end
             
         end
         
