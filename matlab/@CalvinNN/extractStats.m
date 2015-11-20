@@ -1,4 +1,4 @@
-function stats = extractStats(net)
+function stats = extractStats(net, ~)
 % stats = extractStats(net)
 
 sel = find(cellfun(@(x) isa(x,'dagnn.Loss'), {net.layers.block})) ;
