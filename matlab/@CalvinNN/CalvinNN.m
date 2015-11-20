@@ -31,7 +31,7 @@ classdef CalvinNN < handle
             % Load the network from file if necessary
             if ischar(netIn),
                 netIn = load(netIn);
-            end;
+            end
             
             % Store the network
             if isfield(netIn, 'net')
@@ -49,7 +49,7 @@ classdef CalvinNN < handle
                 obj.convertNetwork(netIn);
             else
                 error('Error: Network is neither in SimpleNN nor DAG format!');
-            end;
+            end
         end
         
         % Declarations for methods that are in separate files

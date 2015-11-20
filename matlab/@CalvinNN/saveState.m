@@ -18,7 +18,7 @@ if netSize > 2e9,
     matVer = '-v7.3';
 else
     matVer = '-v6';
-end;
+end
 
 % Save to file
 save(fileName, 'net', 'stats', matVer);
