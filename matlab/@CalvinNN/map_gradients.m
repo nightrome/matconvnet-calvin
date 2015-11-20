@@ -1,5 +1,9 @@
-function mmap = map_gradients(fname, net, numGpus)
-% mmap = map_gradients(fname, net, numGpus)
+function mmap = map_gradients(obj, net)
+% mmap = map_gradients(obj, net)
+
+% Get inputs
+fname = obj.nnOpts.memoryMapFile;
+numGpus = numel(obj.nnOpts.gpus);
 
 format = {} ;
 for i=1:numel(net.params)

@@ -1,8 +1,12 @@
-function saveState(fileName, net, stats) %#ok<INUSD>
-% saveState(fileName, net, stats)
+function saveState(obj, fileName)
+% saveState(obj, fileName)
 %
 % Save network and statistics for the current epoch.
 % Files are saved in v7.3 format to allow nets with > 2GB memory.
+
+% Get fields from CalvinNN
+net = obj.net;
+stats = obj.stats; %#ok<NASGU>
 
 % Extract the fields from the DAG class
 net = net.saveobj() ; %#ok<NASGU>

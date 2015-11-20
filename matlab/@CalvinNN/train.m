@@ -38,7 +38,7 @@ modelFigPath = fullfile(obj.nnOpts.expDir, 'net-train.pdf');
 start = obj.nnOpts.continue * CalvinNN.findLastCheckpoint(obj.nnOpts.expDir);
 if start >= 1
     fprintf('resuming by loading epoch %d\n', start);
-    [obj.net, obj.stats] = CalvinNN.loadState(modelPath(start));
+    obj.loadState(modelPath(start));
 end
 
 for epoch=start+1:obj.nnOpts.numEpochs
@@ -56,23 +56,23 @@ for epoch=start+1:obj.nnOpts.numEpochs
         state.allBatchInds = obj.imdb.getAllBatchInds();
         
         if numGpus <= 1
-            obj.stats.(datasetMode)(epoch) = CalvinNN.process_epoch(obj.net, state, obj.imdb, obj.nnOpts, datasetMode);
+            obj.stats.(datasetMode)(epoch) = obj.process_epoch(obj.net, state);
         else
             savedNet = obj.net.saveobj();
             spmd
                 net_ = dagnn.DagNN.loadobj(savedNet);
-                stats_.(datasetMode) = CalvinNN.process_epoch(net_, state, obj.imdb, obj.nnOpts, datasetMode);
+                stats_.(datasetMode) = obj.process_epoch(net_, state);
                 if labindex == 1, savedNet_ = net_.saveobj(); end
             end
             obj.net = dagnn.DagNN.loadobj(savedNet_{1});
-            stats__ = CalvinNN.accumulateStats(stats_);
+            stats__ = obj.accumulateStats(stats_);
             obj.stats.(datasetMode)(epoch) = stats__.(datasetMode);
         end
     end
     
     % save
     if ~obj.nnOpts.evaluateMode,
-        CalvinNN.saveState(modelPath(epoch), obj.net, obj.stats);
+        obj.saveState(modelPath(epoch));
     end
     
     figure(1); clf;

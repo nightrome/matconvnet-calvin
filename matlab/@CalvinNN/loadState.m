@@ -1,6 +1,6 @@
-function [net, stats] = loadState(fileName)
-% [net, stats] = loadState(fileName)
+function loadState(obj, fileName)
+% loadState(obj, fileName)
 
 netStruct = load(fileName, 'net', 'stats');
-net = dagnn.DagNN.loadobj(netStruct.net);
-stats = netStruct.stats;
+obj.net = dagnn.DagNN.loadobj(netStruct.net);
+obj.stats = netStruct.stats;
