@@ -25,8 +25,8 @@ for fieldIdx = 1 : numel(defnnOptsFields),
     fieldName = defnnOptsFields{fieldIdx};
     if ~isfield(nnOpts, fieldName),
         nnOpts.(fieldName) = defnnOpts.(fieldName);
-    end;
-end;
+    end
+end
 
 if ~exist(nnOpts.expDir, 'dir'), mkdir(nnOpts.expDir); end
 

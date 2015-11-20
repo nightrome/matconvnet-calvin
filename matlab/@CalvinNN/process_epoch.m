@@ -46,7 +46,7 @@ for t=1:obj.nnOpts.batchSize:numel(allBatchInds),
         % Skip empty subbatches
         if numElements == 0,
             continue;
-        end;
+        end
         
         if strcmp(obj.imdb.datasetMode, 'train')
             net.accumulateParamDers = (s ~= 1);

@@ -14,7 +14,7 @@ if numGpus > 1,
     % Delete parpool with wrong size
     if ~isempty(pool) && pool.NumWorkers ~= numGpus,
         delete(gcp);
-    end;
+    end
     
     % Create new parpool
     if isempty(pool) || ~pool.isvalid(),
@@ -30,7 +30,7 @@ if numGpus > 1,
     end
 elseif numGpus == 1,
     gpuDevice(obj.nnOpts.gpus);
-end;
+end
 
 modelPath = @(ep) fullfile(obj.nnOpts.expDir, sprintf('net-epoch-%d.mat', ep));
 modelFigPath = fullfile(obj.nnOpts.expDir, 'net-train.pdf');
