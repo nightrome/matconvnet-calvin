@@ -15,11 +15,11 @@ numGpus = numel(obj.nnOpts.gpus);
 if numGpus >= 1
     net.move('gpu');
     if strcmp(obj.imdb.datasetMode, 'train')
-        state.momentum = cellfun(@gpuArray,state.momentum,'UniformOutput',false);
+        state.momentum = cellfun(@gpuArray, state.momentum, 'UniformOutput', false);
     end
 end
 if numGpus > 1
-    mmap = obj.map_gradients(obj, net);
+    mmap = obj.map_gradients(net);
 else
     mmap = [];
 end
