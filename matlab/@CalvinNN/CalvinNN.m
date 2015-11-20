@@ -60,7 +60,7 @@ classdef CalvinNN < handle
         train(obj);
     end
     
-    methods (Access = private)
+    methods (Access = protected)
         % Declarations for methods that are in separate files
         stats = accumulateStats(stats_);
         state = accumulate_gradients(obj, state, net, batchSize, mmap);
