@@ -47,25 +47,31 @@ classdef CalvinNN < handle
             elseif isfield(netIn, 'layers'),
                 % Convert a simpleNN network to DAG format
                 obj.convertNetwork(netIn);
+            else
+                error('Error: Network is neither in SimpleNN nor DAG format!');
             end;
         end
         
-        % Declaration for methods that are in separate files
+        % Declarations for methods that are in separate files
         convertNetwork(obj, net);
         convertNetworkToFastRcnn(obj);
         init(obj, varargin);
+        saveState(obj, fileName);
         train(obj);
     end
     
-    methods (Static)
-        state = accumulate_gradients(state, net, opts, batchSize, mmap);
+    methods (Access = private)
+        % Declarations for methods that are in separate files
         stats = accumulateStats(stats_);
+        state = accumulate_gradients(obj, state, net, batchSize, mmap);
+        loadState(obj, fileName);
+        mmap = map_gradients(fname, net, numGpus);
+        stats = process_epoch(obj, net, state);
+        write_gradients(mmap, net);
+    end
+    
+    methods (Static)
         stats = extractStats(net);
         epoch = findLastCheckpoint(modelDir);
-        [net, stats] = loadState(fileName);
-        mmap = map_gradients(fname, net, numGpus);
-        stats = process_epoch(net, state, imdb, opts, mode);
-        saveState(fileName, net, stats);
-        write_gradients(mmap, net);
     end
 end

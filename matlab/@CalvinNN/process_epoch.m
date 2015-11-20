@@ -1,22 +1,25 @@
-function stats = process_epoch(net, state, imdb, nnOpts, mode)
-% stats = process_epoch(net, state, imdb, nnOpts, mode)
+function stats = process_epoch(obj, net, state)
+% stats = process_epoch(obj, net, state)
+%
+% Note that net needs to be a separate argument (not obj.net) to support
+% multiple GPUs.
 
 % Check options
-assert(~nnOpts.prefetch, 'Error: Prefetch is not supported in Matconvnet-Calvin!');
+assert(~obj.nnOpts.prefetch, 'Error: Prefetch is not supported in Matconvnet-Calvin!');
 
-if strcmp(mode,'train')
+if strcmp(obj.imdb.datasetMode, 'train')
     state.momentum = num2cell(zeros(1, numel(net.params)));
 end
 
-numGpus = numel(nnOpts.gpus);
+numGpus = numel(obj.nnOpts.gpus);
 if numGpus >= 1
     net.move('gpu');
-    if strcmp(mode,'train')
+    if strcmp(obj.imdb.datasetMode, 'train')
         state.momentum = cellfun(@gpuArray,state.momentum,'UniformOutput',false);
     end
 end
 if numGpus > 1
-    mmap = CalvinNN.map_gradients(nnOpts.memoryMapFile, net, numGpus);
+    mmap = obj.map_gradients(obj, net);
 else
     mmap = [];
 end
@@ -28,26 +31,26 @@ assert(~isempty(allBatchInds));
 start = tic;
 num = 0;
 
-for t=1:nnOpts.batchSize:numel(allBatchInds),
+for t=1:obj.nnOpts.batchSize:numel(allBatchInds),
     batchNumElements = 0;
     
-    for s=1:nnOpts.numSubBatches,
+    for s=1:obj.nnOpts.numSubBatches,
         % get this image batch and prefetch the next
         batchStart = t + (labindex-1) + (s-1) * numlabs;
-        batchEnd = min(t+nnOpts.batchSize-1, numel(allBatchInds));
-        batchInds = allBatchInds(batchStart : nnOpts.numSubBatches * numlabs : batchEnd);
+        batchEnd = min(t+obj.nnOpts.batchSize-1, numel(allBatchInds));
+        batchInds = allBatchInds(batchStart : obj.nnOpts.numSubBatches * numlabs : batchEnd);
         num = num + numel(batchInds);
         if numel(batchInds) == 0, continue; end
         
-        [inputs, numElements] = imdb.getBatch(batchInds, net);
+        [inputs, numElements] = obj.imdb.getBatch(batchInds, net);
         % Skip empty subbatches
         if numElements == 0,
             continue;
         end;
         
-        if strcmp(mode, 'train')
+        if strcmp(obj.imdb.datasetMode, 'train')
             net.accumulateParamDers = (s ~= 1);
-            net.eval(inputs, nnOpts.derOutputs);
+            net.eval(inputs, obj.nnOpts.derOutputs);
         else
             net.eval(inputs);
         end
@@ -56,15 +59,15 @@ for t=1:nnOpts.batchSize:numel(allBatchInds),
     end
     
     % extract learning stats
-    stats = nnOpts.extractStatsFn(net);
+    stats = obj.nnOpts.extractStatsFn(net);
     
     % accumulate gradient
-    if strcmp(mode, 'train')
+    if strcmp(obj.imdb.datasetMode, 'train')
         if ~isempty(mmap)
-            CalvinNN.write_gradients(mmap, net);
+            obj.write_gradients(mmap, net);
             labBarrier();
         end
-        state = CalvinNN.accumulate_gradients(state, net, nnOpts, batchNumElements, mmap);
+        state = obj.accumulate_gradients(state, net, batchNumElements, mmap);
     end
     
     % print learning statistics
@@ -72,9 +75,9 @@ for t=1:nnOpts.batchSize:numel(allBatchInds),
     stats.time = toc(start);
     
     fprintf('%s: epoch %02d: %3d/%3d: %.1f Hz', ...
-        mode, ...
+        obj.imdb.datasetMode, ...
         state.epoch, ...
-        fix(t/nnOpts.batchSize)+1, ceil(numel(allBatchInds)/nnOpts.batchSize), ...
+        fix(t/obj.nnOpts.batchSize)+1, ceil(numel(allBatchInds)/obj.nnOpts.batchSize), ...
         stats.num/stats.time * max(numGpus, 1));
     for f = setdiff(fieldnames(stats)', {'num', 'time'})
         f = char(f);
