@@ -32,14 +32,15 @@ boxes = inputs{boxI};
 currMaxBoxes = min(maxNumBoxesPerImTest, size(boxes, 1));
 for cI = size(scores,2):-1:1
     [currScores, sI] = sort(scores(:,cI), 'descend');
+    currScores = currScores(1:currMaxBoxes);
     sI = sI(1:currMaxBoxes);
     currBoxes = boxes(sI,:);
-    currScores = currScores(sI,:);
+    
     
     [~, goodBoxesI] = BoxNMS(currBoxes, nmsTTest);
     currBoxes = currBoxes(goodBoxesI,:);
     currScores = currScores(goodBoxesI,:);
     
-    results.boxes{cI} = currBoxes;
-    results.scores{cI} = currScores;
+    results.boxes{cI} = gather(currBoxes);
+    results.scores{cI} = gather(currScores);
 end

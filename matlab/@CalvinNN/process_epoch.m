@@ -104,7 +104,10 @@ for t=1:obj.nnOpts.batchSize:numel(allBatchInds),
     end
 end
 
-stats.results = results; % Give back results (or do we need another argument?)
+% Give back results in test mode (or do we need another argument?)
+if strcmp(obj.imdb.datasetMode, 'test')
+    stats.results = results; 
+end
 
 fprintf('Finished!\n');
 
