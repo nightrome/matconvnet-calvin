@@ -31,6 +31,10 @@ assert(~isempty(allBatchInds));
 start = tic;
 num = 0;
 
+targetTime = 3; % Counter to not pollute screen with printf statements
+waitTime = 10;  % How long to wait to update the fprintf statements.
+fprintf('Starting epoch: %d\n', state.epoch);
+
 for t=1:obj.nnOpts.batchSize:numel(allBatchInds),
     batchNumElements = 0;
     
@@ -55,11 +59,21 @@ for t=1:obj.nnOpts.batchSize:numel(allBatchInds),
             net.eval(inputs);
         end
         
+        % Results at test time
+        if strcmp(obj.imdb.datasetMode, 'test')
+            % Deal with memory allocation
+            currResult = obj.nnOpts.testFn(obj.imdb, obj.nnOpts, net, inputs);
+            if t == 1 && s == 1
+                results = repmat(currResult, numel(allBatchInds), 1);
+            end
+            results(batchInds) = currResult;
+        end
+        
         batchNumElements = batchNumElements + numElements;
     end
     
     % extract learning stats
-    stats = obj.nnOpts.extractStatsFn(net);
+    stats = obj.nnOpts.extractStatsFn(net, inputs);
     
     % accumulate gradient
     if strcmp(obj.imdb.datasetMode, 'train')
@@ -74,18 +88,25 @@ for t=1:obj.nnOpts.batchSize:numel(allBatchInds),
     stats.num = num;
     stats.time = toc(start);
     
-    fprintf('%s: epoch %02d: %3d/%3d: %.1f Hz', ...
-        obj.imdb.datasetMode, ...
-        state.epoch, ...
-        fix(t/obj.nnOpts.batchSize)+1, ceil(numel(allBatchInds)/obj.nnOpts.batchSize), ...
-        stats.num/stats.time * max(numGpus, 1));
-    for f = setdiff(fieldnames(stats)', {'num', 'time'})
-        f = char(f);
-        fprintf(' %s:', f);
-        fprintf(' %.3f', stats.(f));
+    if stats.time > targetTime
+        targetTime = targetTime + waitTime;
+        fprintf('%s: epoch %02d: %3d/%3d: %.1f Hz', ...
+            obj.imdb.datasetMode, ...
+            state.epoch, ...
+            fix(t/obj.nnOpts.batchSize)+1, ceil(numel(allBatchInds)/obj.nnOpts.batchSize), ...
+            stats.num/stats.time * max(numGpus, 1));
+        for f = setdiff(fieldnames(stats)', {'num', 'time', 'results'}) 
+            f = char(f);
+            fprintf(' %s:', f);
+            fprintf(' %.3f', stats.(f));
+        end
+        fprintf('\n');
     end
-    fprintf('\n');
 end
+
+stats.results = results; % Give back results (or do we need another argument?)
+
+fprintf('Finished!\n');
 
 net.reset();
 net.move('cpu');
