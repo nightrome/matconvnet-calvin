@@ -10,3 +10,4 @@ root = vl_rootnn();
 addpath(fullfile(root, 'matlab', 'imdb'));
 addpath(fullfile(root, 'matlab', 'regiontopixel'));
 addpath(fullfile(root, 'matlab', 'roipool'));
+addpath(fullfile(root, 'matlab', 'boxes'));

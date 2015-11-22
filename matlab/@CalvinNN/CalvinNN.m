@@ -58,7 +58,7 @@ classdef CalvinNN < handle
         init(obj, varargin);
         saveState(obj, fileName);
         train(obj);
-        test(obj, targetEpoch);
+        results = test(obj, targetEpoch);
     end
     
     methods (Access = protected)
@@ -72,7 +72,8 @@ classdef CalvinNN < handle
     end
     
     methods (Static)
-        stats = extractStats(net);
+        stats = extractStats(net, inputs);
+        stats = testDetection(imdb, nnOpts, net, inputs);
         epoch = findLastCheckpoint(modelDir);
     end
 end

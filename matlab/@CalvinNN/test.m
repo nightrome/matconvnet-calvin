@@ -3,11 +3,9 @@ function results = test(obj, targetEpoch)
 %
 % - Loads the network within this function using targetEpoch or checking HD for last epoch saved
 % - Does a single processing of an epoch for testing
-% - Uses the nnOpts.extractStatsTestFn function for the testing
+% - Uses the nnOpts.testFn function for the testing
 % - Automatically changes softmaxloss to softmax. Other losses are not yet supported
 
-tempExtractStatsFn = obj.nnOpts.extractStatsFn;
-obj.nnOpts.extractStatsFn = obj.nnOpts.extractStatsTestFn;
 
 % setup GPUs
 numGpus = numel(obj.nnOpts.gpus);
@@ -36,7 +34,7 @@ modelPath = @(ep) fullfile(obj.nnOpts.expDir, sprintf('net-epoch-%d.mat', ep));
 if nargin == 1
     targetEpoch = CalvinNN.findLastCheckpoint(obj.nnOpts.expDir);
 end
-[obj.net, obj.stats] = CalvinNN.loadState(modelPath(targetEpoch));
+obj.loadState(modelPath(targetEpoch));
 
 % Replace softmaxloss layer with softmax layer
 softmaxlossInput = obj.net.layers(obj.net.getLayerIndex('softmaxloss')).inputs{1};
@@ -53,24 +51,21 @@ state.allBatchInds = obj.imdb.getAllBatchInds();
 
 % Process the epoch
 if numGpus <= 1
-    obj.stats.(datasetMode) = CalvinNN.process_epoch(obj.net, state, obj.imdb, obj.nnOpts, datasetMode);
+    obj.stats.(datasetMode) = obj.process_epoch(obj.net, state);
 else
     % Jasper: Probably the multi-gpu mode does not work because of accumulateStats
     % savedNet = obj.net.saveobj();
     spmd
         net_ = obj.net; % dagnn.DagNN.loadobj(savedNet);
-        stats_.(datasetMode) = CalvinNN.process_epoch(net_, state, obj.imdb, obj.nnOpts, datasetMode);
+        stats_.(datasetMode) = obj.process_epoch(net_, state);
         % if labindex == 1, savedNet_ = net_.saveobj(); end
     end
     % obj.net = dagnn.DagNN.loadobj(savedNet_{1});
-    stats__ = CalvinNN.accumulateStats(stats_);
+    stats__ = obj.accumulateStats(stats_);
     obj.stats.(datasetMode) = stats__.(datasetMode);
 end
 
 % The stats are the desired results 
 results = obj.stats.(datasetMode);
-
-% Set the extractStatsFn function to original training function
-obj.nnOpts.extractStatsFn = tempExtractStatsFn;
 
 end
