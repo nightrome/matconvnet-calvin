@@ -38,7 +38,7 @@ modelFigPath = fullfile(obj.nnOpts.expDir, 'net-train.pdf');
 start = obj.nnOpts.continue * CalvinNN.findLastCheckpoint(obj.nnOpts.expDir);
 if start >= 1
     fprintf('resuming by loading epoch %d\n', start);
-    obj.loadState(modelPath(start));
+    [obj.net, obj.stats] = CalvinNN.loadState(modelPath(start));
 end
 
 for epoch=start+1:obj.nnOpts.numEpochs

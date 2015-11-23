@@ -65,7 +65,6 @@ classdef CalvinNN < handle
         % Declarations for methods that are in separate files
         stats = accumulateStats(obj, stats_);
         state = accumulate_gradients(obj, state, net, batchSize, mmap);
-        loadState(obj, fileName);
         mmap = map_gradients(fname, net, numGpus);
         stats = process_epoch(obj, net, state);
         write_gradients(mmap, net);
@@ -75,5 +74,6 @@ classdef CalvinNN < handle
         stats = extractStats(net, inputs);
         stats = testDetection(imdb, nnOpts, net, inputs);
         epoch = findLastCheckpoint(modelDir);
+        [net, stats] = loadState(obj, fileName);
     end
 end

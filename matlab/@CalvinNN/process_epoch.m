@@ -7,6 +7,7 @@ function stats = process_epoch(obj, net, state)
 % Check options
 assert(~obj.nnOpts.prefetch, 'Error: Prefetch is not supported in Matconvnet-Calvin!');
 
+% Consider moving these outside of process_epoch
 if strcmp(obj.imdb.datasetMode, 'train')
     state.momentum = num2cell(zeros(1, numel(net.params)));
 end
