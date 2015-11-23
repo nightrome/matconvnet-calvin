@@ -34,7 +34,7 @@ modelPath = @(ep) fullfile(obj.nnOpts.expDir, sprintf('net-epoch-%d.mat', ep));
 if nargin == 1
     targetEpoch = CalvinNN.findLastCheckpoint(obj.nnOpts.expDir);
 end
-obj.loadState(modelPath(targetEpoch));
+[obj.net, obj.stats] = CalvinNN.loadState(modelPath(targetEpoch));
 
 % Replace softmaxloss layer with softmax layer
 softmaxlossInput = obj.net.layers(obj.net.getLayerIndex('softmaxloss')).inputs{1};
