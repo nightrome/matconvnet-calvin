@@ -1,6 +1,11 @@
-function loadState(obj, fileName)
-% loadState(obj, fileName)
+function[net, stats] = loadState(fileName)
+% [net, stats] = loadState(fileName)
+%
+% Loads a training snapshot of the network.
+%
+% Copyright by Matconvnet
+% Modified by Holger Caesar, 2015
 
 netStruct = load(fileName, 'net', 'stats');
-obj.net = dagnn.DagNN.loadobj(netStruct.net);
-obj.stats = netStruct.stats;
+net = dagnn.DagNN.loadobj(netStruct.net);
+stats = netStruct.stats;
