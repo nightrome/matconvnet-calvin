@@ -29,13 +29,13 @@ classdef ImdbCalvin < handle
             obj.datasetMode = datasetMode;
         end
         
-        function allBatchIds = getAllBatchInds(obj)
+        function allBatchInds = getAllBatchInds(obj)
             % Obtain the indices and ordering of all batches (for this epoch)
             switch obj.datasetMode
                 case 'train'
-                    allBatchIds = randperm(size(obj.data.train,1));
+                    allBatchInds = randperm(size(obj.data.train,1));
                 otherwise
-                    allBatchIds = 1:size(obj.data.(obj.datasetMode),1);
+                    allBatchInds = 1:size(obj.data.(obj.datasetMode),1);
             end
         end
     end
