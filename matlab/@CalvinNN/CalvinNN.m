@@ -35,6 +35,7 @@ classdef CalvinNN < handle
             
             % Store the network
             if isfield(netIn, 'net')
+                % Store net
                 if isa(netIn.net, 'dagnn.DagNN')
                     % The network is already a DAG
                     obj.net = netIn.net;
@@ -44,6 +45,11 @@ classdef CalvinNN < handle
                 else
                     error('Error: Network is neither in SimpleNN nor DAG format!');
                 end
+                
+                % Store stats
+                if isfield(netIn, 'stats')
+                    obj.stats = netIn.stats;
+                end;
             elseif isfield(netIn, 'layers'),
                 % Convert a simpleNN network to DAG format
                 obj.convertNetwork(netIn);
