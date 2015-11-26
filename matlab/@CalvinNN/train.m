@@ -47,6 +47,8 @@ for epoch=start+1:obj.nnOpts.numEpochs
     state.epoch = epoch;
     state.learningRate = obj.nnOpts.learningRate(min(epoch, numel(obj.nnOpts.learningRate)));
     
+    obj.imdb.switchFlipLR();
+    
     % Do training and validation
     theSets = {'train', 'val'};
     for datasetModeI = 1:numel(theSets),
