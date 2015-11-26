@@ -28,7 +28,8 @@ for fieldIdx = 1 : numel(defnnOptsFields),
     end
 end
 
-if ~exist(nnOpts.expDir, 'dir'), mkdir(nnOpts.expDir); end
+% TODO: do not create directory at test time
+if ~exist(nnOpts.expDir, 'dir') && ~isempty(nnOpts.expDir), mkdir(nnOpts.expDir); end
 
 % Set new fields
 obj.nnOpts = nnOpts;
