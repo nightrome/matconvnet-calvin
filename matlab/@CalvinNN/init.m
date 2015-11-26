@@ -18,7 +18,6 @@ defnnOpts.extractStatsFn = @CalvinNN.extractStats;
 % Matconvnet-calvin options
 defnnOpts.evaluateMode = false;
 
-% defnnOpts = vl_argparse(nnOpts, varargin);
 % Merge settings
 defnnOptsFields = fields(defnnOpts);
 for fieldIdx = 1 : numel(defnnOptsFields),
@@ -28,8 +27,10 @@ for fieldIdx = 1 : numel(defnnOptsFields),
     end
 end
 
-% TODO: do not create directory at test time
-if ~exist(nnOpts.expDir, 'dir') && ~isempty(nnOpts.expDir), mkdir(nnOpts.expDir); end
+% Do not create directory in evaluation mode
+if ~nnOpts.evaluateMode && ~exist(nnOpts.expDir, 'dir'),
+    mkdir(nnOpts.expDir);
+end
 
 % Set new fields
 obj.nnOpts = nnOpts;
