@@ -6,7 +6,7 @@ function train(obj)
 % - Currently we cannot change the learning rate after 13 epochs.
 % - Only <=2 GPUs at the same time seem to work
 
-% setup GPUs
+% Setup GPUs
 numGpus = numel(obj.nnOpts.gpus);
 if numGpus > 1,
     pool = gcp('nocreate');
@@ -50,9 +50,10 @@ for epoch=start+1:obj.nnOpts.numEpochs
     obj.imdb.switchFlipLR();
     
     % Do training and validation
-    theSets = {'train', 'val'};
-    for datasetModeI = 1:numel(theSets),
-        datasetMode = theSets{datasetModeI};
+    datasetModes = {'train', 'val'};
+    for datasetModeIdx = 1:numel(datasetModes)
+        datasetMode = datasetModes{datasetModeIdx};
+        
         % Set datasetMode in imdb
         obj.imdb.setDatasetMode(datasetMode);
         state.allBatchInds = obj.imdb.getAllBatchInds();
@@ -72,26 +73,27 @@ for epoch=start+1:obj.nnOpts.numEpochs
         end
     end
     
-    % save
-    if ~obj.nnOpts.evaluateMode,
+    % Save current snapshot
+    if ~obj.nnOpts.evaluateMode
         obj.saveState(modelPath(epoch));
     end
     
+    % Plot statistics
     figure(1); clf;
     values = [];
     leg = {};
-    for s = {'train', 'val'}
-        s = char(s); %#ok<FXSET>
+    datasetModes = {'train', 'val'};
+    for datasetModeIdx = 1:numel(datasetModes)
+        datasetMode = datasetModes{datasetModeIdx};
+        
         for f = setdiff(fieldnames(obj.stats.train)', {'num', 'time'})
             f = char(f); %#ok<FXSET>
-            leg{end+1} = sprintf('%s (%s)', f, s); %#ok<AGROW>
-            tmp = [obj.stats.(s).(f)];
+            leg{end+1} = sprintf('%s (%s)', f, datasetMode); %#ok<AGROW>
+            tmp = [obj.stats.(datasetMode).(f)];
             values(end+1,:) = tmp(1,:)'; %#ok<AGROW>
         end
     end
-    subplot(1,2,1); plot(1:epoch, values');
-    legend(leg{:}); xlabel('epoch'); ylabel('metric');
-    subplot(1,2,2); semilogy(1:epoch, values');
+    plot(1:epoch, values');
     legend(leg{:}); xlabel('epoch'); ylabel('metric');
     grid on;
     drawnow;
