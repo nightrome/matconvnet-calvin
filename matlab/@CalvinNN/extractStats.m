@@ -1,5 +1,7 @@
 function stats = extractStats(net, ~)
 % stats = extractStats(net)
+%
+% Extract all losses from the network.
 
 sel = find(cellfun(@(x) isa(x,'dagnn.Loss'), {net.layers.block})) ;
 stats = struct() ;

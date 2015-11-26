@@ -1,5 +1,8 @@
 function stats = accumulateStats(obj, stats_)
 % stats = accumulateStats(obj, stats_)
+%
+% Goes through each GPUs struct stats_{g} and averages the values of all
+% stats fields.
 
 stats = struct();
 datasetMode = obj.imdb.datasetMode;
