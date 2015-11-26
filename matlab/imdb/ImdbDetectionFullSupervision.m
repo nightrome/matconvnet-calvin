@@ -19,6 +19,15 @@ classdef ImdbDetectionFullSupervision < ImdbMatbox
             % Sample boxes
             gStruct = obj.LoadGStruct(batchInds);
             
+            if obj.flipLR
+                currImT = fliplr(image);
+                currBoxesT = gStruct.boxes;
+                currBoxesT(:,3) = oriImSize(2) - gStruct.boxes(:,1) + 1;
+                currBoxesT(:,1) = oriImSize(2) - gStruct.boxes(:,3) + 1;
+                gStruct.boxes = currBoxesT;
+                image = currImT;
+            end
+            
             if ismember(obj.datasetMode, {'train', 'val'})
                 [boxes, labels] = obj.SamplePosAndNegFromGstruct(gStruct, obj.boxesPerIm);
 

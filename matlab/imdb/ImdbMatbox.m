@@ -28,7 +28,6 @@ classdef ImdbMatbox < ImdbCalvin
         imExt
         meanIm
         targetClasses = [];
-        flipLR = true;
         posFraction = 0.25;
         
 %         labelMode  % Jasper: Maybe deprecated way of specifying labels as a matrix
@@ -68,7 +67,7 @@ classdef ImdbMatbox < ImdbCalvin
                 % Check if split is correct
                 allIdx = cat(1, datasetIdx{:});
                 if ~isequal(sort(allIdx), (1:length(filenames))')
-                    error('Complete dataset should be divided');
+                    warning('Dataset not correctly divided');
                 end
                 
                 obj.data.train = filenames(datasetIdx{1});
@@ -130,10 +129,7 @@ classdef ImdbMatbox < ImdbCalvin
             negF = (1-obj.posFraction) / obj.posFraction;
         end
         
-        % Switch the flipLR switch
-        function SwitchFlipLR(obj)
-            obj.flipLR = mod(obj.flipLR+1, 2);                
-        end
+        
         
         
         

@@ -10,6 +10,8 @@ classdef ImdbCalvin < handle
         datasetMode % train, val or test
 
         data        % data.train data.val data.test
+        
+        flipLR = false;  % Flag if data will be flipped or not
     end
     
     methods (Abstract)
@@ -37,6 +39,12 @@ classdef ImdbCalvin < handle
                 otherwise
                     allBatchInds = 1:size(obj.data.(obj.datasetMode),1);
             end
+        end
+        
+        
+        function switchFlipLR(obj)
+            % Switch the flipLR switch
+            obj.flipLR = mod(obj.flipLR+1, 2);                
         end
     end
 end
