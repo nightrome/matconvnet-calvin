@@ -25,13 +25,13 @@ else
     mmap = [];
 end
 
-stats.time = 0;
-stats.scores = [];
+% Get the indices of all batches
 allBatchInds = state.allBatchInds;
 assert(~isempty(allBatchInds));
+
+% Initialize
 start = tic;
 num = 0;
-
 targetTime = 3; % Counter to not pollute screen with printf statements
 waitTime = 10;  % How long to wait to update the fprintf statements.
 fprintf('Starting epoch: %d\n', state.epoch);
@@ -49,23 +49,23 @@ for t=1:obj.nnOpts.batchSize:numel(allBatchInds),
         
         [inputs, numElements] = obj.imdb.getBatch(batchInds, net);
         % Skip empty subbatches
-        if numElements == 0,
+        if numElements == 0
             continue;
         end
         
-        if strcmp(obj.imdb.datasetMode, 'train')
+        if strcmp(obj.imdb.datasetMode, 'train') && ~obj.nnOpts.evaluateMode
             net.accumulateParamDers = (s ~= 1);
             net.eval(inputs, obj.nnOpts.derOutputs);
         else
             net.eval(inputs);
         end
         
-        % Results at test time
-        if strcmp(obj.imdb.datasetMode, 'test')
+        % Extract results at evaluation time
+        if obj.nnOpts.evaluateMode
             % Deal with memory allocation
             currResult = obj.nnOpts.testFn(obj.imdb, obj.nnOpts, net, inputs);
             if t == 1 && s == 1
-                results = repmat(currResult, numel(allBatchInds), 1);
+                results = repmat(currResult(1), numel(allBatchInds), 1);
             end
             results(batchInds) = currResult;
         end
@@ -73,10 +73,10 @@ for t=1:obj.nnOpts.batchSize:numel(allBatchInds),
         batchNumElements = batchNumElements + numElements;
     end
     
-    % extract learning stats
+    % Extract learning stats
     stats = obj.nnOpts.extractStatsFn(net, inputs);
     
-    % accumulate gradient
+    % Accumulate gradients
     if strcmp(obj.imdb.datasetMode, 'train')
         if ~isempty(mmap)
             obj.write_gradients(mmap, net);
@@ -85,7 +85,7 @@ for t=1:obj.nnOpts.batchSize:numel(allBatchInds),
         state = obj.accumulate_gradients(state, net, batchNumElements, mmap);
     end
     
-    % print learning statistics
+    % Print learning statistics
     stats.num = num;
     stats.time = toc(start);
     
@@ -105,8 +105,8 @@ for t=1:obj.nnOpts.batchSize:numel(allBatchInds),
     end
 end
 
-% Give back results in test mode (or do we need another argument?)
-if strcmp(obj.imdb.datasetMode, 'test')
+% Give back results at evaluation time
+if obj.nnOpts.evaluateMode
     stats.results = results; 
 end
 
