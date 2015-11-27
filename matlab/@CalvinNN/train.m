@@ -6,38 +6,14 @@ function train(obj)
 % - Currently we cannot change the learning rate after 13 epochs.
 % - Only <=2 GPUs at the same time seem to work
 
-% Setup GPUs
-numGpus = numel(obj.nnOpts.gpus);
-if numGpus > 1,
-    pool = gcp('nocreate');
-    
-    % Delete parpool with wrong size
-    if ~isempty(pool) && pool.NumWorkers ~= numGpus,
-        delete(gcp);
-    end
-    
-    % Create new parpool
-    if isempty(pool) || ~pool.isvalid(),
-        parpool('local',numGpus);
-    end
-    
-    % Assign GPUs
-    spmd, gpuDevice(obj.nnOpts.gpus(labindex)), end
-    
-    % Delete previous memory mapping files
-    if exist(obj.nnOpts.memoryMapFile, 'file')
-        delete(obj.nnOpts.memoryMapFile);
-    end
-elseif numGpus == 1,
-    gpuDevice(obj.nnOpts.gpus);
-end
-
 modelPath = @(ep) fullfile(obj.nnOpts.expDir, sprintf('net-epoch-%d.mat', ep));
 modelFigPath = fullfile(obj.nnOpts.expDir, 'net-train.pdf');
+numGpus = numel(obj.nnOpts.gpus);
 
+% Load previous training snapshot
 start = obj.nnOpts.continue * CalvinNN.findLastCheckpoint(obj.nnOpts.expDir);
 if start >= 1
-    fprintf('resuming by loading epoch %d\n', start);
+    fprintf('Resuming by loading epoch %d\n', start);
     [obj.net, obj.stats] = CalvinNN.loadState(modelPath(start));
 end
 

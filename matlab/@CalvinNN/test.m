@@ -6,28 +6,7 @@ function results = test(obj)
 % - Automatically changes softmaxloss to softmax. Other losses are not yet supported
 % TODO: Undo automatic change to softmax
 
-
-% setup GPUs
 numGpus = numel(obj.nnOpts.gpus);
-if numGpus > 1,
-    pool = gcp('nocreate');
-    
-    % Delete parpool with wrong size
-    if ~isempty(pool) && pool.NumWorkers ~= numGpus,
-        delete(gcp);
-    end;
-    
-    % Create new parpool
-    if isempty(pool) || ~pool.isvalid(),
-        parpool('local',numGpus);
-    end
-    
-    % Assign GPUs
-    spmd, gpuDevice(obj.nnOpts.gpus(labindex)), end    
-    
-elseif numGpus == 1,
-    gpuDevice(obj.nnOpts.gpus);
-end;
 
 % % Load correct network (Latest if targetEpoch is not given)
 % if nargin == 2
@@ -37,7 +16,6 @@ end;
 %     end
 %     [obj.net, obj.stats] = CalvinNN.loadState(modelPath(targetEpoch));    
 % end
-
 
 % Replace softmaxloss layer with softmax layer
 softmaxlossInput = obj.net.layers(obj.net.getLayerIndex('softmaxloss')).inputs{1};

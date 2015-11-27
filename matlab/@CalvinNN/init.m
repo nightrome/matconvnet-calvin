@@ -32,5 +32,33 @@ if ~exist(nnOpts.expDir, 'dir') && ~isempty(nnOpts.expDir),
     mkdir(nnOpts.expDir);
 end
 
+% Setup GPUs and memory map file
+numGpus = numel(nnOpts.gpus);
+if numGpus > 1,
+    pool = gcp('nocreate');
+    
+    % Delete parpool with wrong size
+    if ~isempty(pool) && pool.NumWorkers ~= numGpus
+        delete(gcp);
+    end
+    
+    % Create new parpool
+    if isempty(pool) || ~pool.isvalid()
+        parpool('local', numGpus);
+    end
+    
+    % Assign GPUs
+    spmd,
+        gpuDevice(nnOpts.gpus(labindex))
+    end
+    
+    % Delete previous memory mapping files
+    if exist(nnOpts.memoryMapFile, 'file')
+        delete(nnOpts.memoryMapFile);
+    end
+elseif numGpus == 1,
+    gpuDevice(nnOpts.gpus);
+end
+
 % Set new fields
 obj.nnOpts = nnOpts;
