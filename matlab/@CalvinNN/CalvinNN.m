@@ -17,6 +17,11 @@ classdef CalvinNN < handle
         function obj = CalvinNN(net, imdb, nnOpts)
             % obj = CalvinNN(imdb, [nnOpts])
             
+            % Default arguments
+            if ~exist('nnOpts', 'var') || isempty(nnOpts)
+                nnOpts = struct();
+            end
+            
             % Set fields
             obj.imdb = imdb;
             
