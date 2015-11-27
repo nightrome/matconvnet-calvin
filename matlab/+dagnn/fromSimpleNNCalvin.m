@@ -45,7 +45,7 @@ function obj = fromSimpleNNCalvin(net, varargin)
 % This file is part of the VLFeat library and is made available under
 % the terms of the BSD license (see the COPYING file).
 
-opts.canonicalNames = false ;
+opts.canonicalNames = true ;
 opts = vl_argparse(opts, varargin) ;
 
 import dagnn.*
@@ -192,6 +192,8 @@ for l = 1:numel(net.layers)
      case {'roipool'}
       roiPoolSize = net.layers{l}.roipoolSize;
       block = RoiPooling('poolSize', roiPoolSize);
+      inputs = [inputs, {'oriImSize', 'boxes'}]; %#ok<AGROW>
+      outputs = [outputs, {'roiPool5Mask'}]; %#ok<AGROW>
     otherwise
       error([net.layers{l}.type ' is unsupported']) ;
   end
