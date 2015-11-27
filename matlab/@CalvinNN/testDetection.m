@@ -1,6 +1,7 @@
 function results = testDetection(imdb, nnOpts, net, inputs)
 % Get predicted boxes and scores per class
-% Only gets top nnOpts.maxNumBoxesPerImTest boxes (default: 50)
+% Only gets top nnOpts.maxNumBoxesPerImTest boxes (default: 5000)
+% Only gets boxes with score higher than nnOpts.minDetectionScore (default: 0.01)
 % NMS threshold: nnOpts.nmsTTest (default: 0.3)
 
 % Variables which should probably be in imdb.nnOpts or something
@@ -8,13 +9,19 @@ function results = testDetection(imdb, nnOpts, net, inputs)
 if isfield(nnOpts, 'maxNumBoxesPerImTest')
     maxNumBoxesPerImTest = nnOpts.maxNumBoxesPerImTest;
 else
-    maxNumBoxesPerImTest = 50;
+    maxNumBoxesPerImTest = 5000;
 end
 
 if isfield(nnOpts, 'nmsTTest')
     nmsTTest = imdb.nmsTTest;
 else
     nmsTTest = 0.3; % non-maximum threshold
+end
+
+if isfield(nnOpts, 'minDetectionScore')
+    minDetectionScore = nnOpts.minDetectionScore;
+else
+    minDetectionScore = 0.01;
 end
 
 % Get scores
@@ -31,12 +38,18 @@ boxes = inputs{boxI};
 % Get top boxes for each category. Perform NMS. Thresholds defined at top of function
 currMaxBoxes = min(maxNumBoxesPerImTest, size(boxes, 1));
 for cI = size(scores,2):-1:1
+    % Get top scores and boxes
     [currScores, sI] = sort(scores(:,cI), 'descend');
     currScores = currScores(1:currMaxBoxes);
     sI = sI(1:currMaxBoxes);
     currBoxes = boxes(sI,:);
     
+    % Get scores (w boxes) above certain threshold
+    goodI = currScores > minDetectionScore;
+    currScores = currScores(goodI,:);
+    currBoxes = currBoxes(goodI,:);
     
+    % Perform NMS
     [~, goodBoxesI] = BoxNMS(currBoxes, nmsTTest);
     currBoxes = currBoxes(goodBoxesI,:);
     currScores = currScores(goodBoxesI,:);
