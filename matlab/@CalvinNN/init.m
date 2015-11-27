@@ -15,10 +15,7 @@ defnnOpts.derOutputs = {'objective', 1};
 defnnOpts.memoryMapFile = fullfile(tempdir, 'matconvnet.bin');
 defnnOpts.extractStatsFn = @CalvinNN.extractStats;
 
-% Matconvnet-calvin options
-defnnOpts.evaluateMode = false;
-
-% Merge settings
+% Merge input settings with default settings
 defnnOptsFields = fields(defnnOpts);
 for fieldIdx = 1 : numel(defnnOptsFields),
     fieldName = defnnOptsFields{fieldIdx};
@@ -27,8 +24,11 @@ for fieldIdx = 1 : numel(defnnOptsFields),
     end
 end
 
+% Check settings
+assert(~nnOpts.prefetch, 'Error: Prefetch is not supported in Matconvnet-Calvin!');
+
 % Do not create directory in evaluation mode
-if ~nnOpts.evaluateMode && ~exist(nnOpts.expDir, 'dir'),
+if ~exist(nnOpts.expDir, 'dir') && ~isempty(nnOpts.expDir),
     mkdir(nnOpts.expDir);
 end
 

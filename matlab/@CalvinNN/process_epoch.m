@@ -4,14 +4,12 @@ function stats = process_epoch(obj, net, state)
 % Note that net needs to be a separate argument (not obj.net) to support
 % multiple GPUs.
 
-% Check options
-assert(~obj.nnOpts.prefetch, 'Error: Prefetch is not supported in Matconvnet-Calvin!');
-
-% Consider moving these outside of process_epoch
+% Initialize momentum on this worker
 if strcmp(obj.imdb.datasetMode, 'train')
     state.momentum = num2cell(zeros(1, numel(net.params)));
 end
 
+% Move data to GPU and create memory map file for multiple GPUs
 numGpus = numel(obj.nnOpts.gpus);
 if numGpus >= 1
     net.move('gpu');
@@ -53,15 +51,15 @@ for t=1:obj.nnOpts.batchSize:numel(allBatchInds),
             continue;
         end
         
-        if strcmp(obj.imdb.datasetMode, 'train') && ~obj.nnOpts.evaluateMode
+        if strcmp(obj.imdb.datasetMode, 'train')
             net.accumulateParamDers = (s ~= 1);
             net.eval(inputs, obj.nnOpts.derOutputs);
         else
             net.eval(inputs);
         end
         
-        % Extract results at evaluation time
-        if obj.nnOpts.evaluateMode
+        % Extract results at test time
+        if strcmp(obj.imdb.datasetMode, 'test')
             % Deal with memory allocation
             currResult = obj.nnOpts.testFn(obj.imdb, obj.nnOpts, net, inputs);
             if t == 1 && s == 1
@@ -96,17 +94,17 @@ for t=1:obj.nnOpts.batchSize:numel(allBatchInds),
             state.epoch, ...
             fix(t/obj.nnOpts.batchSize)+1, ceil(numel(allBatchInds)/obj.nnOpts.batchSize), ...
             stats.num/stats.time * max(numGpus, 1));
-        for f = setdiff(fieldnames(stats)', {'num', 'time', 'results'}) 
-            f = char(f);
-            fprintf(' %s:', f);
-            fprintf(' %.3f', stats.(f));
+        for field = setdiff(fieldnames(stats)', {'num', 'time', 'results'}) 
+            field = char(field);
+            fprintf(' %s:', field);
+            fprintf(' %.3f', stats.(field));
         end
         fprintf('\n');
     end
 end
 
-% Give back results at evaluation time
-if obj.nnOpts.evaluateMode
+% Give back results at test time
+if strcmp(obj.imdb.datasetMode, 'test')
     stats.results = results; 
 end
 
