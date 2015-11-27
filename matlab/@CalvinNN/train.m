@@ -41,6 +41,9 @@ if start >= 1
     [obj.net, obj.stats] = CalvinNN.loadState(modelPath(start));
 end
 
+% Make sure the net is set to training mode ('normal' means dropout is active)
+obj.net.mode = 'train';
+
 for epoch=start+1:obj.nnOpts.numEpochs
     
     % train one epoch
@@ -74,9 +77,7 @@ for epoch=start+1:obj.nnOpts.numEpochs
     end
     
     % Save current snapshot
-    if ~obj.nnOpts.evaluateMode
-        obj.saveState(modelPath(epoch));
-    end
+    obj.saveState(modelPath(epoch));
     
     % Plot statistics
     figure(1); clf;
