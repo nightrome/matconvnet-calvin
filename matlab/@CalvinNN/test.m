@@ -1,11 +1,10 @@
-function results = test(obj, targetEpoch)
+function results = test(obj)
 % Test function
 %
-% - If targetEpoch is given, load the network from nnOpts.expDir. targetEpoch = -1
-%   load latest network
 % - Does a single processing of an epoch for testing
 % - Uses the nnOpts.testFn function for the testing
 % - Automatically changes softmaxloss to softmax. Other losses are not yet supported
+% TODO: Undo automatic change to softmax
 
 
 % setup GPUs
@@ -30,14 +29,14 @@ elseif numGpus == 1,
     gpuDevice(obj.nnOpts.gpus);
 end;
 
-% Load correct network (Latest if targetEpoch is not given)
-if nargin == 2
-    modelPath = @(ep) fullfile(obj.nnOpts.expDir, sprintf('net-epoch-%d.mat', ep));
-    if targetEpoch == -1
-        targetEpoch = CalvinNN.findLastCheckpoint(obj.nnOpts.expDir);
-    end
-    [obj.net, obj.stats] = CalvinNN.loadState(modelPath(targetEpoch));    
-end
+% % Load correct network (Latest if targetEpoch is not given)
+% if nargin == 2
+%     modelPath = @(ep) fullfile(obj.nnOpts.expDir, sprintf('net-epoch-%d.mat', ep));
+%     if targetEpoch == -1
+%         targetEpoch = CalvinNN.findLastCheckpoint(obj.nnOpts.expDir);
+%     end
+%     [obj.net, obj.stats] = CalvinNN.loadState(modelPath(targetEpoch));    
+% end
 
 
 % Replace softmaxloss layer with softmax layer
@@ -51,7 +50,7 @@ assert(numel(softmaxIdx) == 1);
 datasetMode = 'test';
 obj.net.mode = datasetMode;            % Disable dropout
 obj.imdb.setDatasetMode(datasetMode);
-state.epoch = targetEpoch;
+state.epoch = 1;
 state.allBatchInds = obj.imdb.getAllBatchInds();
 
 % Process the epoch
