@@ -1,10 +1,8 @@
 function train(obj)
 % train(obj)
 %
-% TODO: 
-% - Currently this method doesn't allow for testing. Either change it or implement a different method for that. 
-% - Currently we cannot change the learning rate after 13 epochs.
-% - Only <=2 GPUs at the same time seem to work
+% TODO:
+% - Only <= 2 GPUs at the same time seem to work
 
 modelPath = @(ep) fullfile(obj.nnOpts.expDir, sprintf('net-epoch-%d.mat', ep));
 modelFigPath = fullfile(obj.nnOpts.expDir, 'net-train.pdf');
@@ -42,7 +40,7 @@ for epoch=start+1:obj.nnOpts.numEpochs
         else
             savedNet = obj.net.saveobj();
             spmd
-                net_ = dagnn.DagNN.loadobj(savedNet);
+                net_ = dagnn.DagNN.loadobj(savedNet); %TODO: using multiple GPUs, it crashes here, since loadobj is not known
                 stats_.(datasetMode) = obj.process_epoch(net_, state);
                 if labindex == 1, savedNet_ = net_.saveobj(); end
             end
