@@ -22,6 +22,7 @@ nnOpts = vl_argparse(defnnOpts, varargin, 'nonrecursive');
 
 % Check settings
 assert(~nnOpts.prefetch, 'Error: Prefetch is not supported in Matconvnet-Calvin!');
+assert(numel(nnOpts.learningRate) == 1 || numel(nnOpts.learningRate) == nnOpts.numEpochs);
 
 % Do not create directory in evaluation mode
 if ~exist(nnOpts.expDir, 'dir') && ~isempty(nnOpts.expDir),
