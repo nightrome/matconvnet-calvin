@@ -53,7 +53,6 @@ else
     % Get input fields
     labelPixelFreqs = regionToPixelAux.labelPixelFreqs;
     spLabelHistos   = regionToPixelAux.spLabelHistos;
-    imageCountTrn   = regionToPixelAux.imageCountTrn;
     
     % Check inputs
     assert(all(size(labelPixelFreqs) == [labelCount, 1]));
@@ -93,21 +92,20 @@ else
     end;
     
     % Renormalize label weights to have on average a weight == boxCount
-    if oldWeightMode,
-        if inverseLabelFreqs,
-             weightsSP = (pixelSizesSP * imageCountTrn) ./ (labelPixelFreqs(labelsSP) * labelCount);
-             weightsSP = weightsSP ./ sum(weightsSP);
-        else
-            pixelWeightsSP = pixelSizesSP ./ sum(pixelSizesSP);
-            weightsSP = pixelWeightsSP;
-        end;
+    % Note: division by the number of images on which these frequencies are
+    % computed is now outsourced to getBatch.
+    if inverseLabelFreqs,
+        weightsSP = pixelSizesSP ./ (labelPixelFreqs(labelsSP) * labelCount);
     else
-        if inverseLabelFreqs,
-            weightsSP = (pixelSizesSP * imageCountTrn) ./ (labelPixelFreqs(labelsSP) * labelCount);
-        else
-            weightsSP = (pixelSizesSP * imageCountTrn)  / sum(labelPixelFreqs);
-        end;
+        weightsSP = pixelSizesSP  / sum(labelPixelFreqs);
     end;
+    
+    % Renormalize to (average of) 1
+    if oldWeightMode,
+        weightsSP = weightsSP ./ sum(weightsSP);
+    end;
+    
+    % Renormalize to (average of) boxCount
     weightsSP = weightsSP * boxCount;
     
     % Reshape and append label weights
