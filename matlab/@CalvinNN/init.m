@@ -1,4 +1,4 @@
-function init(obj, nnOpts)
+function init(obj, varargin)
 % init(obj, nnOpts)
 
 defnnOpts.expDir = fullfile('data', 'exp');
@@ -8,21 +8,17 @@ defnnOpts.numSubBatches = 2;
 defnnOpts.gpus = [];
 defnnOpts.prefetch = false;
 defnnOpts.numEpochs = 16;
-defnnOpts.learningRate = 0.001;
+defnnOpts.learningRate = [repmat(1e-3, [1, 12]), repmat(1e-4, [1, 4])];
 defnnOpts.weightDecay = 0.0005;
 defnnOpts.momentum = 0.9;
 defnnOpts.derOutputs = {'objective', 1};
 defnnOpts.memoryMapFile = fullfile(tempdir, 'matconvnet.bin');
 defnnOpts.extractStatsFn = @CalvinNN.extractStats;
+defnnOpts.testFn = @(imdb, nnOpts, net, inputs, batchInds) error('Error: Test function not implemented'); % function used at test time to evaluate performance
+defnnOpts.misc = struct(); % fields used by custom layers are stored here
 
 % Merge input settings with default settings
-defnnOptsFields = fields(defnnOpts);
-for fieldIdx = 1 : numel(defnnOptsFields),
-    fieldName = defnnOptsFields{fieldIdx};
-    if ~isfield(nnOpts, fieldName),
-        nnOpts.(fieldName) = defnnOpts.(fieldName);
-    end
-end
+nnOpts = vl_argparse(defnnOpts, varargin, 'nonrecursive');
 
 % Check settings
 assert(~nnOpts.prefetch, 'Error: Prefetch is not supported in Matconvnet-Calvin!');
@@ -47,7 +43,7 @@ if numGpus > 1,
         parpool('local', numGpus);
     end
     
-    % Assign GPUs
+    % Assign GPUs to SPMD workers
     spmd,
         gpuDevice(nnOpts.gpus(labindex))
     end

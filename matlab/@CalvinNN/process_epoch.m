@@ -58,9 +58,9 @@ for t=1:obj.nnOpts.batchSize:numel(allBatchInds),
             net.eval(inputs);
         end
         
-        % Extract results at test time
+        % Extract results at test time (not val)
         if strcmp(obj.imdb.datasetMode, 'test')
-            % Deal with memory allocation
+            % Pre-allocate the struct-array for the results
             currResult = obj.nnOpts.testFn(obj.imdb, obj.nnOpts, net, inputs);
             if t == 1 && s == 1
                 results = repmat(currResult(1), numel(allBatchInds), 1);
