@@ -42,7 +42,7 @@ classdef WeightedLoss < dagnn.Loss
         
         function reset(obj)
             reset@dagnn.Loss(obj);
-            numBatches = 0;
+            obj.numBatches = 0;
         end
     end
 end
