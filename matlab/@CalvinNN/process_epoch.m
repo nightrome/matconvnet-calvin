@@ -72,7 +72,9 @@ for t=1:obj.nnOpts.batchSize:numel(allBatchInds),
     end
     
     % Extract learning stats
-    stats = obj.nnOpts.extractStatsFn(net, inputs);
+    if ~strcmp(obj.imdb.datasetMode, 'test')
+        stats = obj.nnOpts.extractStatsFn(net, inputs);
+    end
     
     % Accumulate gradients
     if strcmp(obj.imdb.datasetMode, 'train')
