@@ -5,6 +5,9 @@ classdef RegionToPixel < dagnn.Layer
     % inputs are: scoresAll, regionToPixelAux
     % outputs are: scoresSP, labelsSP, weightsSP
     %
+    % Note: The presence/absence of regionToPixelAux.spLabelHistos indicates
+    % whether we are in train/val or test mode.
+    %
     % Copyright by Holger Caesar, 2015
     
     properties
@@ -20,8 +23,7 @@ classdef RegionToPixel < dagnn.Layer
     methods
         function outputs = forward(obj, inputs, params) %#ok<INUSD>
             assert(numel(inputs) == 2);
-            isTest = strcmp(obj.net.mode, 'test');
-            [scoresSP, labelsSP, weightsSP, obj.mask] = regionToPixel_forward(inputs{1}, inputs{2}, obj.inverseLabelFreqs, obj.oldWeightMode, obj.replicateUnpureSPs, isTest);
+            [scoresSP, labelsSP, weightsSP, obj.mask] = regionToPixel_forward(inputs{1}, inputs{2}, obj.inverseLabelFreqs, obj.oldWeightMode, obj.replicateUnpureSPs);
             
             % Split labels into labels and instance weights
             outputs = cell(3, 1);
