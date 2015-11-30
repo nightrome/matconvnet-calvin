@@ -15,15 +15,13 @@ if start >= 1
     [obj.net, obj.stats] = CalvinNN.loadState(modelPath(start));
 end
 
-% Make sure the net is set to training mode ('normal' means dropout is active)
-obj.net.mode = 'train';
-
 for epoch=start+1:obj.nnOpts.numEpochs
     
-    % train one epoch
+    % Set epoch and it's learning rate
     state.epoch = epoch;
     state.learningRate = obj.nnOpts.learningRate(min(epoch, numel(obj.nnOpts.learningRate)));
     
+    % Toggle image flipping mode on and off
     obj.imdb.switchFlipLR();
     
     % Do training and validation
@@ -31,8 +29,13 @@ for epoch=start+1:obj.nnOpts.numEpochs
     for datasetModeIdx = 1:numel(datasetModes)
         datasetMode = datasetModes{datasetModeIdx};
         
-        % Set datasetMode in imdb
+        % Set train/val mode (disable Dropout etc.)
         obj.imdb.setDatasetMode(datasetMode);
+        if strcmp(datasetMode, 'train'),
+            obj.net.mode = 'train';
+        else % val
+            obj.net.mode = 'test';
+        end;
         state.allBatchInds = obj.imdb.getAllBatchInds();
         
         if numGpus <= 1
