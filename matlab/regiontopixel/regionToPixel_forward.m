@@ -1,8 +1,11 @@
-function[scoresSP, labelsSP, weightsSP, mapSP] = regionToPixel_forward(scoresAll, regionToPixelAux, inverseLabelFreqs, oldWeightMode, replicateUnpureSPs, isTest)
-% [scoresSP, labelsSP, weightsSP, mapSP] = regionToPixel_forward(scoresAll, regionToPixelAux, inverseLabelFreqs, oldWeightMode, replicateUnpureSPs, isTest)
+function[scoresSP, labelsSP, weightsSP, mapSP] = regionToPixel_forward(scoresAll, regionToPixelAux, inverseLabelFreqs, oldWeightMode, replicateUnpureSPs)
+% [scoresSP, labelsSP, weightsSP, mapSP] = regionToPixel_forward(scoresAll, regionToPixelAux, inverseLabelFreqs, oldWeightMode, replicateUnpureSPs)
 %
 % Go from a region level to a pixel level.
 % (to be able to compute a loss there)
+%
+% Note: The presence/absence of regionToPixelAux.spLabelHistos indicates
+% whether we are in train/val or test mode.
 %
 % Copyright by Holger Caesar, 2015
 
@@ -40,6 +43,7 @@ for spIdx = 1 : spCount,
 end;
 
 % Compute sample target labels and weights
+isTest = ~isfield(regionToPixelAux, 'spLabelHistos');
 if isTest,
     % Set dummy outputs
     labelsSP = [];
