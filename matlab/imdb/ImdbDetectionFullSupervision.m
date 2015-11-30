@@ -29,10 +29,13 @@ classdef ImdbDetectionFullSupervision < ImdbMatbox
             end
             
             if ismember(obj.datasetMode, {'train', 'val'})
-                [boxes, labels] = obj.SamplePosAndNegFromGstruct(gStruct, obj.boxesPerIm);
+                [boxes, labels, keys, overlapScores, regressionFactors] = obj.SamplePosAndNegFromGstruct(gStruct, obj.boxesPerIm);
+%                 keys
 
                 % Assign elements to cell array for use in training the network
                 numElements = obj.boxesPerIm;
+                batchData{10} = regressionFactors;
+                batchData{9} = 'regressionTargets';
                 batchData{8} = oriImSize;
                 batchData{7} = 'oriImSize';
                 batchData{6} = boxes;
@@ -80,7 +83,7 @@ classdef ImdbDetectionFullSupervision < ImdbMatbox
         end
         
         
-        function [boxes, labels, keys, overlapScores] = SamplePosAndNegFromGstruct(obj, gStruct, numSamples)
+        function [boxes, labels, keys, overlapScores, regressionTargets] = SamplePosAndNegFromGstruct(obj, gStruct, numSamples)
             % Get positive, negative, and true GT keys
             [maxOverlap, classOverlap] = max(gStruct.overlap, [], 2);
 
@@ -107,6 +110,24 @@ classdef ImdbDetectionFullSupervision < ImdbMatbox
             boxes = gStruct.boxes(keys,:);
 
             overlapScores = cat(1, ones(length(gtKeys),1), maxOverlap(posKeys), maxOverlap(negKeys));
+            
+            % Calculate regression targets.
+            % Jasper: I simplify Girshick by implementing regression through four
+            % scalars which scale the box with respect to its center.
+            if nargout == 5
+                regressionTargets = zeros(size(boxes), 'like', boxes);
+                regressionTargets(1:length(gtKeys),:) = 1; % Scaling factors are 1 for GT
+                
+                % Now get scaling factors for non-GT positive boxes
+                gtBoxes = gStruct.boxes(gtKeys,:);
+                posBoxes = gStruct.boxes(posKeys,:);
+                for bI = 1:length(posKeys)
+                    currPosBox = posBoxes(bI,:);
+                    [~, gtI] = BoxBestOverlap(gtBoxes, currPosBox);
+                    currGtBox = gtBoxes(gtI,:);
+                    regressionTargets(bI + length(gtKeys),:) = BoxRegressionTarget(currGtBox, currPosBox);
+                end
+            end 
         end
     end
 end
