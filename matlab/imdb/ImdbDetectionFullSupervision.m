@@ -118,17 +118,24 @@ classdef ImdbDetectionFullSupervision < ImdbMatbox
             % Jasper: I simplify Girshick by implementing regression through four
             % scalars which scale the box with respect to its center.
             if nargout == 5
-                regressionTargets = zeros(size(boxes), 'like', boxes);
-                regressionTargets(1:length(gtKeys),:) = 1; % Scaling factors are 1 for GT
+                % Create NaN array: nans represent numbers which will not be active
+                % in regression
+                regressionTargets = nan([size(boxes,1) 4 * obj.numClasses], 'like', boxes);
                 
-                % Now get scaling factors for non-GT positive boxes
+                % Get scaling factors for all positive boxes
                 gtBoxes = gStruct.boxes(gtKeys,:);
-                posBoxes = gStruct.boxes(posKeys,:);
-                for bI = 1:length(posKeys)
-                    currPosBox = posBoxes(bI,:);
+                for bI = 1:length(gtKeys)+length(posKeys)
+                    % Get current box and corresponding GT box
+                    currPosBox = boxes(bI,:);
                     [~, gtI] = BoxBestOverlap(gtBoxes, currPosBox);
                     currGtBox = gtBoxes(gtI,:);
-                    regressionTargets(bI + length(gtKeys),:) = BoxRegressionTarget(currGtBox, currPosBox);
+                    
+                    % Get range of regression target based on the label of the gt box
+                    targetRangeBegin = 4 * (labels(bI)-1)+1;
+                    targetRange = targetRangeBegin:(targetRangeBegin+3);
+                    
+                    % Set regression targets
+                    regressionTargets(bI,targetRange) = BoxRegressionTarget(currGtBox, currPosBox);
                 end
             end 
         end

@@ -54,7 +54,8 @@ for cI = size(scores,2):-1:1
     currBoxes = boxes(sI,:);
     
     % Do regression
-    currRegressF = regressFactors(sI,:);
+    regressFRange = (cI*4)-3:cI*4;
+    currRegressF = regressFactors(sI,regressFRange);
     currBoxesReg = BoxRegresss(currBoxes, currRegressF);
     
     % Get scores (w boxes) above certain threshold
