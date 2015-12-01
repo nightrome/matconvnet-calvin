@@ -12,7 +12,7 @@ leftLayerIdx = obj.getLayerIndex(leftLayerName);
 rightLayerIdx = obj.getLayerIndex(rightLayerName);
 leftLayer = obj.layers(leftLayerIdx);
 rightLayer = obj.layers(rightLayerIdx);
-leftOutputs  = leftLayer.outputs;
+leftOutputs = leftLayer.outputs;
 rightInputs = rightLayer.inputs;
 
 % Check whether left and right are actually connected

@@ -21,13 +21,17 @@ classdef GeneralSigmoid < dagnn.ElementWise
         
         function outputs = forward(obj, inputs, params)
             % Get inputs
-            assert(numel(inputs) == 3);
+            assert(numel(inputs) == 1);
             assert(numel(params) == 2);
             x = inputs{1};
             a = params{1};
             b = params{2};
             
-            y = sigmoid(x, a, b);
+            % Reshape parameters
+            a = reshape(a, 1, 1, [], 1);
+            b = reshape(b, 1, 1, [], 1);
+            
+            y = obj.sigmoid(x, a, b);
             outputs{1} = y;
         end
         
@@ -39,23 +43,44 @@ classdef GeneralSigmoid < dagnn.ElementWise
             a = params{1};
             b = params{2};
             
-            y = sigmoid(x, a, b);
+            % Reshape parameters
+            a = reshape(a, 1, 1, [], 1);
+            b = reshape(b, 1, 1, [], 1);
+            
+            % Compute outputs and gradients
+            % Note: this can be further optimized by summing first and then
+            % multiplying.
+            y = obj.sigmoid(x, a, b);
             dzdy = derOutputs{1};
-            dzdb = dzdy .* (y .* (1 - y)); %   dzdy * dydb
-            derInputs{1} = dzdb .* a; % dzdx = dzdy * dydx
-            derParams{1} = dzdb .* x; % dzda = dzdy * dyda
-            derParams{2} = dzdb;      % dzdb = dzdy * dydb
+            dzdb = dzdy .* (y .* (1 - y));  % dzdb = dzdy * dydb
+            dzda = bsxfun(@times, dzdb, x); % dzda = dzdy * dyda
+            dzdx = bsxfun(@times, dzdb, a); % dzdx = dzdy * dydx
+            
+            % Sum over regions (not for dzdx!)
+            dzda = reshape((sum(dzda, 4)), [], 1);
+            dzdb = reshape((sum(dzdb, 4)), [], 1);
+            
+            % Store outputs
+            assert(all(size(x) == size(dzdx)));
+            derInputs{1} = dzdx;
+            derParams{1} = dzda;
+            derParams{2} = dzdb;
         end
         
         function params = initParams(obj)
-            params{1} = repmat(single(-7), [obj.numClasses, 1]);
+            % Note that compared to the BMVC paper, we use the proper
+            % sigmoid function with the "-" sign. Hence the "a" parameter
+            % should be positive!
+            params{1} = repmat(single(7), [obj.numClasses, 1]);
             params{2} = zeros([obj.numClasses, 1], 'single');
         end
     end
     
-    methods (Access = private)
-        function[y] = sigmoid(x, a, b)
-            y = 1 ./ (1 + exp(- (a * x + b)));
+    methods (Access = protected)
+        function[y] = sigmoid(obj, x, a, b) %#ok<INUSL>
+
+            linear = bsxfun(@plus, bsxfun(@times, x, a), b);
+            y = 1 ./ (1 + exp(- (linear)));
         end
     end
 end
