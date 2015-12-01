@@ -2,6 +2,7 @@ classdef ImdbDetectionFullSupervision < ImdbMatbox
     properties(SetAccess = protected, GetAccess = public)
         negOverlapRange = [0.1 0.5];
         boxesPerIm = 64;
+        boxRegress = true;
     end
     methods
         function obj = ImdbDetectionFullSupervision(imageDir, imExt, matboxDir, filenames, datasetIdx, meanIm)
@@ -34,8 +35,10 @@ classdef ImdbDetectionFullSupervision < ImdbMatbox
 
                 % Assign elements to cell array for use in training the network
                 numElements = obj.boxesPerIm;
-                batchData{10} = regressionFactors;
-                batchData{9} = 'regressionTargets';
+                if obj.boxRegress
+                    batchData{10} = regressionFactors;
+                    batchData{9} = 'regressionTargets';
+                end
                 batchData{8} = oriImSize;
                 batchData{7} = 'oriImSize';
                 batchData{6} = boxes;
@@ -129,5 +132,9 @@ classdef ImdbDetectionFullSupervision < ImdbMatbox
                 end
             end 
         end
-    end
-end
+        
+        function SetBoxRegress(obj, doRegress)
+            obj.boxRegress = doRegress;
+        end
+    end % End methods
+end % End classdef
