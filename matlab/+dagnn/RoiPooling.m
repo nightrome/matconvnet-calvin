@@ -52,9 +52,9 @@ classdef RoiPooling < dagnn.Layer
         end
         
         function [derInputs, derParams] = backward(obj, inputs, params, derOutputs) %#ok<INUSL>
-            assert(numel(derOutputs) == 1);            
-           
+
             % Get inputs
+            assert(numel(derOutputs) == 1);
             convIm = inputs{1};
             boxes  = inputs{3};
             dzdx = derOutputs{1};

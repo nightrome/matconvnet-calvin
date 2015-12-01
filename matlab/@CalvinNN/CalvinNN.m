@@ -33,6 +33,13 @@ classdef CalvinNN < handle
         end
         
         function loadNetwork(obj, netIn)
+            % loadNetwork(obj, netIn)
+            %
+            % Network can be:
+            %  - DAG (netIn.net, [netIn.stats])
+            %  - SimpleNN (netIn.layers, [netIn.normalization] , ...)
+            %  - Path to any of the above
+            
             % Load the network from file if necessary
             if ischar(netIn),
                 netIn = load(netIn);
