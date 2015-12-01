@@ -73,6 +73,6 @@ for cI = size(scores,2):-1:1
     results.scores{cI} = gather(currScores);
     
     if imdb.boxRegress
-        results.regress{cI} = currBoxesReg;
+        results.boxesRegressed{cI} = gather(currBoxesReg);
     end
 end
