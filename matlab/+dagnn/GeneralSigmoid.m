@@ -26,6 +26,8 @@ classdef GeneralSigmoid < dagnn.ElementWise
             x = inputs{1};
             a = params{1};
             b = params{2};
+            assert(size(x, 3) == size(a, 1) && ...
+                   size(x, 3) == size(b, 1));
             
             % Reshape parameters
             a = reshape(a, 1, 1, [], 1);
@@ -42,6 +44,8 @@ classdef GeneralSigmoid < dagnn.ElementWise
             x = inputs{1};
             a = params{1};
             b = params{2};
+            dzdy = derOutputs{1};
+            assert(all(size(x) == size(dzdy)));
             
             % Reshape parameters
             a = reshape(a, 1, 1, [], 1);
@@ -51,7 +55,6 @@ classdef GeneralSigmoid < dagnn.ElementWise
             % Note: this can be further optimized by summing first and then
             % multiplying.
             y = obj.sigmoid(x, a, b);
-            dzdy = derOutputs{1};
             dzdb = dzdy .* (y .* (1 - y));  % dzdb = dzdy * dydb
             dzda = bsxfun(@times, dzdb, x); % dzda = dzdy * dyda
             dzdx = bsxfun(@times, dzdb, a); % dzdx = dzdy * dydx
@@ -68,7 +71,7 @@ classdef GeneralSigmoid < dagnn.ElementWise
         end
         
         function params = initParams(obj)
-            % Note that compared to the BMVC paper, we use the proper
+            % Note that compared to the Caesar BMVC 2015 paper, we use the proper
             % sigmoid function with the "-" sign. Hence the "a" parameter
             % should be positive!
             params{1} = repmat(single(7), [obj.numClasses, 1]);
