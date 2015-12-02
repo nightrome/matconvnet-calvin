@@ -32,12 +32,6 @@ newParams = net.layers(fc8Idx).block.initParams();
 net.params(net.layers(fc8Idx).paramIndexes(1)).value = newParams{1};
 net.params(net.layers(fc8Idx).paramIndexes(2)).value = newParams{2};
 
-% net.params(net.layers(fc8Idx).paramIndexes(1)).value = ...
-%     net.params(net.layers(fc8Idx).paramIndexes(1)).value(:,:,:,1:obj.imdb.numClasses);
-% 
-% net.params(net.layers(fc8Idx).paramIndexes(2)).value = ...
-%     net.params(net.layers(fc8Idx).paramIndexes(2)).value(:,1:obj.imdb.numClasses);
-
 % Rename input and output
 net.renameVar('x0', 'input');
 net.renameVar(net.layers(net.getLayerIndex('softmaxloss')).outputs, 'objective');

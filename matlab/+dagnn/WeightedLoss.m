@@ -20,7 +20,9 @@ classdef WeightedLoss < dagnn.Loss
     methods
         function outputs = forward(obj, inputs, params) %#ok<INUSD>
             % Added a new input here called "lossInstanceWeights"
-            outputs{1} = vl_nnloss(inputs{1}, inputs{2}, [], 'loss', obj.loss, 'instanceWeights', inputs{3});
+            instanceWeights = inputs{3};
+            assert(~isempty(instanceWeights));
+            outputs{1} = vl_nnloss(inputs{1}, inputs{2}, [], 'loss', obj.loss, 'instanceWeights', instanceWeights);
             n = obj.numAveraged;
             m = n + size(inputs{1},4);
             obj.average = (n * obj.average + gather(outputs{1})) / m;

@@ -14,6 +14,7 @@ classdef RegionToPixel < dagnn.Layer
         inverseLabelFreqs = true;
         oldWeightMode = true;
         replicateUnpureSPs = true;
+        minPixFreq = []; % used only in getBatch
     end
     
     properties (Transient)
@@ -44,24 +45,28 @@ classdef RegionToPixel < dagnn.Layer
             
             % Get inputs
             boxCount = size(inputs{1}, 4);
-            dzdx = derOutputs{1};
+            dzdy = derOutputs{1};
             
             % Move inputs from GPU if necessary
-            gpuMode = isa(dzdx, 'gpuArray');
+            gpuMode = isa(dzdy, 'gpuArray');
             if gpuMode,
-                dzdx = gather(dzdx);
+                dzdy = gather(dzdy);
             end;
             
             % Map SP gradients to RP+GT gradients
-            dzdxout = regionToPixel_backward(boxCount, obj.mask, dzdx);
+            dzdx = regionToPixel_backward(boxCount, obj.mask, dzdy);
+            
+            % Check that no gradients were omitted (due to bugs)
+            % Do an epsilon comparison with low precision
+            assert(sum(dzdy(:)) - sum(dzdx(:)) < 1e-3);
             
             % Move outputs to GPU if necessary
             if gpuMode,
-                dzdxout = gpuArray(dzdxout);
+                dzdx = gpuArray(dzdx);
             end;
             
             % Store gradients
-            derInputs{1} = dzdxout;
+            derInputs{1} = dzdx;
             derInputs{2} = [];
             derParams = {};
         end
