@@ -56,10 +56,6 @@ classdef RegionToPixel < dagnn.Layer
             % Map SP gradients to RP+GT gradients
             dzdx = regionToPixel_backward(boxCount, obj.mask, dzdy);
             
-            % Check that no gradients were omitted (due to bugs)
-            % Do an epsilon comparison with low precision
-            assert(sum(dzdy(:)) - sum(dzdx(:)) < 1e-3);
-            
             % Move outputs to GPU if necessary
             if gpuMode,
                 dzdx = gpuArray(dzdx);
