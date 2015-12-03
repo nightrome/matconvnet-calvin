@@ -23,7 +23,6 @@ for epoch=start+1:obj.nnOpts.numEpochs
     
     % Toggle image flipping mode on and off
     obj.imdb.switchFlipLR();
-    permute(obj.net.params(17).value(:,:,1:10,1:5), [4 3 2 1])
     
     % Do training and validation
     datasetModes = {'train', 'val'};
