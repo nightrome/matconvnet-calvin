@@ -48,32 +48,35 @@ end
 currMaxBoxes = min(maxNumBoxesPerImTest, size(boxes, 1));
 for cI = size(scores,2):-1:1
     % Get top scores and boxes
-    [currScores, sI] = sort(scores(:,cI), 'descend');
-    currScores = currScores(1:currMaxBoxes);
+    [currScoresT, sI] = sort(scores(:,cI), 'descend');
+    currScoresT = currScoresT(1:currMaxBoxes);
     sI = sI(1:currMaxBoxes);
     currBoxes = boxes(sI,:);
     
     % Do regression
     regressFRange = (cI*4)-3:cI*4;
-    currRegressF = regressFactors(sI,regressFRange);
+    currRegressF = gather(regressFactors(sI,regressFRange));
     currBoxesReg = BoxRegresss(currBoxes, currRegressF);
     
     % Get scores (w boxes) above certain threshold
-    goodI = currScores > minDetectionScore;
-    currScores = currScores(goodI,:);
+    goodI = currScoresT > minDetectionScore;
+    currScoresT = currScoresT(goodI,:);
     currBoxes = currBoxes(goodI,:);
     currBoxesReg = currBoxesReg(goodI,:);
     
     % Perform NMS
     [~, goodBoxesI] = BoxNMS(currBoxes, nmsTTest);
     currBoxes = currBoxes(goodBoxesI,:);
-    currScores = currScores(goodBoxesI,:);
-    currBoxesReg = currBoxesReg(goodBoxesI,:);
+    currScores = currScoresT(goodBoxesI,:);
     
     results.boxes{cI} = gather(currBoxes);
     results.scores{cI} = gather(currScores);
     
     if imdb.boxRegress
+        [~, goodBoxesI] = BoxNMS(currBoxesReg, nmsTTest);
+        currBoxesReg = currBoxesReg(goodBoxesI,:);
+        currScoresRegressed = currScoresT(goodBoxesI,:);
         results.boxesRegressed{cI} = gather(currBoxesReg);
+        results.scoresRegressed{cI} = gather(currScoresRegressed);
     end
 end
