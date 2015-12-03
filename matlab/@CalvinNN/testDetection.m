@@ -41,7 +41,7 @@ if imdb.boxRegress
     regressStruct = net.vars(vI);
     regressFactors = permute(regressStruct.value, [4 3 2 1]);
 else
-    regressFactors = zeros(size(boxes));
+    regressFactors = zeros(size(boxes,1), size(boxes,2) * imdb.numClasses);
 end
 
 % Get top boxes for each category. Perform NMS. Thresholds defined at top of function
