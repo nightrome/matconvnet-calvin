@@ -26,10 +26,7 @@ warning('NotTested:regressloss', ...
     'No loss has been thoroughly tested yet');
 warning('off', 'NotTested:regressloss');
 
-
-assert(numel(X) == numel(t));
-
-X = permute(X, [4 3 2 1]);
+assert(isequal(size(X), size(t)));
 
 % Just compute loss
 if nargin == 2 || isempty(dzdy)

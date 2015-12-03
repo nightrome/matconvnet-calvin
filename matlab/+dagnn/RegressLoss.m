@@ -3,10 +3,10 @@ classdef RegressLoss < dagnn.Loss
     methods
         function outputs = forward(obj, inputs, params)
             % Deal with NaNs in target scores which should be ignored
-            isnanMask = isnan(inputs{2});
             regressionTargets = inputs{2};
+            isnanMask = isnan(regressionTargets);
             regressionTargets(isnanMask) = 0;
-            regressionScore = inputs{1};
+            regressionScore = permute(inputs{1}, [4 3 2 1]);
             regressionScore(isnanMask) = 0;
             
             outputs{1} = vl_nnloss_regress(regressionScore, regressionTargets, [], 'loss', obj.loss) ;
@@ -18,10 +18,10 @@ classdef RegressLoss < dagnn.Loss
         
         function [derInputs, derParams] = backward(obj, inputs, params, derOutputs)
             % Deal with NaNs in target scores which should be ignored
-            isnanMask = isnan(inputs{2});
             regressionTargets = inputs{2};
+            isnanMask = isnan(regressionTargets);
             regressionTargets(isnanMask) = 0;
-            regressionScore = inputs{1};
+            regressionScore = permute(inputs{1}, [4 3 2 1]);
             regressionScore(isnanMask) = 0;
             
             derInputs{1} = vl_nnloss_regress(regressionScore,regressionTargets, derOutputs{1}, 'loss', obj.loss) ;
