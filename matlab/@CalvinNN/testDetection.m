@@ -37,7 +37,7 @@ boxes = inputs{boxI};
 
 % Get regression targets for boxes
 if imdb.boxRegress
-    vI = net.getVarIndex('xRegress');
+    vI = net.getVarIndex('regressionScore');
     regressStruct = net.vars(vI);
     regressFactors = permute(regressStruct.value, [4 3 2 1]);
 else
