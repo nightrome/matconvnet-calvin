@@ -1,4 +1,7 @@
 classdef RegressLoss < dagnn.Loss
+    properties
+        smoothMaxDiff = 1; % For smooth-loss (see vl_nnloss_regress)
+    end
     
     methods
         function outputs = forward(obj, inputs, params)
@@ -9,7 +12,7 @@ classdef RegressLoss < dagnn.Loss
             regressionScore = permute(inputs{1}, [4 3 2 1]);
             regressionScore(isnanMask) = 0;
             
-            outputs{1} = vl_nnloss_regress(regressionScore, regressionTargets, [], 'loss', obj.loss) ;
+            outputs{1} = vl_nnloss_regress(regressionScore, regressionTargets, [], 'loss', obj.loss, 'smoothMaxDiff', obj.smoothMaxDiff) ;
             n = obj.numAveraged ;
             m = n + size(inputs{1},4) ;
             obj.average = (n * obj.average + gather(outputs{1})) / m ;
@@ -24,7 +27,7 @@ classdef RegressLoss < dagnn.Loss
             regressionScore = permute(inputs{1}, [4 3 2 1]);
             regressionScore(isnanMask) = 0;
             
-            derInputs{1} = vl_nnloss_regress(regressionScore,regressionTargets, derOutputs{1}, 'loss', obj.loss) ;
+            derInputs{1} = vl_nnloss_regress(regressionScore,regressionTargets, derOutputs{1}, 'loss', obj.loss, 'smoothMaxDiff', obj.smoothMaxDiff) ;
             derInputs{2} = [] ;
             derInputs{3} = [] ;
             derParams = {} ;
