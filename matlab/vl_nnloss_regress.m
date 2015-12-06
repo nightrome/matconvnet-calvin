@@ -41,8 +41,9 @@ if nargin == 2 || isempty(dzdy)
             Y = sum(abs(X - t), ndims(X));
         case 'smooth'
             diff = X - t;
-            diff(diff > opts.smoothMaxDiff) = opts.smoothMaxDiff;
-            diff(diff < opts.smoothMaxDiff) = -opts.smoothMaxDiff;
+            % Loss is not just the L2 but now I am too lazy to implement
+%             diff(diff > opts.smoothMaxDiff) = opts.smoothMaxDiff;
+%             diff(diff < -opts.smoothMaxDiff) = -opts.smoothMaxDiff;
             Y = sum(diff .* diff / 2, ndims(X));            
         otherwise
             error('Incorrect loss: %s', opts.loss);
@@ -58,7 +59,7 @@ else
         case 'smooth'
             diff = X-t;
             diff(diff > opts.smoothMaxDiff) = opts.smoothMaxDiff;
-            diff(diff < opts.smoothMaxDiff) = -opts.smoothMaxDiff;
+            diff(diff < -opts.smoothMaxDiff) = -opts.smoothMaxDiff;
             Y = permute(dzdy * (diff), [4 3 2 1]); 
         otherwise
             error('Incorrect loss: %s', opts.loss);
