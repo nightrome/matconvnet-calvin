@@ -14,8 +14,15 @@ classdef ImdbDetectionFullSupervision < ImdbMatbox
                 error('Only supports batches of 1');
             end
             
+            if nargin == 2
+                gpuMode = false;
+            else
+                gpuMode = strcmp(net.device, 'gpu');
+            end
+                
+            
             % Load image. Make correct size. Subtract average im.
-            [image, oriImSize] = obj.LoadImage(batchInds, strcmp(net.device, 'gpu'));
+            [image, oriImSize] = obj.LoadImage(batchInds, gpuMode);
             
             % Sample boxes
             gStruct = obj.LoadGStruct(batchInds);
