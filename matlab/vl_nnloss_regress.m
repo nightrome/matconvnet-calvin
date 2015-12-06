@@ -41,10 +41,23 @@ if nargin == 2 || isempty(dzdy)
             Y = sum(abs(X - t), ndims(X));
         case 'smooth'
             diff = X - t;
-            % Loss is not just the L2 but now I am too lazy to implement
-%             diff(diff > opts.smoothMaxDiff) = opts.smoothMaxDiff;
-%             diff(diff < -opts.smoothMaxDiff) = -opts.smoothMaxDiff;
-            Y = sum(diff .* diff / 2, ndims(X));            
+            
+            % Loss is L2 for part below opts.smoothMaxDiff and L1 for above.
+            diffT = diff;
+            maskTooHigh = (diff > opts.smoothMaxDiff);
+            maskTooLow = (diff < -opts.smoothMaxDiff);
+            diffT(maskTooHigh) = opts.smoothMaxDiff;
+            diffT(maskTooLow) = -opts.smoothMaxDiff;            
+            squaredPart = (diffT .* diffT / 2);
+            
+            nonSquaredPart = zeros(size(squaredPart));
+            nonSquaredPart(maskTooHigh) =  diff(maskTooHigh) - opts.smoothMaxDiff;
+            nonSquaredPart(maskTooLow)  = -diff(maskTooLow)  - opts.smoothMaxDiff;
+            nonSquaredPart = nonSquaredPart * opts.smoothMaxDiff; % Derivative of loss is opts.smoothMaxDiff
+            
+            totalLoss = squaredPart + nonSquaredPart;
+            Y = sum(totalLoss, ndims(X));
+            
         otherwise
             error('Incorrect loss: %s', opts.loss);
     end
