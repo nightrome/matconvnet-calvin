@@ -8,10 +8,12 @@ function Y = vl_nnloss_regress(X, t, dzdy, varargin)
 % 2-dimensional vectors are row vectors
 % 3-dimensional vectors are aligned in the z-axis
 % 
-% Possible loss: {'L1', 'L2', and 'Smooth'}, where Smooth is L2 when |X| < 1 and L1 otherwise
-% Smooth was used by Girshick to be less insensitive to outliers while having more
-% sensible gradient updates close to the target
-% SMOOTH NOT IMPLEMENTED YET!
+% Possible loss: {'L1', 'L2', and 'Smooth'}, where Smooth is L2 up until the
+% but the maximum derivative with respect to the loss is capped to +/-
+% opts.smoothMaxDiff. For opts.smoothMaxDiff = 1, smooth is L2 when |X| < 1 and L1
+% otherwise. This form of smooth was used by Girshick to be less insensitive to outliers 
+% while having more sensible gradient updates close to the target. The version here
+% is more flexible.
 %
 % WEIGHTING NOT IMPLEMENTED YET!
 %
@@ -19,7 +21,8 @@ function Y = vl_nnloss_regress(X, t, dzdy, varargin)
 
 % Determine loss 
 opts.loss = 'L2';
-vl_argparse(opts, varargin);
+opts.smoothMaxDiff = 1;
+opts = vl_argparse(opts, varargin);
 
 % Display warning once
 warning('NotTested:regressloss', ...
@@ -36,6 +39,11 @@ if nargin == 2 || isempty(dzdy)
             Y = sum(diff .* diff / 2, ndims(X)); % Sum over last dimension
         case 'l1'
             Y = sum(abs(X - t), ndims(X));
+        case 'smooth'
+            diff = X - t;
+            diff(diff > opts.smoothMaxDiff) = opts.smoothMaxDiff;
+            diff(diff < opts.smoothMaxDiff) = -opts.smoothMaxDiff;
+            Y = sum(diff .* diff / 2, ndims(X));            
         otherwise
             error('Incorrect loss: %s', opts.loss);
     end
@@ -47,6 +55,11 @@ else
             Y = permute(dzdy * (X-t), [4 3 2 1]); 
         case 'l1'
             Y = permute(dzdy * sign(X-t), [4 3 2 1]);
+        case 'smooth'
+            diff = X-t;
+            diff(diff > opts.smoothMaxDiff) = opts.smoothMaxDiff;
+            diff(diff < opts.smoothMaxDiff) = -opts.smoothMaxDiff;
+            Y = permute(dzdy * (diff), [4 3 2 1]); 
         otherwise
             error('Incorrect loss: %s', opts.loss);
     end
