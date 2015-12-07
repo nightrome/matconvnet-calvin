@@ -142,7 +142,7 @@ classdef ImdbDetectionFullSupervision < ImdbMatbox
                     targetRange = targetRangeBegin:(targetRangeBegin+3);
                     
                     % Set regression targets
-                    regressionTargets(bI,targetRange) = BoxRegressionTarget(currGtBox, currPosBox);
+                    regressionTargets(bI,targetRange) = BoxRegressionTargetLog(currGtBox, currPosBox);
                 end
             end 
         end
