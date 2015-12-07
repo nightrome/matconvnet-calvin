@@ -56,7 +56,7 @@ for cI = size(scores,2):-1:1
     % Do regression
     regressFRange = (cI*4)-3:cI*4;
     currRegressF = gather(regressFactors(sI,regressFRange));
-    currBoxesReg = BoxRegresssLog(currBoxes, currRegressF);
+    currBoxesReg = BoxRegresss(currBoxes, currRegressF);
     
     % Get scores (w boxes) above certain threshold
     goodI = currScoresT > minDetectionScore;
