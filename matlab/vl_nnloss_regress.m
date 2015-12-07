@@ -50,7 +50,7 @@ if nargin == 2 || isempty(dzdy)
             diffT(maskTooLow) = -opts.smoothMaxDiff;            
             squaredPart = (diffT .* diffT / 2);
             
-            nonSquaredPart = zeros(size(squaredPart));
+            nonSquaredPart = zeros(size(squaredPart), 'like', X);
             nonSquaredPart(maskTooHigh) =  diff(maskTooHigh) - opts.smoothMaxDiff;
             nonSquaredPart(maskTooLow)  = -diff(maskTooLow)  - opts.smoothMaxDiff;
             nonSquaredPart = nonSquaredPart * opts.smoothMaxDiff; % Derivative of loss is opts.smoothMaxDiff
