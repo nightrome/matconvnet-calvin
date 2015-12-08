@@ -57,20 +57,45 @@ classdef RegionToPixel < dagnn.Layer
             dzdx = regionToPixel_backward(boxCount, obj.mask, dzdy);
             
             % Limit maximum gradients
-            dzdxAbsMax = 0.5 * boxCount; % 1.0 crashes at batch 18
-            if ~isempty(dzdxAbsMax)
-                
-                maxDzdx = max(abs(dzdx(:)));
-                if maxDzdx > dzdxAbsMax
+            dzdxMaxLimit = []; %boxCount / 64.0;
+            % 2.0 crashes at batch 18
+            % 4.0 crashes at batch 20
+            % 8.0 crashes at batch 25
+            % 16.0 crashes at batch 33
+            % 32.0 crashes at batch 36
+            % 64.0 crashes at batch 37
+            
+            dzdxSumLimit = []; %boxCount / 4.0;
+            % 4.0 crashes at batch 19
+            
+            if ~isempty(dzdxMaxLimit)
+                dzdxMax = max(abs(dzdx(:)));
+                if dzdxMax > dzdxMaxLimit
                     % Report max
-                    [y, ~] = find(squeeze(abs(dzdx)) == maxDzdx);
+                    [y, ~] = find(squeeze(abs(dzdx)) == dzdxMax);
                     for i = 1 : numel(y)
-                        fprintf('Maximum gradient at class %d: %.1f\n', y(i), maxDzdx);
+                        fprintf('Maximum gradient at class %d: %.1f > %.1f\n', y(i), dzdxMax, dzdxMaxLimit);
                     end
                     
                     % Limit gradients
-                    dzdx(dzdx >  dzdxAbsMax) =  dzdxAbsMax;
-                    dzdx(dzdx < -dzdxAbsMax) = -dzdxAbsMax;
+                    dzdx(dzdx >  dzdxMaxLimit) =  dzdxMaxLimit;
+                    dzdx(dzdx < -dzdxMaxLimit) = -dzdxMaxLimit;
+                end
+            end
+            
+            if ~isempty(dzdxSumLimit)
+                dzdxSum = max(sum(abs(dzdx), 4));
+                if dzdxSum > dzdxSumLimit
+                    classSums = squeeze(sum(abs(dzdx), 4));
+                    y = find(classSums == dzdxSum);
+                    yFactors = dzdxSumLimit ./ classSums(y);
+                    for i = 1 : numel(y)
+                        % Report max
+                        fprintf('Summed gradient at class %d: %.1f > %.1f\n', y(i), dzdxSum, dzdxSumLimit);
+                        
+                        % Limit gradients
+                        dzdx(:, :, y(i), :) = dzdx(:, :, y(i), :) .* yFactors(i);
+                    end
                 end
             end
             
