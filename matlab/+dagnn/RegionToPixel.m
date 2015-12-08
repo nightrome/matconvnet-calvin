@@ -49,17 +49,35 @@ classdef RegionToPixel < dagnn.Layer
             
             % Move inputs from GPU if necessary
             gpuMode = isa(dzdy, 'gpuArray');
-            if gpuMode,
+            if gpuMode
                 dzdy = gather(dzdy);
-            end;
+            end
             
             % Map SP gradients to RP+GT gradients
             dzdx = regionToPixel_backward(boxCount, obj.mask, dzdy);
             
+            % Limit maximum gradients
+            dzdxAbsMax = boxCount; %50 crashes at batch 19
+            if ~isempty(dzdxAbsMax)
+                
+                maxDzdx = max(abs(dzdx(:)));
+                if maxDzdx > dzdxAbsMax
+                    % Report max
+                    [y, ~] = find(squeeze(abs(dzdx)) == maxDzdx);
+                    for i = 1 : numel(y)
+                        fprintf('Maximum gradient at class %d: %.1f\n', y(i), maxDzdx);
+                    end
+                    
+                    % Limit gradients
+                    dzdx(dzdx >  dzdxAbsMax) =  dzdxAbsMax;
+                    dzdx(dzdx < -dzdxAbsMax) = -dzdxAbsMax;
+                end
+            end
+            
             % Move outputs to GPU if necessary
-            if gpuMode,
+            if gpuMode
                 dzdx = gpuArray(dzdx);
-            end;
+            end
             
             % Store gradients
             derInputs{1} = dzdx;

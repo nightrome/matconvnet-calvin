@@ -59,7 +59,7 @@ else
     assert(all(size(spLabelHistos) == [spCount, labelCount]));
     
     % If an SP has no label, we need to remove it from scores, map, target and
-    % pixelSizes
+    % pixelSizes (only in train/val)
     nonEmptySPs = ~any(isnan(scoresSP))';
     scoresSP = scoresSP(:, nonEmptySPs);
     mapSP = mapSP(:, nonEmptySPs);
@@ -105,7 +105,9 @@ else
         weightsSP = weightsSP ./ sum(weightsSP);
     end;
     
-    % Renormalize to (average of) boxCount
+    % Renormalize to (average weight of) boxCount
+    % Note: The accumulate_gradients function divides by boxCount again,
+    % s.t. each image has an average weight of boxCount
     weightsSP = weightsSP * boxCount;
     
     % Reshape and append label weights
