@@ -25,28 +25,53 @@ classdef LabelPresence < dagnn.Layer
             
             % Move to CPU
             gpuMode = isa(scoresSP, 'gpuArray');
-            if gpuMode,
+            if gpuMode
                 scoresSP = gather(scoresSP);
-            end;
+            end
             
             labelList = unique(labelImage);
             labelListCount = numel(labelList);
             labelCount = size(scoresSP, 3);
             
             % Init
-            scoresImage  = nan(1, 1, labelCount, labelListCount); % score of the label, and all other labels
+            scoresImage = nan(1, 1, labelCount, labelListCount); % score of the label, and all other labels
             obj.mask = nan(labelCount, labelListCount); % contains the label of each superpixel
             
+            % Loss for each gt label
+            [~, predictedLabels] = max(scoresSP, [], 3);
             for labelListIdx = 1 : labelListCount,
-                label = labelList(labelListIdx);
-                [scoresImage(1, 1, :, labelListIdx), spIdx] = max(scoresSP(:, :, label, :), [], 4);
+%                 label = labelList(labelListIdx);
+                relRegions = 1:numel(predictedLabels);
+                [scoresImage(1, 1, :, labelListIdx), relRegionsIdx] = max(scoresSP(:, :, :, relRegions), [], 4);
+                spIdx = relRegions(relRegionsIdx);
                 obj.mask(:, labelListIdx) = spIdx;
-            end;
+            end
+            
+%             %TODO: remove
+%             scoresImage = scoresImage(:, :, :, 1);
+%             obj.mask = obj.mask(:, 1);
+
+%             % Loss for each predicted label
+%             [~, predicted] = max(scoresSP, [], 3);
+%             predictedUn = unique(predicted);
+%             predictedCount = numel(predictedUn);
+%             
+%             % Init
+%             scoresImage = nan(1, 1, labelCount, predictedCount); % score of the label, and all other labels
+%             obj.mask = nan(labelCount, predictedCount); % contains the label of each superpixel
+%             
+%             for predictedIdx = 1 : numel(predicted)
+%                 label = predictedUn(labelListIdx);
+%                 relRegions = find(predicted == label);
+%                 [scoresImage(1, 1, :, predictedIdx), relRegionsIdx] = max(scoresSP(:, :, label, relRegions), [], 4);
+%                 spIdx = relRegions(relRegionsIdx);
+%                 obj.mask(:, labelListIdx) = spIdx;
+%             end
             
             % Convert outputs back to GPU if necessary
-            if gpuMode,
+            if gpuMode
                 scoresImage = gpuArray(scoresImage);
-            end;
+            end
             
             % Split labels into labels and instance weights
             outputs = cell(1, 1);
@@ -65,17 +90,17 @@ classdef LabelPresence < dagnn.Layer
             
             % Move inputs from GPU if necessary
             gpuMode = isa(dzdy, 'gpuArray');
-            if gpuMode,
+            if gpuMode
                 dzdy = gather(dzdy);
-            end;
+            end
             
             % Map Image gradients to RP+GT gradients
             dzdx = labelPresence_backward(spCount, obj.mask, dzdy);
             
             % Move outputs to GPU if necessary
-            if gpuMode,
+            if gpuMode
                 dzdx = gpuArray(dzdx);
-            end;
+            end
             
             % Store gradients
             derInputs{1} = dzdx;
@@ -95,54 +120,54 @@ classdef LabelPresence < dagnn.Layer
             % does not have a derivative and therefore backpropagation
             % would be skipped in the normal function.
             
-            in = layer.inputIndexes ;
-            out = layer.outputIndexes ;
-            par = layer.paramIndexes ;
-            net = obj.net ;
+            in = layer.inputIndexes;
+            out = layer.outputIndexes;
+            par = layer.paramIndexes;
+            net = obj.net;
             
             % Modification:
             out = out(1);
             
-            inputs = {net.vars(in).value} ;
-            derOutputs = {net.vars(out).der} ;
+            inputs = {net.vars(in).value};
+            derOutputs = {net.vars(out).der};
             for i = 1:numel(derOutputs)
-                if isempty(derOutputs{i}), return ; end
+                if isempty(derOutputs{i}), return; end
             end
             
             if net.conserveMemory
                 % clear output variables (value and derivative)
                 % unless precious
                 for i = out
-                    if net.vars(i).precious, continue ; end
-                    net.vars(i).der = [] ;
-                    net.vars(i).value = [] ;
+                    if net.vars(i).precious, continue; end
+                    net.vars(i).der = [];
+                    net.vars(i).value = [];
                 end
             end
             
             % compute derivatives of inputs and paramerters
             [derInputs, derParams] = obj.backward ...
-                (inputs, {net.params(par).value}, derOutputs) ;
+                (inputs, {net.params(par).value}, derOutputs);
             
             % accumuate derivatives
             for i = 1:numel(in)
-                v = in(i) ;
+                v = in(i);
                 if net.numPendingVarRefs(v) == 0 || isempty(net.vars(v).der)
-                    net.vars(v).der = derInputs{i} ;
+                    net.vars(v).der = derInputs{i};
                 elseif ~isempty(derInputs{i})
-                    net.vars(v).der = net.vars(v).der + derInputs{i} ;
+                    net.vars(v).der = net.vars(v).der + derInputs{i};
                 end
-                net.numPendingVarRefs(v) = net.numPendingVarRefs(v) + 1 ;
+                net.numPendingVarRefs(v) = net.numPendingVarRefs(v) + 1;
             end
             
             for i = 1:numel(par)
-                p = par(i) ;
+                p = par(i);
                 if (net.numPendingParamRefs(p) == 0 && ~net.accumulateParamDers) ...
                         || isempty(net.params(p).der)
-                    net.params(p).der = derParams{i} ;
+                    net.params(p).der = derParams{i};
                 else
-                    net.params(p).der = net.params(p).der + derParams{i} ;
+                    net.params(p).der = net.params(p).der + derParams{i};
                 end
-                net.numPendingParamRefs(p) = net.numPendingParamRefs(p) + 1 ;
+                net.numPendingParamRefs(p) = net.numPendingParamRefs(p) + 1;
             end
         end
         
