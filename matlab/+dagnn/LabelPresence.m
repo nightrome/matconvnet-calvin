@@ -1,20 +1,13 @@
-classdef RegionToPixel < dagnn.Layer
-    % Go from a region level to a pixel level.
-    % (to be able to compute a loss there)
+classdef LabelPresence < dagnn.Layer
+    % Convert pixel label scores to presence/absence scores for each class per batch.
+    % (to be able to compute an image-level loss there)
     %
-    % inputs are: scoresAll, regionToPixelAux
-    % outputs are: scoresSP, labelsSP, weightsSP
-    %
-    % Note: The presence/absence of regionToPixelAux.spLabelHistos indicates
-    % whether we are in train/val or test mode.
+    % inputs are: scoresSP, labelImage
+    % outputs are: scoresImage
     %
     % Copyright by Holger Caesar, 2015
     
     properties
-        inverseLabelFreqs = true;
-        oldWeightMode = true;
-        replicateUnpureSPs = true;
-        minPixFreq = []; % used only in getBatch
     end
     
     properties (Transient)
@@ -24,60 +17,65 @@ classdef RegionToPixel < dagnn.Layer
     methods
         function outputs = forward(obj, inputs, params) %#ok<INUSD>
             assert(numel(inputs) == 2);
-            [scoresSP, labelsSP, weightsSP, obj.mask] = regionToPixel_forward(inputs{1}, inputs{2}, obj.inverseLabelFreqs, obj.oldWeightMode, obj.replicateUnpureSPs);
+            %             [scoresImage, labelsImage, weightsImage, obj.mask] = labelPresence_forward(inputs{1}, inputs{2});
+            
+            % Get inputs
+            scoresSP = inputs{1};
+            labelImage = inputs{2};
+            
+            % Move to CPU
+            gpuMode = isa(scoresSP, 'gpuArray');
+            if gpuMode,
+                scoresSP = gather(scoresSP);
+            end;
+            
+            labelList = unique(labelImage);
+            labelListCount = numel(labelList);
+            labelCount = size(scoresSP, 3);
+            
+            % Init
+            scoresImage  = nan(1, 1, labelCount, labelListCount); % score of the label, and all other labels
+            obj.mask = nan(labelCount, labelListCount); % contains the label of each superpixel
+            
+            for labelListIdx = 1 : labelListCount,
+                label = labelList(labelListIdx);
+                [scoresImage(1, 1, :, labelListIdx), spIdx] = max(scoresSP(:, :, label, :), [], 4);
+                obj.mask(:, labelListIdx) = spIdx;
+            end;
+            
+            % Convert outputs back to GPU if necessary
+            if gpuMode,
+                scoresImage = gpuArray(scoresImage);
+            end;
             
             % Split labels into labels and instance weights
-            outputs = cell(3, 1);
-            outputs{1} = scoresSP;
-            outputs{2} = labelsSP;
-            outputs{3} = weightsSP;
+            outputs = cell(1, 1);
+            outputs{1} = scoresImage;
         end
         
         function [derInputs, derParams] = backward(obj, inputs, params, derOutputs) %#ok<INUSL>
-            % Go from a pixel level back to region level.
-            % This uses the mask saved in the forward pass.
             %
-            % Note: The gradients should already have an average
-            % weighting of 'boxCount', as introduced in the forward
-            % pass.
+            % This uses the mask saved in the forward pass.
             
             assert(numel(derOutputs) == 1);
             
             % Get inputs
-            boxCount = size(inputs{1}, 4);
+            spCount = size(inputs{1}, 4);
             dzdy = derOutputs{1};
             
             % Move inputs from GPU if necessary
             gpuMode = isa(dzdy, 'gpuArray');
-            if gpuMode
+            if gpuMode,
                 dzdy = gather(dzdy);
-            end
+            end;
             
-            % Map SP gradients to RP+GT gradients
-            dzdx = regionToPixel_backward(boxCount, obj.mask, dzdy);
-            
-            % Limit maximum gradients
-            dzdxAbsMax = 0.5 * boxCount; % 1.0 crashes at batch 18
-            if ~isempty(dzdxAbsMax)
-                
-                maxDzdx = max(abs(dzdx(:)));
-                if maxDzdx > dzdxAbsMax
-                    % Report max
-                    [y, ~] = find(squeeze(abs(dzdx)) == maxDzdx);
-                    for i = 1 : numel(y)
-                        fprintf('Maximum gradient at class %d: %.1f\n', y(i), maxDzdx);
-                    end
-                    
-                    % Limit gradients
-                    dzdx(dzdx >  dzdxAbsMax) =  dzdxAbsMax;
-                    dzdx(dzdx < -dzdxAbsMax) = -dzdxAbsMax;
-                end
-            end
+            % Map Image gradients to RP+GT gradients
+            dzdx = labelPresence_backward(spCount, obj.mask, dzdy);
             
             % Move outputs to GPU if necessary
-            if gpuMode
+            if gpuMode,
                 dzdx = gpuArray(dzdx);
-            end
+            end;
             
             % Store gradients
             derInputs{1} = dzdx;
@@ -148,7 +146,7 @@ classdef RegionToPixel < dagnn.Layer
             end
         end
         
-        function obj = RegionToPixel(varargin)
+        function obj = LabelPresence(varargin)
             obj.load(varargin);
         end
     end
