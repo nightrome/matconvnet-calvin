@@ -74,9 +74,9 @@ classdef ImdbDetectionFullSupervision < ImdbMatbox
             oriImSize = double(size(image));
             image = image - imresize(obj.meanIm, [oriImSize(1) oriImSize(2)]); % Subtract mean im
             
-%             resizeFactor = 1000 / max(oriImSize(1:2));
-            resizeFactor = 600 / min(oriImSize(1:2));
-            % resizeFactor = min(resizeFactorMin, resizeFactorMax);
+            resizeFactorMax = 1000 / max(oriImSize(1:2));
+            resizeFactorMin = 600 / min(oriImSize(1:2));
+            resizeFactor = min(resizeFactorMin, resizeFactorMax);
             if gpuMode
                 image = gpuArray(image);
                 image = imresize(image, resizeFactor);
