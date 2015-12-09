@@ -3,7 +3,7 @@
 #include "matrix.h"
 
 /*
- * dzdxout = roiPooling_backward(boxCount, convImSize, roiPoolSize, masks, dzdx);
+ * dzdx = roiPooling_backward(boxCount, convImSize, roiPoolSize, masks, dzdy);
  *
  * Sum the gradients that are backpropagated through the ROI pooling layer.
  *
@@ -15,7 +15,7 @@ void mexFunction(int nlhs, mxArray *out[], int nrhs, const mxArray *input[])
     if (nlhs == 0) {
         return;
     } else if (nlhs != 1 || nrhs != 5) {
-        mexErrMsgTxt("Error. Usage: dzdxout = roiPooling_backward(boxCount, convImSize, roiPoolSize, masks, dzdx)");
+        mexErrMsgTxt("Error. Usage: dzdx = roiPooling_backward(boxCount, convImSize, roiPoolSize, masks, dzdy)");
         return;
     }
     
@@ -24,7 +24,7 @@ void mexFunction(int nlhs, mxArray *out[], int nrhs, const mxArray *input[])
     const mxArray* convImSizeMx = input[1];
     const mxArray* roiPoolSizeMx = input[2];
     const mxArray* masksMx = input[3];
-    const mxArray* dzdxMx = input[4];
+    const mxArray* dzdyMx = input[4];
     
     // Check inputs
     if (!mxIsDouble(boxCountMx) || !mxIsScalar(boxCountMx)) {
@@ -38,26 +38,26 @@ void mexFunction(int nlhs, mxArray *out[], int nrhs, const mxArray *input[])
     }
     int boxCount = (int) mxGetScalar(boxCountMx);
     const mwSize* masksDims = mxGetDimensions(masksMx);
-    const mwSize* dzdxDims = mxGetDimensions(dzdxMx);
+    const mwSize* dzdyDims = mxGetDimensions(dzdyMx);
     if (!mxIsSingle(masksMx)){
         mexErrMsgTxt("Error: masks must be single!");
     }
-    if (!mxIsSingle(dzdxMx)) {
-        mexErrMsgTxt("Error: dzdx must be single!");
+    if (!mxIsSingle(dzdyMx)) {
+        mexErrMsgTxt("Error: dzdy must be single!");
     }
-    if (    mxGetNumberOfDimensions(masksMx) != mxGetNumberOfDimensions(dzdxMx) ||
-            masksDims[0] != dzdxDims[0] ||
-            masksDims[1] != dzdxDims[1] ||
-            masksDims[2] != dzdxDims[2] ||
-            (masksDims[3] != dzdxDims[3] && boxCount > 1)) {
-        mexErrMsgTxt("Error: masks must have the same format as dzdx!");
+    if (    mxGetNumberOfDimensions(masksMx) != mxGetNumberOfDimensions(dzdyMx) ||
+            masksDims[0] != dzdyDims[0] ||
+            masksDims[1] != dzdyDims[1] ||
+            masksDims[2] != dzdyDims[2] ||
+            (masksDims[3] != dzdyDims[3] && boxCount > 1)) {
+        mexErrMsgTxt("Error: masks must have the same format as dzdy!");
     }
     
     // Get arrays
     double* convImSize = (double*) mxGetData(convImSizeMx);
     double* roiPoolSize = (double*) mxGetData(roiPoolSizeMx);
     float* masks = (float*) mxGetData(masksMx);
-    float* dzdx = (float*) mxGetData(dzdxMx);
+    float* dzdy = (float*) mxGetData(dzdyMx);
     
     int roiPoolSizeY = roiPoolSize[0];
     int roiPoolSizeX = roiPoolSize[1];
@@ -66,13 +66,13 @@ void mexFunction(int nlhs, mxArray *out[], int nrhs, const mxArray *input[])
     int channelCount = convImSize[2];
     
     // Create output and initialize it to all zeros (in mxCreateNumericArray)
-    // dzdxout = zeros(convImSize, 'single');
-    mwSize dzdxoutSize[3];
-    dzdxoutSize[0] = convImSizeY;
-    dzdxoutSize[1] = convImSizeX;
-    dzdxoutSize[2] = channelCount;
-    out[0] = mxCreateNumericArray(3, dzdxoutSize, mxSINGLE_CLASS, mxREAL);
-    float* dzdxout = (float*) mxGetData(out[0]);
+    // dzdx = zeros(convImSize, 'single');
+    mwSize dzdxSize[3];
+    dzdxSize[0] = convImSizeY;
+    dzdxSize[1] = convImSizeX;
+    dzdxSize[2] = channelCount;
+    out[0] = mxCreateNumericArray(3, dzdxSize, mxSINGLE_CLASS, mxREAL);
+    float* dzdx = (float*) mxGetData(out[0]);
     
     for (int boxIdx = 0; boxIdx < boxCount; boxIdx++) {
         for (int regionIdxY = 0; regionIdxY < roiPoolSizeY; regionIdxY++) {
@@ -85,9 +85,9 @@ void mexFunction(int nlhs, mxArray *out[], int nrhs, const mxArray *input[])
                     
                     if (!isnan) {
                         // Sum over all RoIs that max-pooled x in the forward pass:
-                        // dzdxout(convImgY, convImgX, channelIdx) = dzdxout(convImgY, convImgX, channelIdx) + dzdx(regionIdxY, regionIdxX, channelIdx, boxIdx);
-                        int dzdxoutIdx = convImgIdxNoChannel + channelIdx * convImSizeY * convImSizeX;
-                        dzdxout[dzdxoutIdx] = dzdxout[dzdxoutIdx] + dzdx[masksIdx];
+                        // dzdx(convImgY, convImgX, channelIdx) = dzdx(convImgY, convImgX, channelIdx) + dzdy(regionIdxY, regionIdxX, channelIdx, boxIdx);
+                        int dzdxIdx = convImgIdxNoChannel + channelIdx * convImSizeY * convImSizeX;
+                        dzdx[dzdxIdx] = dzdx[dzdxIdx] + dzdy[masksIdx];
                     }
                 }
             }
