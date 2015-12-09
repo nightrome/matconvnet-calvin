@@ -8,6 +8,7 @@ classdef LabelPresence < dagnn.Layer
     % Copyright by Holger Caesar, 2015
     
     properties
+        useAllLabels = true;
     end
     
     properties (Transient)
@@ -16,10 +17,9 @@ classdef LabelPresence < dagnn.Layer
     
     methods
         function outputs = forward(obj, inputs, params) %#ok<INUSD>
-            assert(numel(inputs) == 2);
-            %             [scoresImage, labelsImage, weightsImage, obj.mask] = labelPresence_forward(inputs{1}, inputs{2});
             
             % Get inputs
+            assert(numel(inputs) == 2);
             scoresSP = inputs{1};
             labelImage = inputs{2};
             
@@ -29,51 +29,38 @@ classdef LabelPresence < dagnn.Layer
                 scoresSP = gather(scoresSP);
             end
             
-            labelList = unique(labelImage);
-            labelListCount = numel(labelList);
+            % Loss for each gt label
             labelCount = size(scoresSP, 3);
             
-            % Init
-            scoresImage = nan(1, 1, labelCount, labelListCount); % score of the label, and all other labels
-            obj.mask = nan(labelCount, labelListCount); % contains the label of each superpixel
-            
-            % Loss for each gt label
-            [~, predictedLabels] = max(scoresSP, [], 3);
-            for labelListIdx = 1 : labelListCount,
-%                 label = labelList(labelListIdx);
-                relRegions = 1:numel(predictedLabels);
-                [scoresImage(1, 1, :, labelListIdx), relRegionsIdx] = max(scoresSP(:, :, :, relRegions), [], 4);
-                spIdx = relRegions(relRegionsIdx);
-                obj.mask(:, labelListIdx) = spIdx;
+            if obj.useAllLabels
+                % Init
+                scoresImage = nan(1, 1, labelCount, labelCount); % score of the label, and all other labels
+                obj.mask = nan(labelCount, labelCount); % contains the label of each superpixel
+                
+                for labelIdx = 1 : labelCount
+                    [scoresImage(:, :, :, labelIdx), spIdx] = max(scoresSP(:, :, labelIdx, :), [], 4);
+                    obj.mask(:, labelIdx) = spIdx;
+                end
+            else
+                % Init
+                labelList = unique(labelImage);
+                labelListCount = numel(labelList);
+                scoresImage = nan(1, 1, labelCount, labelListCount); % score of the label, and all other labels
+                obj.mask = nan(labelCount, labelListCount); % contains the label of each superpixel
+                
+                for labelListIdx = 1 : labelListCount,
+                    labelIdx = labelList(labelListIdx);
+                    [scoresImage(:, :, :, labelListIdx), spIdx] = max(scoresSP(:, :, labelIdx, :), [], 4);
+                    obj.mask(:, labelListIdx) = spIdx;
+                end
             end
-            
-%             %TODO: remove
-%             scoresImage = scoresImage(:, :, :, 1);
-%             obj.mask = obj.mask(:, 1);
-
-%             % Loss for each predicted label
-%             [~, predicted] = max(scoresSP, [], 3);
-%             predictedUn = unique(predicted);
-%             predictedCount = numel(predictedUn);
-%             
-%             % Init
-%             scoresImage = nan(1, 1, labelCount, predictedCount); % score of the label, and all other labels
-%             obj.mask = nan(labelCount, predictedCount); % contains the label of each superpixel
-%             
-%             for predictedIdx = 1 : numel(predicted)
-%                 label = predictedUn(labelListIdx);
-%                 relRegions = find(predicted == label);
-%                 [scoresImage(1, 1, :, predictedIdx), relRegionsIdx] = max(scoresSP(:, :, label, relRegions), [], 4);
-%                 spIdx = relRegions(relRegionsIdx);
-%                 obj.mask(:, labelListIdx) = spIdx;
-%             end
             
             % Convert outputs back to GPU if necessary
             if gpuMode
                 scoresImage = gpuArray(scoresImage);
             end
             
-            % Split labels into labels and instance weights
+            % Store outputs
             outputs = cell(1, 1);
             outputs{1} = scoresImage;
         end
@@ -82,9 +69,8 @@ classdef LabelPresence < dagnn.Layer
             %
             % This uses the mask saved in the forward pass.
             
-            assert(numel(derOutputs) == 1);
-            
             % Get inputs
+            assert(numel(derOutputs) == 1);
             spCount = size(inputs{1}, 4);
             dzdy = derOutputs{1};
             
