@@ -41,9 +41,8 @@ classdef RegionToPixel < dagnn.Layer
             % weighting of 'boxCount', as introduced in the forward
             % pass.
             
-            assert(numel(derOutputs) == 1);
-            
             % Get inputs
+            assert(numel(derOutputs) == 1);
             boxCount = size(inputs{1}, 4);
             dzdy = derOutputs{1};
             
@@ -56,48 +55,48 @@ classdef RegionToPixel < dagnn.Layer
             % Map SP gradients to RP+GT gradients
             dzdx = regionToPixel_backward(boxCount, obj.mask, dzdy);
             
-            % Limit maximum gradients
-            dzdxMaxLimit = []; %boxCount / 64.0;
-            % 2.0 crashes at batch 18
-            % 4.0 crashes at batch 20
-            % 8.0 crashes at batch 25
-            % 16.0 crashes at batch 33
-            % 32.0 crashes at batch 36
-            % 64.0 crashes at batch 37
-            
-            dzdxSumLimit = []; %boxCount / 4.0;
-            % 4.0 crashes at batch 19
-            
-            if ~isempty(dzdxMaxLimit)
-                dzdxMax = max(abs(dzdx(:)));
-                if dzdxMax > dzdxMaxLimit
-                    % Report max
-                    [y, ~] = find(squeeze(abs(dzdx)) == dzdxMax);
-                    for i = 1 : numel(y)
-                        fprintf('Maximum gradient at class %d: %.1f > %.1f\n', y(i), dzdxMax, dzdxMaxLimit);
-                    end
-                    
-                    % Limit gradients
-                    dzdx(dzdx >  dzdxMaxLimit) =  dzdxMaxLimit;
-                    dzdx(dzdx < -dzdxMaxLimit) = -dzdxMaxLimit;
-                end
-            end
-            
-            if ~isempty(dzdxSumLimit)
-                dzdxSum = max(sum(abs(dzdx), 4));
-                if dzdxSum > dzdxSumLimit
-                    classSums = squeeze(sum(abs(dzdx), 4));
-                    y = find(classSums == dzdxSum);
-                    yFactors = dzdxSumLimit ./ classSums(y);
-                    for i = 1 : numel(y)
-                        % Report max
-                        fprintf('Summed gradient at class %d: %.1f > %.1f\n', y(i), dzdxSum, dzdxSumLimit);
-                        
-                        % Limit gradients
-                        dzdx(:, :, y(i), :) = dzdx(:, :, y(i), :) .* yFactors(i);
-                    end
-                end
-            end
+%             % Limit maximum gradients
+%             dzdxMaxLimit = []; %boxCount / 64.0;
+%             % 2.0 crashes at batch 18
+%             % 4.0 crashes at batch 20
+%             % 8.0 crashes at batch 25
+%             % 16.0 crashes at batch 33
+%             % 32.0 crashes at batch 36
+%             % 64.0 crashes at batch 37
+%             
+%             dzdxSumLimit = []; %boxCount / 4.0;
+%             % 4.0 crashes at batch 19
+%             
+%             if ~isempty(dzdxMaxLimit)
+%                 dzdxMax = max(abs(dzdx(:)));
+%                 if dzdxMax > dzdxMaxLimit
+%                     % Report max
+%                     [y, ~] = find(squeeze(abs(dzdx)) == dzdxMax);
+%                     for i = 1 : numel(y)
+%                         fprintf('Maximum gradient at class %d: %.1f > %.1f\n', y(i), dzdxMax, dzdxMaxLimit);
+%                     end
+%                     
+%                     % Limit gradients
+%                     dzdx(dzdx >  dzdxMaxLimit) =  dzdxMaxLimit;
+%                     dzdx(dzdx < -dzdxMaxLimit) = -dzdxMaxLimit;
+%                 end
+%             end
+%             
+%             if ~isempty(dzdxSumLimit)
+%                 dzdxSum = max(sum(abs(dzdx), 4));
+%                 if dzdxSum > dzdxSumLimit
+%                     classSums = squeeze(sum(abs(dzdx), 4));
+%                     y = find(classSums == dzdxSum);
+%                     yFactors = dzdxSumLimit ./ classSums(y);
+%                     for i = 1 : numel(y)
+%                         % Report max
+%                         fprintf('Summed gradient at class %d: %.1f > %.1f\n', y(i), dzdxSum, dzdxSumLimit);
+%                         
+%                         % Limit gradients
+%                         dzdx(:, :, y(i), :) = dzdx(:, :, y(i), :) .* yFactors(i);
+%                     end
+%                 end
+%             end
             
             % Move outputs to GPU if necessary
             if gpuMode
@@ -122,54 +121,54 @@ classdef RegionToPixel < dagnn.Layer
             % does not have a derivative and therefore backpropagation
             % would be skipped in the normal function.
             
-            in = layer.inputIndexes ;
-            out = layer.outputIndexes ;
-            par = layer.paramIndexes ;
-            net = obj.net ;
+            in = layer.inputIndexes;
+            out = layer.outputIndexes;
+            par = layer.paramIndexes;
+            net = obj.net;
             
             % Modification:
             out = out(1);
             
-            inputs = {net.vars(in).value} ;
-            derOutputs = {net.vars(out).der} ;
+            inputs = {net.vars(in).value};
+            derOutputs = {net.vars(out).der};
             for i = 1:numel(derOutputs)
-                if isempty(derOutputs{i}), return ; end
+                if isempty(derOutputs{i}), return; end
             end
             
             if net.conserveMemory
                 % clear output variables (value and derivative)
                 % unless precious
                 for i = out
-                    if net.vars(i).precious, continue ; end
-                    net.vars(i).der = [] ;
-                    net.vars(i).value = [] ;
+                    if net.vars(i).precious, continue; end
+                    net.vars(i).der = [];
+                    net.vars(i).value = [];
                 end
             end
             
             % compute derivatives of inputs and paramerters
             [derInputs, derParams] = obj.backward ...
-                (inputs, {net.params(par).value}, derOutputs) ;
+                (inputs, {net.params(par).value}, derOutputs);
             
             % accumuate derivatives
             for i = 1:numel(in)
-                v = in(i) ;
+                v = in(i);
                 if net.numPendingVarRefs(v) == 0 || isempty(net.vars(v).der)
-                    net.vars(v).der = derInputs{i} ;
+                    net.vars(v).der = derInputs{i};
                 elseif ~isempty(derInputs{i})
-                    net.vars(v).der = net.vars(v).der + derInputs{i} ;
+                    net.vars(v).der = net.vars(v).der + derInputs{i};
                 end
-                net.numPendingVarRefs(v) = net.numPendingVarRefs(v) + 1 ;
+                net.numPendingVarRefs(v) = net.numPendingVarRefs(v) + 1;
             end
             
             for i = 1:numel(par)
-                p = par(i) ;
+                p = par(i);
                 if (net.numPendingParamRefs(p) == 0 && ~net.accumulateParamDers) ...
                         || isempty(net.params(p).der)
-                    net.params(p).der = derParams{i} ;
+                    net.params(p).der = derParams{i};
                 else
-                    net.params(p).der = net.params(p).der + derParams{i} ;
+                    net.params(p).der = net.params(p).der + derParams{i};
                 end
-                net.numPendingParamRefs(p) = net.numPendingParamRefs(p) + 1 ;
+                net.numPendingParamRefs(p) = net.numPendingParamRefs(p) + 1;
             end
         end
         
