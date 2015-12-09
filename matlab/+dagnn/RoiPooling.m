@@ -57,29 +57,29 @@ classdef RoiPooling < dagnn.Layer
             assert(numel(derOutputs) == 1);
             convIm = inputs{1};
             boxes  = inputs{3};
-            dzdx = derOutputs{1};
+            dzdy = derOutputs{1};
             boxCount = size(boxes, 1);
             convImSize = size(convIm);
-            gpuMode = isa(dzdx, 'gpuArray');
+            gpuMode = isa(dzdy, 'gpuArray');
             
             % Move inputs from GPU if necessary
             if gpuMode,
-                dzdx = gather(dzdx);
+                dzdy = gather(dzdy);
             end;
             
             % Backpropagate derivatives (only works on CPU)
-            dzdxout = roiPooling_backward(boxCount, convImSize, obj.poolSize, obj.mask, dzdx);
+            dzdx = roiPooling_backward(boxCount, convImSize, obj.poolSize, obj.mask, dzdy);
             
             % Move outputs to GPU if necessary
             if gpuMode,
-                dzdxout = gpuArray(dzdxout);
+                dzdx = gpuArray(dzdx);
             end;
             
             % Debug: Visualize gradients
-%                 roiPooling_visualizeBackward(inputs{2}, boxes, obj.mask, dzdx, dzdxout, 1, 1);
+%                 roiPooling_visualizeBackward(inputs{2}, boxes, obj.mask, dzdy, dzdx, 1, 1);
             
             % Store outputs
-            derInputs{1} = dzdxout;
+            derInputs{1} = dzdx;
             derInputs{2} = [];
             derInputs{3} = [];
             derParams = {};
