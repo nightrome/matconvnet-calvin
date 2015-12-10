@@ -29,6 +29,7 @@ classdef ImdbMatbox < ImdbCalvin
         meanIm
         targetClasses = [];
         posFraction = 0.25;
+        minBoxSize = 25;
         
 %         labelMode  % Jasper: Maybe deprecated way of specifying labels as a matrix
 %         or vector (matrix allows multiple labels). Functions dealing with this are
@@ -104,7 +105,22 @@ classdef ImdbMatbox < ImdbCalvin
                 gStruct.overlap = zeros(size(gStruct.overlap(goodIds,:)), 'single');
                 gStruct.boxes = gStruct.boxes(goodIds,:);
                 gStruct.class = zeros(size(gStruct.class(goodIds,:)), 'uint16');
-            end 
+            end
+            
+            gt = gStruct.boxes(gStruct.gt,:);
+            [nR, nC] = BoxSize(gt);
+            if min(min(nR), min(nC)) < obj.minBoxSize
+                keyboard;
+            end
+            
+            % Remove small boxes
+            [nR, nC] = BoxSize(gStruct.boxes);
+            badI = ((nR < obj.minBoxSize) | (nC < obj.minBoxSize)) & ~gStruct.gt;
+            gStruct.gt = gStruct.gt(~badI,:);
+            gStruct.overlap = gStruct.overlap(~badI,:);
+            gStruct.boxes = gStruct.boxes(~badI,:);
+            gStruct.class = gStruct.class(~badI,:);
+            
             
             % Remove non-target classes if applicable (only then targetClasses have
             % been set)
