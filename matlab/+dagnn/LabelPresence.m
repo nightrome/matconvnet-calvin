@@ -8,7 +8,7 @@ classdef LabelPresence < dagnn.Layer
     % Copyright by Holger Caesar, 2015
     
     properties
-        useAllLabels = true;
+        useAllLabels = true; % only used in getBatch to define labelImage as 1:labelCount or the GT labels
     end
     
     properties (Transient)
@@ -32,27 +32,18 @@ classdef LabelPresence < dagnn.Layer
             % Loss for each gt label
             labelCount = size(scoresSP, 3);
             
-            if obj.useAllLabels
-                % Init
-                scoresImage = nan(1, 1, labelCount, labelCount); % score of the label, and all other labels
-                obj.mask = nan(labelCount, labelCount); % contains the label of each superpixel
-                
-                for labelIdx = 1 : labelCount
-                    [scoresImage(:, :, :, labelIdx), spIdx] = max(scoresSP(:, :, labelIdx, :), [], 4);
-                    obj.mask(:, labelIdx) = spIdx;
-                end
-            else
-                % Init
-                labelList = unique(labelImage);
-                labelListCount = numel(labelList);
-                scoresImage = nan(1, 1, labelCount, labelListCount); % score of the label, and all other labels
-                obj.mask = nan(labelCount, labelListCount); % contains the label of each superpixel
-                
-                for labelListIdx = 1 : labelListCount,
-                    labelIdx = labelList(labelListIdx);
-                    [scoresImage(:, :, :, labelListIdx), spIdx] = max(scoresSP(:, :, labelIdx, :), [], 4);
-                    obj.mask(:, labelListIdx) = spIdx;
-                end
+            % Init
+            labelList = unique(labelImage);
+            labelListCount = numel(labelList);
+            scoresImage = nan(1, 1, labelCount, labelListCount); % score of the label, and all other labels
+            obj.mask = nan(labelCount, labelListCount); % contains the label of each superpixel
+            
+            % For each label, get the scores of the highest scoring pixel
+            for labelListIdx = 1 : labelListCount,
+                labelIdx = labelList(labelListIdx);
+                [~, spIdx] = max(scoresSP(:, :, labelIdx, :), [], 4);
+                scoresImage(:, :, :, labelListIdx) = scoresSP(:, :, :, spIdx);
+                obj.mask(:, labelListIdx) = spIdx;
             end
             
             % Convert outputs back to GPU if necessary
