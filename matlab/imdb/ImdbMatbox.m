@@ -107,12 +107,6 @@ classdef ImdbMatbox < ImdbCalvin
                 gStruct.class = zeros(size(gStruct.class(goodIds,:)), 'uint16');
             end
             
-            gt = gStruct.boxes(gStruct.gt,:);
-            [nR, nC] = BoxSize(gt);
-            if min(min(nR), min(nC)) < obj.minBoxSize
-                keyboard;
-            end
-            
             % Remove small boxes
             [nR, nC] = BoxSize(gStruct.boxes);
             badI = ((nR < obj.minBoxSize) | (nC < obj.minBoxSize)) & ~gStruct.gt;
