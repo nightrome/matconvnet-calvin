@@ -15,6 +15,9 @@ classdef RegionToPixel < dagnn.Layer
         oldWeightMode = true;
         replicateUnpureSPs = true;
         minPixFreq = []; % used only in getBatch
+        
+        dzdxMaxLimitLayer = [];
+        dzdxSumLimitLayer = []; %might not make any sense!
     end
     
     properties (Transient)
@@ -55,48 +58,43 @@ classdef RegionToPixel < dagnn.Layer
             % Map SP gradients to RP+GT gradients
             dzdx = regionToPixel_backward(boxCount, obj.mask, dzdy);
             
-%             % Limit maximum gradients
-%             dzdxMaxLimit = []; %boxCount / 64.0;
-%             % 2.0 crashes at batch 18
-%             % 4.0 crashes at batch 20
-%             % 8.0 crashes at batch 25
-%             % 16.0 crashes at batch 33
-%             % 32.0 crashes at batch 36
-%             % 64.0 crashes at batch 37
-%             
-%             dzdxSumLimit = []; %boxCount / 4.0;
-%             % 4.0 crashes at batch 19
-%             
-%             if ~isempty(dzdxMaxLimit)
-%                 dzdxMax = max(abs(dzdx(:)));
-%                 if dzdxMax > dzdxMaxLimit
-%                     % Report max
-%                     [y, ~] = find(squeeze(abs(dzdx)) == dzdxMax);
-%                     for i = 1 : numel(y)
-%                         fprintf('Maximum gradient at class %d: %.1f > %.1f\n', y(i), dzdxMax, dzdxMaxLimit);
-%                     end
-%                     
-%                     % Limit gradients
-%                     dzdx(dzdx >  dzdxMaxLimit) =  dzdxMaxLimit;
-%                     dzdx(dzdx < -dzdxMaxLimit) = -dzdxMaxLimit;
+            dzdxMaxLimit = obj.dzdxMaxLimitLayer;
+            dzdxSumLimit = obj.dzdxSumLimitLayer;
+            
+            if ~isempty(dzdxMaxLimit)
+                dzdxMax = max(abs(dzdx(:)));
+                    
+                % Limit gradients
+                if dzdxMax > dzdxMaxLimit
+                    dzdx(dzdx >  dzdxMaxLimit) =  dzdxMaxLimit;
+                    dzdx(dzdx < -dzdxMaxLimit) = -dzdxMaxLimit;
+                end
+                
+%                 % Report max
+%                 [y, ~] = find(squeeze(abs(dzdx)) == dzdxMax);
+%                 for i = 1 : numel(y)
+%                     fprintf('Maximum gradient at class %d: %.1f, %.1f\n', y(i), dzdxMax, dzdxMaxLimit);
 %                 end
-%             end
-%             
-%             if ~isempty(dzdxSumLimit)
-%                 dzdxSum = max(sum(abs(dzdx), 4));
-%                 if dzdxSum > dzdxSumLimit
-%                     classSums = squeeze(sum(abs(dzdx), 4));
-%                     y = find(classSums == dzdxSum);
-%                     yFactors = dzdxSumLimit ./ classSums(y);
-%                     for i = 1 : numel(y)
-%                         % Report max
-%                         fprintf('Summed gradient at class %d: %.1f > %.1f\n', y(i), dzdxSum, dzdxSumLimit);
-%                         
-%                         % Limit gradients
-%                         dzdx(:, :, y(i), :) = dzdx(:, :, y(i), :) .* yFactors(i);
-%                     end
+            end
+            
+            if ~isempty(dzdxSumLimit)
+                classSums = squeeze(sum(abs(dzdx), 4));
+                dzdxSum = max(classSums);
+                classMatches = find(classSums == dzdxSum);
+                
+                % Limit gradients
+                if dzdxSum > dzdxSumLimit
+                    classFactors = dzdxSumLimit ./ classSums(classMatches);
+                    for i = 1 : numel(classMatches)
+                        dzdx(:, :, classMatches(i), :) = dzdx(:, :, classMatches(i), :) .* classFactors(i);
+                    end
+                end
+                
+%                 % Report sum
+%                 for i = 1 : numel(classMatches)
+%                     fprintf('Summed gradient at class %d: %.1f, %.1f\n', classMatches(i), dzdxSum, dzdxSumLimit);
 %                 end
-%             end
+            end
             
             % Move outputs to GPU if necessary
             if gpuMode
