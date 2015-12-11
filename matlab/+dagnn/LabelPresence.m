@@ -7,10 +7,6 @@ classdef LabelPresence < dagnn.Layer
     %
     % Copyright by Holger Caesar, 2015
     
-    properties
-        useAllLabels = true; % only used in getBatch to define labelImage as 1:labelCount or the GT labels
-    end
-    
     properties (Transient)
         mask
     end
