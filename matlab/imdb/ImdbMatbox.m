@@ -29,7 +29,7 @@ classdef ImdbMatbox < ImdbCalvin
         meanIm
         targetClasses = [];
         posFraction = 0.25;
-        minBoxSize = 25;
+        minBoxSize = 20;
         
 %         labelMode  % Jasper: Maybe deprecated way of specifying labels as a matrix
 %         or vector (matrix allows multiple labels). Functions dealing with this are
