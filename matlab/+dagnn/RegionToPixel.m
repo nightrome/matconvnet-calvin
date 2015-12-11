@@ -15,9 +15,6 @@ classdef RegionToPixel < dagnn.Layer
         oldWeightMode = true;
         replicateUnpureSPs = true;
         minPixFreq = []; % used only in getBatch
-        
-        dzdxMaxLimitLayer = [];
-        dzdxSumLimitLayer = []; %might not make any sense!
     end
     
     properties (Transient)
@@ -57,44 +54,6 @@ classdef RegionToPixel < dagnn.Layer
             
             % Map SP gradients to RP+GT gradients
             dzdx = regionToPixel_backward(boxCount, obj.mask, dzdy);
-            
-            dzdxMaxLimit = obj.dzdxMaxLimitLayer;
-            dzdxSumLimit = obj.dzdxSumLimitLayer;
-            
-            if ~isempty(dzdxMaxLimit)
-                dzdxMax = max(abs(dzdx(:)));
-                    
-                % Limit gradients
-                if dzdxMax > dzdxMaxLimit
-                    dzdx(dzdx >  dzdxMaxLimit) =  dzdxMaxLimit;
-                    dzdx(dzdx < -dzdxMaxLimit) = -dzdxMaxLimit;
-                end
-                
-%                 % Report max
-%                 [y, ~] = find(squeeze(abs(dzdx)) == dzdxMax);
-%                 for i = 1 : numel(y)
-%                     fprintf('Maximum gradient at class %d: %.1f, %.1f\n', y(i), dzdxMax, dzdxMaxLimit);
-%                 end
-            end
-            
-            if ~isempty(dzdxSumLimit)
-                classSums = squeeze(sum(abs(dzdx), 4));
-                dzdxSum = max(classSums);
-                classMatches = find(classSums == dzdxSum);
-                
-                % Limit gradients
-                if dzdxSum > dzdxSumLimit
-                    classFactors = dzdxSumLimit ./ classSums(classMatches);
-                    for i = 1 : numel(classMatches)
-                        dzdx(:, :, classMatches(i), :) = dzdx(:, :, classMatches(i), :) .* classFactors(i);
-                    end
-                end
-                
-%                 % Report sum
-%                 for i = 1 : numel(classMatches)
-%                     fprintf('Summed gradient at class %d: %.1f, %.1f\n', classMatches(i), dzdxSum, dzdxSumLimit);
-%                 end
-            end
             
             % Move outputs to GPU if necessary
             if gpuMode
