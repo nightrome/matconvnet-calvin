@@ -111,7 +111,7 @@ else
     weightsSP = weightsSP * boxCount;
     
     % Reshape and append label weights
-    labelsSP = reshape(labelsSP, 1, 1, 1, []);
+    labelsSP  = reshape(labelsSP,  1, 1, 1, []);
     weightsSP = reshape(weightsSP, 1, 1, 1, []);
     
     % Final checks (only in train, in test NANs are fine)
