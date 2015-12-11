@@ -14,7 +14,7 @@ classdef WeightedLoss < dagnn.Loss
     % Copyright by Holger Caesar, 2015
     
     properties (Transient)
-        numBatches = 0;
+        numSubBatches = 0;
     end
     
     methods
@@ -35,10 +35,10 @@ classdef WeightedLoss < dagnn.Loss
             
             % Update statistics
             n = obj.numAveraged;
-            m = n + size(inputs{1}, 4); % only works when average sum(instanceWeights)~ 1
+            m = n + size(inputs{1}, 4);
             obj.average = (n * obj.average + gather(outputs{1})) / m;
             obj.numAveraged = m;
-            obj.numBatches = obj.numBatches + 1;
+            obj.numSubBatches = obj.numSubBatches + 1;
             assert(~isnan(obj.average));
         end
         
@@ -57,7 +57,7 @@ classdef WeightedLoss < dagnn.Loss
         
         function reset(obj)
             reset@dagnn.Loss(obj);
-            obj.numBatches = 0;
+            obj.numSubBatches = 0;
         end
     end
 end
