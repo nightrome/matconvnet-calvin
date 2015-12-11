@@ -73,6 +73,7 @@ classdef CalvinNN < handle
         % Declarations for methods that are in separate files
         convertNetwork(obj, net);
         convertNetworkToFastRcnn(obj);
+        convertNetworkToFastRcnn2(obj, lastConvPoolName, finalFCLayerName);
         init(obj, varargin);
         saveState(obj, fileName);
         train(obj);
