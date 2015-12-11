@@ -35,7 +35,7 @@ classdef WeightedLoss < dagnn.Loss
             
             % Update statistics
             n = obj.numAveraged;
-            m = n + size(inputs{1}, 4);
+            m = n + size(inputs{1}, 4); % only works when average sum(instanceWeights)~ 1
             obj.average = (n * obj.average + gather(outputs{1})) / m;
             obj.numAveraged = m;
             obj.numBatches = obj.numBatches + 1;
