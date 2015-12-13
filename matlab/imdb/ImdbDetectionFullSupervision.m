@@ -43,12 +43,12 @@ classdef ImdbDetectionFullSupervision < ImdbMatbox
                 % Assign elements to cell array for use in training the network
                 numElements = obj.boxesPerIm;
                 if obj.boxRegress
-                    batchData{10} = regressionFactors;
+                    batchData{10} = regressionFactors';
                     batchData{9} = 'regressionTargets';
                 end
                 batchData{8} = oriImSize;
                 batchData{7} = 'oriImSize';
-                batchData{6} = boxes;
+                batchData{6} = boxes';
                 batchData{5} = 'boxes';
                 batchData{4} = labels;
                 batchData{3} = 'label';
@@ -59,7 +59,7 @@ classdef ImdbDetectionFullSupervision < ImdbMatbox
                 numElements = size(gStruct.boxes,1);
                 batchData{6} = oriImSize;
                 batchData{5} = 'oriImSize';
-                batchData{4} = gStruct.boxes;
+                batchData{4} = gStruct.boxes';
                 batchData{3} = 'boxes';
                 batchData{2} = image;
                 batchData{1} = 'input';
