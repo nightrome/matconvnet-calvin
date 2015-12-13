@@ -23,7 +23,7 @@ classdef RoiPooling < dagnn.Layer
             assert(numel(inputs) == 3);
             convIm    = inputs{1};
             oriImSize = inputs{2};
-            boxes     = inputs{3};
+            boxes     = inputs{3}';
             
             % Move inputs from GPU if necessary
             gpuMode = isa(convIm, 'gpuArray');
@@ -56,7 +56,7 @@ classdef RoiPooling < dagnn.Layer
             % Get inputs
             assert(numel(derOutputs) == 1);
             convIm = inputs{1};
-            boxes  = inputs{3};
+            boxes  = inputs{3}';
             dzdy = derOutputs{1};
             boxCount = size(boxes, 1);
             convImSize = size(convIm);
