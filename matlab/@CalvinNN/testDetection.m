@@ -33,7 +33,7 @@ scores = permute(scoresStruct.value, [4 3 2 1]);
 inputNames = inputs(1:2:end);
 [~, boxI] = ismember('boxes', inputNames);
 boxI = boxI * 2; % Index of actual argument
-boxes = inputs{boxI};
+boxes = inputs{boxI}';
 
 % Get regression targets for boxes
 if imdb.boxRegress

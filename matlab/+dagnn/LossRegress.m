@@ -28,6 +28,9 @@ classdef LossRegress < dagnn.Loss
             % empty)
 %              if any(cellfun(@isempty, inputs)), return ; end
             
+            % Give up if there are no regression targets
+            if isempty(inputs{2}), return; end
+            
             % clear inputs if not needed anymore
             for v = in
                 net.numPendingVarRefs(v) = net.numPendingVarRefs(v) - 1 ;
