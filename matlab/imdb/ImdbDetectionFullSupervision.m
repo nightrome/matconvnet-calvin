@@ -86,7 +86,7 @@ classdef ImdbDetectionFullSupervision < ImdbMatbox
             % Loads an image from disk, resizes it, and subtracts the mean image
             image = single(imread([obj.imageDir obj.data.(obj.datasetMode){batchIdx} obj.imExt]));
             oriImSize = double(size(image));
-            if size(obj.meanIm, 1) == 1
+            if numel(obj.meanIm) == 3
                 for colourI = 1:3
                     image(:,:,colourI) = image(:,:,colourI) - obj.meanIm(colourI);
                 end
