@@ -19,10 +19,17 @@ function Y = vl_nnloss_regress(X, t, dzdy, varargin)
 %
 % Jasper - 2015
 
-% Determine loss 
+% Set standard parameters
+opts.instanceWeights = []; 
 opts.loss = 'L2';
 opts.smoothMaxDiff = 1;
 opts = vl_argparse(opts, varargin);
+
+if isempty(opts.instanceWeights)
+    instanceWeights = ones(size(X, ndims(X)), 1, 'single');
+else
+    instanceWeights = opts.instanceWeights;
+end
 
 % Display warning once
 warning('NotTested:regressloss', ...
@@ -66,15 +73,16 @@ else
     % Get derivatives w.r.t. loss function
     switch lower(opts.loss)
         case 'l2'
-            Y = permute(dzdy * (X-t), [4 3 2 1]); 
+            Y = dzdy * (X-t);
         case 'l1'
-            Y = permute(dzdy * sign(X-t), [4 3 2 1]);
+            Y = dzdy * sign(X-t);
         case 'smooth'
             diff = X-t;
             diff(diff > opts.smoothMaxDiff) = opts.smoothMaxDiff;
             diff(diff < -opts.smoothMaxDiff) = -opts.smoothMaxDiff;
-            Y = permute(dzdy * (diff), [4 3 2 1]); 
+            Y = dzdy * (diff);
         otherwise
             error('Incorrect loss: %s', opts.loss);
     end
+    
 end

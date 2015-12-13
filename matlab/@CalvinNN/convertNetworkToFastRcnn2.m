@@ -34,7 +34,7 @@ if ~isempty(finalFCLayerName)
     obj.net.addLayer(regressName, dagnn.Conv('size', finalFCLayerSize), inputVars, {'regressionScore'}, {'regressf', 'regressb'});
     fc8RegressIdx = obj.net.getLayerIndex(regressName);
     newParams = obj.net.layers(fc8RegressIdx).block.initParams();
-    obj.net.params(obj.net.layers(fc8RegressIdx).paramIndexes(1)).value = newParams{1} / std(newParams{1}(:)) * 0.001;
+    obj.net.params(obj.net.layers(fc8RegressIdx).paramIndexes(1)).value = newParams{1} / std(newParams{1}(:)) * 0.001; % Girshick initialization with std of 0.001
     obj.net.params(obj.net.layers(fc8RegressIdx).paramIndexes(2)).value = newParams{2};
     
     % Commented out Girshick style learning rates
