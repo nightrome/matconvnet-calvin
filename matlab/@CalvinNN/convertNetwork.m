@@ -10,10 +10,12 @@ function convertNetwork(obj, net)
 net = dagnn.DagNN.fromSimpleNN(net);
 
 % Remove unused/incorrect fields from normalization
-net.meta.normalization = rmfield(net.meta.normalization, 'keepAspect');
-net.meta.normalization = rmfield(net.meta.normalization, 'border');
-net.meta.normalization = rmfield(net.meta.normalization, 'imageSize');
-net.meta.normalization = rmfield(net.meta.normalization, 'interpolation');
+if isfield(net.meta, 'normalization');
+    net.meta.normalization = rmfield(net.meta.normalization, 'keepAspect');
+    net.meta.normalization = rmfield(net.meta.normalization, 'border');
+    net.meta.normalization = rmfield(net.meta.normalization, 'imageSize');
+    net.meta.normalization = rmfield(net.meta.normalization, 'interpolation');
+end
 
 % Add dropout layers after relu6 and relu7
 dropout6Layer = dagnn.DropOut();
