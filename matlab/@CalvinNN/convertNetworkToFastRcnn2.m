@@ -51,7 +51,7 @@ if ~isempty(finalFCLayerName)
 %     obj.net.params(obj.net.layers(fc8RegressIdx).paramIndexes(2)).learningRate = 2;
 %     obj.net.params(obj.net.layers(fc8RegressIdx).paramIndexes(1)).weightDecay = 1;
 %     obj.net.params(obj.net.layers(fc8RegressIdx).paramIndexes(2)).weightDecay = 0;
-    obj.net.addLayer('regressLoss', dagnn.RegressLoss('loss', 'Smooth', 'smoothMaxDiff', 1), ...
+    obj.net.addLayer('regressLoss', dagnn.LossRegress('loss', 'Smooth', 'smoothMaxDiff', 1), ...
         {'regressionScore', 'regressionTargets', 'instanceWeights'}, 'regressObjective');
 end
 

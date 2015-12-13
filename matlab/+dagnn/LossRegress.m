@@ -1,4 +1,4 @@
-classdef RegressLoss < dagnn.Loss
+classdef LossRegress < dagnn.Loss
     properties
         smoothMaxDiff = 1; % For smooth-loss (see vl_nnloss_regress)
     end
@@ -101,7 +101,7 @@ classdef RegressLoss < dagnn.Loss
             derParams = {} ;
         end
         
-        function obj = RegressLoss(varargin)
+        function obj = LossRegress(varargin)
             obj.load(varargin) ;
         end
     end
