@@ -1,7 +1,6 @@
-classdef RegressLoss < dagnn.Loss
-    properties
-        smoothMaxDiff = 1; % For smooth-loss (see vl_nnloss_regress)
-    end
+classdef LossCalvin < dagnn.Loss
+    % Extension of Loss which *forces* the use of instanceWeights: If instanceWeights are
+    % present in the network as a variable, it will use them.
     
     methods
         function forwardAdvanced(obj, layer)
@@ -26,6 +25,7 @@ classdef RegressLoss < dagnn.Loss
             % subnetworks by specifying only some of the variables as input --
             % however it is somewhat dangerous as inputs could be legitimaly
             % empty)
+            % Jasper: Indeed. Removed this option to enable not using instanceWeights
 %              if any(cellfun(@isempty, inputs)), return ; end
             
             % clear inputs if not needed anymore
@@ -45,64 +45,37 @@ classdef RegressLoss < dagnn.Loss
             [net.vars(out).value] = deal(outputs{:}) ;
         end
         
-        function outputs = forward(obj, inputs, params) %#ok<INUSD>
-            % Deal with NaNs in target scores which should be ignored
-            regressionTargets = inputs{2};
-            isnanMask = isnan(regressionTargets);
-            regressionTargets(isnanMask) = 0;
-            regressionScore = squeeze(inputs{1});
-            assert(isequal(size(regressionTargets), size(regressionScore)));
-            regressionScore(isnanMask) = 0;
-            
-            % Get instanceWeights if specified
+        function outputs = forward(obj, inputs, params)            
+            % Get instanceWeights. For safety give error if unspecified
             inputNames = obj.net.layers(obj.layerIndex).inputs;
             [tf, iwInd] = ismember('instanceWeights', inputNames);
             if tf
                 instanceWeights = inputs{iwInd};
             else
-                instanceWeights = [];
+                error('Loss layer %d ignores instanceWeights.\n Set instanceWeight as input variable even if unused.', obj.layerIndex);                
             end
             
-            % Get loss
-            outputs{1} = vl_nnloss_regress(regressionScore, regressionTargets, [], ... 
-                'loss', obj.loss, 'smoothMaxDiff', obj.smoothMaxDiff, 'instanceWeights', instanceWeights);
-            
+            outputs{1} = vl_nnloss(inputs{1}, inputs{2}, [], 'loss', obj.loss, 'instanceWeights', instanceWeights);
             n = obj.numAveraged ;
             m = n + size(inputs{1},4) ;
             obj.average = (n * obj.average + gather(outputs{1})) / m ;
             obj.numAveraged = m ;
         end
         
-        function [derInputs, derParams] = backward(obj, inputs, params, derOutputs) %#ok<INUSL>
-            % Deal with NaNs in target scores which should be ignored
-            regressionTargets = inputs{2};
-            isnanMask = isnan(regressionTargets);
-            regressionTargets(isnanMask) = 0;
-            regressionScore = squeeze(inputs{1});
-            assert(isequal(size(regressionTargets), size(regressionScore)));
-            regressionScore(isnanMask) = 0;
-            
-            % Get instanceWeights if specified
+        function [derInputs, derParams] = backward(obj, inputs, params, derOutputs)
+            % Get instanceWeights
             inputNames = obj.net.layers(obj.layerIndex).inputs;
-            [tf, iwInd] = ismember('instanceWeights', inputNames);
-            if tf
-                instanceWeights = inputs{iwInd};
-            else
-                instanceWeights = [];
-            end
-            
-            % Get gradient
-            derInputs{1} = vl_nnloss_regress(regressionScore,regressionTargets, derOutputs{1}, ...
-                'loss', obj.loss, 'smoothMaxDiff', obj.smoothMaxDiff, 'instanceWeights', instanceWeights);
+            [~, iwInd] = ismember('instanceWeights', inputNames);
+            instanceWeights = inputs{iwInd};
 
-            derInputs{1} = reshape(derInputs{1}, size(inputs{1}));
-            derInputs{2} = [] ;
-            derInputs{3} = [] ;
-            derParams = {} ;
+            derInputs{1} = vl_nnloss(inputs{1}, inputs{2}, derOutputs{1}, 'loss', obj.loss, 'instanceWeights', instanceWeights);
+            derInputs{2} = [];
+            derInputs{3} = []; 
+            derParams = {};
         end
         
-        function obj = RegressLoss(varargin)
-            obj.load(varargin) ;
+        function obj = LossCalvin(varargin)
+            obj = obj@dagnn.Loss(varargin{:});
         end
     end
 end

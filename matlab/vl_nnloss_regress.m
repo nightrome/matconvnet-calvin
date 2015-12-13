@@ -15,8 +15,6 @@ function Y = vl_nnloss_regress(X, t, dzdy, varargin)
 % while having more sensible gradient updates close to the target. The version here
 % is more flexible.
 %
-% WEIGHTING NOT IMPLEMENTED YET!
-%
 % Jasper - 2015
 
 % Set standard parameters
@@ -43,9 +41,9 @@ if nargin == 2 || isempty(dzdy)
     switch lower(opts.loss)
         case 'l2'
             diff = X - t;
-            Y = sum(diff .* diff / 2, ndims(X)); % Sum over last dimension
+            Y = diff .* diff / 2;
         case 'l1'
-            Y = sum(abs(X - t), ndims(X));
+            Y = abs(X - t);
         case 'smooth'
             diff = X - t;
             
@@ -62,13 +60,17 @@ if nargin == 2 || isempty(dzdy)
             nonSquaredPart(maskTooLow)  = -diff(maskTooLow)  - opts.smoothMaxDiff;
             nonSquaredPart = nonSquaredPart * opts.smoothMaxDiff; % Derivative of loss is opts.smoothMaxDiff
             
-            totalLoss = squaredPart + nonSquaredPart;
-            Y = sum(totalLoss, ndims(X));
-            
+            Y = squaredPart + nonSquaredPart;            
         otherwise
             error('Incorrect loss: %s', opts.loss);
     end
-    Y = sum(Y); % Y = instanceWeights(:)' * t(:) ;
+    % Sum loss in all dimensions but the last
+    for i=1:ndims(Y)-1
+        Y = sum(Y, i);
+    end
+    
+    % Weight loss using instanceWeights
+    Y = instanceWeights(:)' * Y(:);
 else
     % Get derivatives w.r.t. loss function
     switch lower(opts.loss)
@@ -84,5 +86,13 @@ else
         otherwise
             error('Incorrect loss: %s', opts.loss);
     end
+    
+    % Get instanceWeights in the right shape (aligned according to last dimension)
+    iwSize = ones(1, ndims(Y));
+    iwSize(end) = length(instanceWeights);
+    instanceWeights = reshape(instanceWeights, iwSize);
+    
+    % Perform instance weighting
+    Y = bsxfun(@times, Y, instanceWeights);
     
 end

@@ -5,6 +5,7 @@ function convertNetworkToFastRcnn2(obj, lastConvPoolName, finalFCLayerName)
 %
 % Copyright by Holger Caesar, 2015
 % Updated by Jasper Uijlings: Extra flexibility and possible bounding box regression
+% Also added instanceWeights to loss layer
 
 if nargin < 2 || isempty(lastConvPoolName)
     lastConvPoolName = 'pool5';
@@ -12,6 +13,14 @@ end
 
 if nargin < 3 
     finalFCLayerName = [];
+end
+
+% Add instanceWeights to loss layer. Note that this field remains empty when not
+% given as input. So the loss layers should ignore empty instanceWeights.
+softmaxInputs = obj.net.layers(obj.net.getLayerIndex('softmaxloss')).inputs;
+if ~ismember('instanceWeights', softmaxInputs)
+    softmaxInputs{end+1} = 'instanceWeights';
+    obj.net.setLayerInputs('softmaxloss', softmaxInputs);
 end
 
 % Replace pooling layer of last convolution layer with roiPooling
@@ -43,7 +52,7 @@ if ~isempty(finalFCLayerName)
 %     obj.net.params(obj.net.layers(fc8RegressIdx).paramIndexes(1)).weightDecay = 1;
 %     obj.net.params(obj.net.layers(fc8RegressIdx).paramIndexes(2)).weightDecay = 0;
     obj.net.addLayer('regressLoss', dagnn.RegressLoss('loss', 'Smooth', 'smoothMaxDiff', 1), ...
-        {'regressionScore', 'regressionTargets'}, 'regressObjective');
+        {'regressionScore', 'regressionTargets', 'instanceWeights'}, 'regressObjective');
 end
 
 % If required, insert freeform pooling layer after roipool

@@ -3,6 +3,7 @@ classdef ImdbDetectionFullSupervision < ImdbMatbox
         negOverlapRange = [0.1 0.5];
         boxesPerIm = 64;
         boxRegress = true;
+        instanceWeighting = false;
     end
     methods
         function obj = ImdbDetectionFullSupervision(imageDir, imExt, matboxDir, filenames, datasetIdx, meanIm)
@@ -42,18 +43,31 @@ classdef ImdbDetectionFullSupervision < ImdbMatbox
 
                 % Assign elements to cell array for use in training the network
                 numElements = obj.boxesPerIm;
+                
+                numBatchFields = 2 * (4 + obj.boxRegress + obj.instanceWeighting);
+                batchData = cell(numBatchFields, 1);
+                idx = 1;
+                batchData{idx} = 'input';       idx = idx + 1;
+                batchData{idx} = image;         idx = idx + 1;
+                batchData{idx} = 'label';       idx = idx + 1;
+                batchData{idx} = labels;        idx = idx + 1;
+                batchData{idx} = 'boxes';       idx = idx + 1;
+                batchData{idx} = boxes';        idx = idx + 1;
+                batchData{idx} = 'oriImSize';   idx = idx + 1;
+                batchData{idx} = oriImSize;     idx = idx + 1;
+                
                 if obj.boxRegress
-                    batchData{10} = regressionFactors';
-                    batchData{9} = 'regressionTargets';
+                    batchData{idx} = 'regressionTargets';   idx = idx + 1;
+                    batchData{idx} = regressionFactors';    idx = idx + 1;                    
                 end
-                batchData{8} = oriImSize;
-                batchData{7} = 'oriImSize';
-                batchData{6} = boxes';
-                batchData{5} = 'boxes';
-                batchData{4} = labels;
-                batchData{3} = 'label';
-                batchData{2} = image;
-                batchData{1} = 'input';
+                if obj.instanceWeighting
+                    instanceWeights = overlapScores;
+                    instanceWeights(labels == 1) = 1;
+                    instanceWeights = reshape(instanceWeights, [1 1 1 length(instanceWeights)]); % VL-Feat way :-S
+                    batchData{idx} = 'instanceWeights';     idx = idx + 1;
+                    batchData{idx} = instanceWeights;       %idx = idx + 1;
+                end
+                
             else
                 % Test set. Get all boxes
                 numElements = size(gStruct.boxes,1);
@@ -149,6 +163,10 @@ classdef ImdbDetectionFullSupervision < ImdbMatbox
         
         function SetBoxRegress(obj, doRegress)
             obj.boxRegress = doRegress;
+        end
+        
+        function SetInstanceWeighting(obj, doInstanceWeighting)
+            obj.instanceWeighting = doInstanceWeighting;
         end
     end % End methods
 end % End classdef
