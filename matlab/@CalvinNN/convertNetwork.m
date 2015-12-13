@@ -22,7 +22,7 @@ net.insertLayer('relu6', 'fc7', 'dropout6', dropout6Layer);
 net.insertLayer('relu7', 'fc8', 'dropout7', dropout7Layer);
 
 % Replace softmax with softmaxloss for training
-softmaxlossBlock = dagnn.Loss('loss', 'softmaxlog');
+softmaxlossBlock = dagnn.LossCalvin('loss', 'softmaxlog');
 net.replaceLayer('prob', 'softmaxloss', softmaxlossBlock, 'label');
 
 % Adapt number of classes in softmaxloss layer from 1000 to numClasses
