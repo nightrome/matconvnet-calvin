@@ -8,10 +8,9 @@ classdef ImdbCalvin < handle
     properties
         numClasses
         datasetMode % train, val or test
+        epoch
 
         data        % data.train data.val data.test
-        
-        flipLR = false;  % Flag if data will be flipped or not
     end
     
     methods (Abstract)
@@ -21,7 +20,6 @@ classdef ImdbCalvin < handle
     end
     
     methods
-        
         function setDatasetMode(obj, datasetMode)
             % 'train', 'val', or 'test' set
             if ~ismember(datasetMode, {'train', 'val', 'test'}),
@@ -41,11 +39,8 @@ classdef ImdbCalvin < handle
             end
         end
         
-        
-        function switchFlipLR(obj)
-            % Switch the flipLR switch
-            obj.flipLR = mod(obj.flipLR+1, 2);                
+        function initEpoch(obj, epoch)
+            obj.epoch = epoch;
         end
     end
 end
-
