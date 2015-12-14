@@ -19,7 +19,6 @@ classdef LossWeighted < dagnn.Loss
     
     methods
         function outputs = forward(obj, inputs, params) %#ok<INUSD>
-            % Added a new input here called "lossInstanceWeights"
             
             % Get inputs
             assert(numel(inputs) == 3);
@@ -44,9 +43,14 @@ classdef LossWeighted < dagnn.Loss
         end
         
         function [derInputs, derParams] = backward(obj, inputs, params, derOutputs) %#ok<INUSL>
-            assert(numel(derOutputs) == 1);
             
-            derInputs{1} = vl_nnloss(inputs{1}, inputs{2}, derOutputs{1}, 'loss', obj.loss, 'instanceWeights', inputs{3});
+            % Get inputs
+            assert(numel(derOutputs) == 1);
+            scores = inputs{1};
+            labels = inputs{2};
+            instanceWeights = inputs{3};
+            
+            derInputs{1} = vl_nnloss(scores, labels, derOutputs{1}, 'loss', obj.loss, 'instanceWeights', instanceWeights);
             derInputs{2} = [];
             derInputs{3} = [];
             derParams = {};
