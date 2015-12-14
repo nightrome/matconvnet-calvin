@@ -84,24 +84,24 @@ classdef ImdbDetectionFullSupervision < ImdbMatbox
         function [image, oriImSize] = LoadImage(obj, batchIdx, gpuMode)
             % image = LoadImage(obj, batchIdx)
             % Loads an image from disk, resizes it, and subtracts the mean image
-            image = single(imread([obj.imageDir obj.data.(obj.datasetMode){batchIdx} obj.imExt]));
-            oriImSize = double(size(image));
+            imageT = single(imread([obj.imageDir obj.data.(obj.datasetMode){batchIdx} obj.imExt]));
+            oriImSize = double(size(imageT));
             if numel(obj.meanIm) == 3
                 for colourI = 1:3
-                    image(:,:,colourI) = image(:,:,colourI) - obj.meanIm(colourI);
+                    imageT(:,:,colourI) = imageT(:,:,colourI) - obj.meanIm(colourI);
                 end
             else
-                image = image - imresize(obj.meanIm, [oriImSize(1) oriImSize(2)]); % Subtract mean im
+                imageT = imageT - imresize(obj.meanIm, [oriImSize(1) oriImSize(2)]); % Subtract mean im
             end
             
             resizeFactor = 1000 / max(oriImSize(1:2));
 %             resizeFactorMin = 600 / min(oriImSize(1:2));
 %             resizeFactor = min(resizeFactorMin, resizeFactorMax);
             if gpuMode
-                image = gpuArray(image);
+                image = gpuArray(imageT);
                 image = imresize(image, resizeFactor);
             else
-                image = imresize(image, resizeFactor, 'bilinear', 'antialiasing', false);
+                image = imresize(imageT, resizeFactor, 'bilinear', 'antialiasing', false);
             end
             
 %             % Subtract mean image
