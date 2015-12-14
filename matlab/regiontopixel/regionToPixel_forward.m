@@ -27,7 +27,6 @@ overlapListAll = regionToPixelAux.overlapListAll;
 % Init
 labelCount = size(scoresAll, 1);
 spCount = size(overlapListAll, 2);
-boxCount = size(scoresAll, 2);
 scoresSP = nan(labelCount, spCount, 'single'); % Note that zeros will be counted anyways!
 mapSP = nan(labelCount, spCount);
 
@@ -104,11 +103,6 @@ else
     if oldWeightMode,
         weightsSP = weightsSP ./ sum(weightsSP);
     end;
-    
-    % Renormalize to (average weight of) boxCount
-    % Note: The accumulate_gradients function divides by boxCount again,
-    % s.t. each image has an average weight of boxCount
-    weightsSP = weightsSP * boxCount;
     
     % Reshape and append label weights
     labelsSP  = reshape(labelsSP,  1, 1, 1, []);

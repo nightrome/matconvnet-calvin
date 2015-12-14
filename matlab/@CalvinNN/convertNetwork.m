@@ -24,14 +24,14 @@ net.insertLayer('relu6', 'fc7', 'dropout6', dropout6Layer);
 net.insertLayer('relu7', 'fc8', 'dropout7', dropout7Layer);
 
 % Replace softmax with softmaxloss for training
-softmaxlossBlock = dagnn.LossCalvin('loss', 'softmaxlog');
+softmaxlossBlock = dagnn.LossWeighted('loss', 'softmaxlog');
 net.replaceLayer('prob', 'softmaxloss', softmaxlossBlock, 'label');
 
 % Adapt number of classes in softmaxloss layer from 1000 to numClasses
 fc8Idx = net.getLayerIndex('fc8');
 net.layers(fc8Idx).block.size(4) = obj.imdb.numClasses;
 newParams = net.layers(fc8Idx).block.initParams();
-net.params(net.layers(fc8Idx).paramIndexes(1)).value = newParams{1};
+net.params(net.layers(fc8Idx).paramIndexes(1)).value = newParams{1} / std(newParams{1}(:)) * 0.01; % Girshick initialization
 net.params(net.layers(fc8Idx).paramIndexes(2)).value = newParams{2}';
 
 % Rename input and output
