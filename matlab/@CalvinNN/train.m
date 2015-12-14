@@ -21,8 +21,8 @@ for epoch=start+1:obj.nnOpts.numEpochs
     state.epoch = epoch;
     state.learningRate = obj.nnOpts.learningRate(min(epoch, numel(obj.nnOpts.learningRate)));
     
-    % Toggle image flipping mode on and off
-    obj.imdb.switchFlipLR();
+    % Set the current epoch in imdb
+    obj.imdb.initEpoch(epoch);
     
     % Do training and validation
     datasetModes = {'train', 'val'};

@@ -31,6 +31,8 @@ classdef ImdbMatbox < ImdbCalvin
         posFraction = 0.25;
         minBoxSize = 20;
         
+        flipLR = false;  % Flag if data will be flipped or not
+        
 %         labelMode  % Jasper: Maybe deprecated way of specifying labels as a matrix
 %         or vector (matrix allows multiple labels). Functions dealing with this are
 %         commented out as well at the end of this file.
@@ -273,6 +275,17 @@ classdef ImdbMatbox < ImdbCalvin
 %             end
 %         end
 
+        function initEpoch(obj, epoch)
+            initEpoch@ImdbCalvin(obj, epoch);
+            
+            % Flip image vertically at the start of each epoch
+            obj.switchFlipLR();
+        end
+
+        function switchFlipLR(obj)
+            % Switch the flipLR switch
+            obj.flipLR = mod(obj.flipLR+1, 2);      
+        end
     end
 end
 
