@@ -50,7 +50,7 @@ classdef ImdbDetectionFullSupervision < ImdbMatbox
                 batchData{idx} = 'input';       idx = idx + 1;
                 batchData{idx} = image;         idx = idx + 1;
                 batchData{idx} = 'label';       idx = idx + 1;
-                batchData{idx} = labels;        idx = idx + 1;
+                batchData{idx} = labels';       idx = idx + 1;
                 batchData{idx} = 'boxes';       idx = idx + 1;
                 batchData{idx} = boxes';        idx = idx + 1;
                 batchData{idx} = 'oriImSize';   idx = idx + 1;
