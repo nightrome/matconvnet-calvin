@@ -1,8 +1,14 @@
 classdef RoiPooling < dagnn.Layer
     % Region of interest pooling layer.
     %
-    % inputs are: convMaps, oriImSize, boxes
+    % inputs are: convIm, oriImSize, boxes
+    %   convIm:     height x width x channels x 1
+    %   oriImSize:  1 x 3
+    %   boxes:      1 x 1 x 4 x boxCount [x1, y1, x2, y2]
+    %
     % outputs are: rois, masks
+    %   rois:       poolSizeY x poolSizeX x channelCount x boxCount
+    %   masks:      poolSizeY x poolSizeX x channelCount x boxCount
     %
     % Copyright by Holger Caesar, 2015
     
