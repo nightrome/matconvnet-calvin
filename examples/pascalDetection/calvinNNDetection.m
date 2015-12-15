@@ -1,16 +1,15 @@
 %% function calvinNNDetection
 
-global MYDATADIR
-global DATAopts
-global USEGPU
+global MYDATADIR        % Directory of datasets
+global DATAopts         % Database specific paths
+global USEGPU           % Set in startup.m. Use GPU or not.
 
 %% Set training and test set
 trainName = 'trainval';
 testName = 'test';
 
 
-%% Setup VOC data (should be done using original VOC code). Here is minimal working example
-% DATAopts = VOCinit(2007); % Jasper way
+%% Setup VOC data (should be done using original VOC code). Below is minimal working example
 DATAopts.dataset = 'VOC2007';
 DATAopts.datadir = [MYDATADIR 'VOCdevkit/' DATAopts.dataset '/'];
 DATAopts.resultsPath = [DATAopts.datadir 'Results/'];
@@ -65,7 +64,7 @@ end
 
 % output path
 nnOpts.expDir = [DATAopts.resultsPath ...
-    sprintf('FastRcnnMatconvnet/CalvinTwoImsGirshickGRegGParamGinitRegGinitFC8IW/')]
+    sprintf('FastRcnnMatconvnet/CalvinDetectionRun/')]
 
 % Start from pretrained network
 net = load([MYDATADIR 'MatconvnetModels/imagenet-vgg-f.mat']);
@@ -99,16 +98,6 @@ ImdbPascal = ImdbDetectionFullSupervision(DATAopts.imgpath(1:end-6), ...        
 %% Create calvinNN CNN class          
 calvinn = CalvinNN(net, ImdbPascal, nnOpts);
 calvinn.convertNetworkToFastRcnn2([], 'fc8');
-
-%% Set Girshick learning rates and biases
-for i=1:2
-    calvinn.net.params(i).learningRate = 0;
-    calvinn.net.params(i).weightDecay = 0;
-end
-for i=4:2:18
-    calvinn.net.params(i).learningRate = 2;
-    calvinn.net.params(i).weightDecay = 0;
-end
 
 %%%%%%%%%%%%%
 %% Train

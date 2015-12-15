@@ -15,7 +15,7 @@ if nargin < 3
     finalFCLayerName = [];
 end
 
-% Add instanceWeights to loss layer. Note that this field remains empty when not
+%% Add instanceWeights to loss layer. Note that this field remains empty when not
 % given as input. So the loss layers should ignore empty instanceWeights.
 softmaxInputs = obj.net.layers(obj.net.getLayerIndex('softmaxloss')).inputs;
 if ~ismember('instanceWeights', softmaxInputs)
@@ -23,7 +23,8 @@ if ~ismember('instanceWeights', softmaxInputs)
     obj.net.setLayerInputs('softmaxloss', softmaxInputs);
 end
 
-% Replace pooling layer of last convolution layer with roiPooling
+
+%% Replace pooling layer of last convolution layer with roiPooling
 lastConvPoolIdx = obj.net.getLayerIndex(lastConvPoolName);
 roiPoolName = ['roi' lastConvPoolName];
 firstFCIdx = obj.net.layers(lastConvPoolIdx).outputIndexes;
@@ -33,7 +34,7 @@ roiPoolSize = obj.net.layers(firstFCIdx).block.size(1:2);
 roiPoolBlock = dagnn.RoiPooling('poolSize', roiPoolSize);
 obj.net.replaceLayer(lastConvPoolName, roiPoolName, roiPoolBlock, {'oriImSize', 'boxes'}, {'roiPoolMask'});
 
-% Add bounding box regression layer
+%% Add bounding box regression layer
 if ~isempty(finalFCLayerName)
     finalFCLayerIdx = obj.net.getLayerIndex(finalFCLayerName);
     inputVars = obj.net.layers(finalFCLayerIdx).inputs;
@@ -46,16 +47,26 @@ if ~isempty(finalFCLayerName)
     obj.net.params(obj.net.layers(fc8RegressIdx).paramIndexes(1)).value = newParams{1} / std(newParams{1}(:)) * 0.001; % Girshick initialization with std of 0.001
     obj.net.params(obj.net.layers(fc8RegressIdx).paramIndexes(2)).value = newParams{2};
     
-    % Commented out Girshick style learning rates
-%     obj.net.params(obj.net.layers(fc8RegressIdx).paramIndexes(1)).learningRate = 1;
-%     obj.net.params(obj.net.layers(fc8RegressIdx).paramIndexes(2)).learningRate = 2;
-%     obj.net.params(obj.net.layers(fc8RegressIdx).paramIndexes(1)).weightDecay = 1;
-%     obj.net.params(obj.net.layers(fc8RegressIdx).paramIndexes(2)).weightDecay = 0;
     obj.net.addLayer('regressLoss', dagnn.LossRegress('loss', 'Smooth', 'smoothMaxDiff', 1), ...
         {'regressionScore', 'regressionTargets', 'instanceWeights'}, 'regressObjective');
 end
 
-% If required, insert freeform pooling layer after roipool
+%% Set correct learning rates and biases (Girshick style)
+% Biases have learning rate of 2 and no weight decay
+for lI=1:length(obj.net.layers)
+    if ~isempty(obj.net.layers(lI).paramIndexes)
+        biasI = obj.net.layers(lI).paramIndexes(2);
+        obj.net.params(biasI).learningRate = 2;
+        obj.net.params(biasI).weightDecay = 0;
+    end
+end
+
+% First convolutional layer does not learn
+conv1I = obj.net.getLayerIndex('conv1');
+obj.net.params(obj.net.layers(conv1I).paramIndexes(1)).learningRate = 0;
+obj.net.params(obj.net.layers(conv1I).paramIndexes(2)).learningRate = 0;
+
+%% If required, insert freeform pooling layer after roipool
 if isfield(obj.nnOpts.misc, 'roiPool'),
     roiPool = obj.nnOpts.misc.roiPool;
     if isfield(roiPool, 'freeform') && roiPool.freeform.use
