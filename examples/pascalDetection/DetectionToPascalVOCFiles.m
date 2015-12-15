@@ -50,7 +50,7 @@ end
 resultsName = sprintf(savePath, compName, className);
 fid = fopen(resultsName,'w');
 for j=1:length(boxIms)
-    fprintf(fid,'%s %f %f %f %f %f\n', boxIms{j}, boxClfs(j),boxes(j,:)));
+    fprintf(fid,'%s %f %f %f %f %f\n', boxIms{j}, boxClfs(j),boxes(j,:));
 end
 fclose(fid);
 fprintf('\n');
