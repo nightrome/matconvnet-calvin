@@ -63,6 +63,9 @@ end
 
 % First convolutional layer does not learn
 conv1I = obj.net.getLayerIndex('conv1');
+if isnan(conv1I)
+    conv1I = obj.net.getLayerIndex('conv1_1');
+end
 obj.net.params(obj.net.layers(conv1I).paramIndexes(1)).learningRate = 0;
 obj.net.params(obj.net.layers(conv1I).paramIndexes(2)).learningRate = 0;
 
