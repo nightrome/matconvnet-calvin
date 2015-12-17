@@ -65,7 +65,7 @@ classdef CalvinNN < handle
             elseif isfield(netIn, 'layers'),
                 % Convert a simpleNN network to DAG format
                 obj.convertNetwork(netIn);
-                obj.convertNetworkToFastRcnn2();
+                obj.convertNetworkToFastRcnn();
             else
                 error('Error: Network is neither in SimpleNN nor DAG format!');
             end
