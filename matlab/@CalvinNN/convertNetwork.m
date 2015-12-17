@@ -40,3 +40,8 @@ net.renameVar(net.layers(net.getLayerIndex('softmaxloss')).outputs, 'objective')
 
 % Update class fields
 obj.net = net;
+
+% Modify for Fast Rcnn (ROI pooling, bbox regression etc.)
+if obj.nnOpts.fastRcnn
+    obj.convertNetworkToFastRcnn();
+end;

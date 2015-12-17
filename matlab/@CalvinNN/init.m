@@ -17,6 +17,12 @@ defnnOpts.extractStatsFn = @CalvinNN.extractStats;
 defnnOpts.testFn = @(imdb, nnOpts, net, inputs, batchInds) error('Error: Test function not implemented'); % function used at test time to evaluate performance
 defnnOpts.misc = struct(); % fields used by custom layers are stored here
 
+% Fast R-CNN options
+defnnOpts.fastRcnn = true;
+defnnOpts.bboxRegress = true;
+defnnOpts.misc.roiPool.use = true;
+defnnOpts.misc.roiPool.freeform.use = false;
+
 % Merge input settings with default settings
 nnOpts = vl_argparse(defnnOpts, varargin, 'nonrecursive');
 
