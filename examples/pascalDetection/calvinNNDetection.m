@@ -95,9 +95,8 @@ ImdbPascal = ImdbDetectionFullSupervision(DATAopts.imgpath(1:end-6), ...        
 % Usually instance weighting gives better performance. But not Girshick style
 % ImdbPascal.SetInstanceWeighting(true); 
 
-%% Create calvinNN CNN class          
+%% Create calvinNN CNN class. By default, network is transformed into fast-rcnn with bbox regression
 calvinn = CalvinNN(net, ImdbPascal, nnOpts);
-calvinn.convertNetworkToFastRcnn2([], 'fc8');
 
 %%%%%%%%%%%%%
 %% Train
