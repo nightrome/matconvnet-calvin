@@ -4,9 +4,6 @@ function [recall, prec, ap, apUpperBound] = ...
 % detection files. Evaluates results.
 
 global DATAopts;
-if strcmp(set, 'test')
-    DATAopts = VOCinit(DATAopts.year, 1);
-end
 
 DATAopts.testset = set;
 
