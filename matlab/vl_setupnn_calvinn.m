@@ -11,3 +11,4 @@ addpath(fullfile(root, 'matlab', 'imdb'));
 addpath(fullfile(root, 'matlab', 'regiontopixel'));
 addpath(fullfile(root, 'matlab', 'roipool'));
 addpath(fullfile(root, 'matlab', 'boxes'));
+addpath(fullfile(root, 'matlab', 'misc'));
