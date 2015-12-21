@@ -114,7 +114,7 @@ clear recall prec ap upperBound
 
 % get image sizes
 for i=length(testIms):-1:1
-    im = ImageRead(testIms{i});
+    im = imread(sprintf(DATAopts.imgpath, testIms{i}));
     imSizes(i,:) = size(im);
 end
 
