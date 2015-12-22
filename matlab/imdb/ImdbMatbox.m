@@ -31,7 +31,7 @@ classdef ImdbMatbox < ImdbCalvin
         posFraction = 0.25;
         minBoxSize = 20;
         
-        flipLR = false;  % Flag if data will be flipped or not
+        flipLR = true;  % Flag if data will be flipped or not
         
 %         labelMode  % Jasper: Maybe deprecated way of specifying labels as a matrix
 %         or vector (matrix allows multiple labels). Functions dealing with this are

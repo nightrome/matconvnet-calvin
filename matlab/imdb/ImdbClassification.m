@@ -3,11 +3,13 @@
 %
 % Jasper: Experimental untested class!
 classdef ImdbClassification < ImdbCalvin
-    properties(SetAccess = protected, GetAccess = public)        
+    properties(SetAccess = protected, GetAccess = public)       
         imageDir
         imExt
         meanIm
         labs
+        
+        flipLR = true;  % Flag if data will be flipped or not
     end
     
     methods
@@ -83,6 +85,9 @@ classdef ImdbClassification < ImdbCalvin
             end
             
             batch = bsxfun(@minus, batch, obj.meanIm);
+            if obj.flipLR
+                batch = fliplr(batch);
+            end
             
             batchData{1} = 'input';
             batchData{2} = batch;
@@ -91,6 +96,18 @@ classdef ImdbClassification < ImdbCalvin
                 batchData{3} = 'label';
                 batchData{4} = batchLabs;
             end
-        end        
+        end
+        
+        function initEpoch(obj, epoch)
+            initEpoch@ImdbCalvin(obj, epoch);
+            
+            % Flip image vertically at the start of each epoch
+            obj.switchFlipLR();
+        end
+
+        function switchFlipLR(obj)
+            % Switch the flipLR switch
+            obj.flipLR = mod(obj.flipLR+1, 2);      
+        end
     end
 end
