@@ -23,9 +23,20 @@ dropout7Layer = dagnn.DropOut();
 net.insertLayer('relu6', 'fc7', 'dropout6', dropout6Layer);
 net.insertLayer('relu7', 'fc8', 'dropout7', dropout7Layer);
 
-% Replace softmax with softmaxloss for training
-softmaxlossBlock = dagnn.LossWeighted('loss', 'softmaxlog');
-net.replaceLayer('prob', 'softmaxloss', softmaxlossBlock, 'label');
+% Replace softmax with correct loss for training (default: softmax)
+switch obj.nnOpts.lossFnObjective
+    case 'softmaxlog'
+        softmaxlossBlock = dagnn.LossWeighted('loss', 'softmaxlog');
+        net.replaceLayer('prob', 'softmaxloss', softmaxlossBlock, 'label');
+        net.renameVar(net.layers(net.getLayerIndex('softmaxloss')).outputs, 'objective');
+    case 'hinge'
+        hingeLossBlock = dagnn.Loss('loss', 'hinge');
+        net.replaceLayer('prob', 'hingeloss', hingeLossBlock, 'label');
+        net.renameVar(net.layers(net.getLayerIndex('hingeloss')).outputs, 'objective');
+    otherwise
+        error('Wrong loss specified');
+end
+        
 
 % Adapt number of classes in softmaxloss layer from 1000 to numClasses
 fc8Idx = net.getLayerIndex('fc8');
@@ -36,7 +47,6 @@ net.params(net.layers(fc8Idx).paramIndexes(2)).value = newParams{2}';
 
 % Rename input and output
 net.renameVar('x0', 'input');
-net.renameVar(net.layers(net.getLayerIndex('softmaxloss')).outputs, 'objective');
 
 % Update class fields
 obj.net = net;

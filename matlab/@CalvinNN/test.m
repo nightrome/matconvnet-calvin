@@ -18,11 +18,20 @@ numGpus = numel(obj.nnOpts.gpus);
 % end
 
 % Replace softmaxloss layer with softmax layer
-softmaxlossInput = obj.net.layers(obj.net.getLayerIndex('softmaxloss')).inputs{1};
-obj.net.removeLayer('softmaxloss');
-obj.net.addLayer('softmax', dagnn.SoftMax(), softmaxlossInput, 'scores', {});
-softmaxIdx = obj.net.layers(obj.net.getLayerIndex('softmax')).outputIndexes;
-assert(numel(softmaxIdx) == 1);
+softMaxLossIdx = obj.net.getLayerIndex('softmaxloss');
+if ~isnan(softMaxLossIdx)
+    softmaxlossInput = obj.net.layers(softMaxLossIdx).inputs{1};
+    obj.net.removeLayer('softmaxloss');
+    obj.net.addLayer('softmax', dagnn.SoftMax(), softmaxlossInput, 'scores', {});
+    softmaxIdx = obj.net.layers(obj.net.getLayerIndex('softmax')).outputIndexes;
+    assert(numel(softmaxIdx) == 1);
+end
+
+% Remove hinge loss layer
+hingeLossIdx = obj.net.getLayerIndex('hingeloss');
+if ~isnan(hingeLossIdx)
+    obj.net.removeLayer('hingeloss');
+end
 
 % Set datasetMode in imdb
 datasetMode = 'test';
