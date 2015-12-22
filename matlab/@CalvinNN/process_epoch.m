@@ -61,11 +61,11 @@ for t=1:obj.nnOpts.batchSize:numel(allBatchInds),
         % Extract results at test time (not val)
         if strcmp(obj.imdb.datasetMode, 'test')
             % Pre-allocate the struct-array for the results
-            currResult = obj.nnOpts.testFn(obj.imdb, obj.nnOpts, net, inputs);
+            currResult = obj.nnOpts.testFn(obj.imdb, obj.nnOpts, net, inputs, batchInds);
             if t == 1 && s == 1
                 results = repmat(currResult(1), numel(allBatchInds), 1);
             end
-            results(batchInds) = currResult;
+            results(batchInds) = currResult(1:numel(batchInds));
         end
         
         batchNumElements = batchNumElements + numElements;

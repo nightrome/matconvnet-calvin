@@ -1,4 +1,4 @@
-function results = testDetection(imdb, nnOpts, net, inputs)
+function results = testDetection(imdb, nnOpts, net, inputs,~)
 % Get predicted boxes and scores per class
 % Only gets top nnOpts.maxNumBoxesPerImTest boxes (default: 5000)
 % Only gets boxes with score higher than nnOpts.minDetectionScore (default: 0.01)

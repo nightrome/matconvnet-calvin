@@ -90,7 +90,8 @@ classdef CalvinNN < handle
     
     methods (Static)
         stats = extractStats(net, inputs);
-        stats = testDetection(imdb, nnOpts, net, inputs);
+        stats = testDetection(imdb, nnOpts, net, inputs, batchInds);
+        stats = testClassification(imdb, nnOpts, net, inputs, batchInds);
         epoch = findLastCheckpoint(modelDir);
         [net, stats] = loadState(obj, fileName);
     end
