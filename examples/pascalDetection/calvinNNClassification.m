@@ -1,5 +1,7 @@
 %% function calvinNNDetection
 
+% Example for classification on Pascal.
+
 global MYDATADIR        % Directory of datasets
 global DATAopts         % Database specific paths
 global USEGPU           % Set in startup.m. Use GPU or not.
