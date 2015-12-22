@@ -147,3 +147,10 @@ end
 
 ap
 map
+
+%%
+save([nnOpts.expDir 'resultsEpochFinalTest.mat'], 'nnOpts', 'stats', 'ap', 'conf');
+
+if USEGPU
+    exit
+end
