@@ -12,6 +12,7 @@ defnnOpts.learningRate = [repmat(1e-3, [1, 12]), repmat(1e-4, [1, 4])];
 defnnOpts.weightDecay = 0.0005;
 defnnOpts.momentum = 0.9;
 defnnOpts.derOutputs = {'objective', 1};
+defnnOpts.lossFnObjective = 'softmaxlog'; % Default is softmax
 defnnOpts.memoryMapFile = fullfile(tempdir, 'matconvnet.bin');
 defnnOpts.extractStatsFn = @CalvinNN.extractStats;
 defnnOpts.testFn = @(imdb, nnOpts, net, inputs, batchInds) error('Error: Test function not implemented'); % function used at test time to evaluate performance

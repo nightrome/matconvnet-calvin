@@ -2,7 +2,7 @@
 % Now validation is set to 10% of the dataset
 %
 % Jasper: Experimental untested class!
-classdef ImdbClassification < Imdb
+classdef ImdbClassification < ImdbCalvin
     properties(SetAccess = protected, GetAccess = public)        
         imageDir
         imExt
@@ -14,7 +14,6 @@ classdef ImdbClassification < Imdb
         function obj = ImdbClassification(imageDir, imExt, filenames, labels, datasetIdx, meanIm, numClasses)
             % Set fields of the imdb class
             obj.imageDir = imageDir;
-            obj.matBoxDir = matBoxDir;
             obj.imExt = imExt;
             obj.meanIm = single(meanIm);
             obj.numClasses = numClasses;
@@ -57,10 +56,16 @@ classdef ImdbClassification < Imdb
             end
         end
         
-        function [batchData, currBatchSize] = GetBatch(obj, batchInds, ~)
-            currBatchSize = length(batchInds);
+        function [batchData, currBatchSize] = getBatch(obj, batchInds, net)
+            if nargin == 2
+                gpuMode = false;
+            else
+                gpuMode = strcmp(net.device, 'gpu');
+            end
             
-            if obj.gpuMode
+            currBatchSize = length(batchInds);
+            batchLabs = zeros(1, 1, obj.numClasses, currBatchSize);
+            if gpuMode
                 batch = zeros(size(obj.meanIm,1), size(obj.meanIm,2), size(obj.meanIm,3), currBatchSize, 'single', 'gpuArray');
             else
                 batch = zeros(size(obj.meanIm,1), size(obj.meanIm,2), size(obj.meanIm,3), currBatchSize, 'single');
@@ -74,17 +79,18 @@ classdef ImdbClassification < Imdb
                 end
                 batch(:,:,:,idx) = imresize(theIm, [size(obj.meanIm,1) size(obj.meanIm,2)], ...
                                           'bilinear', 'antialiasing', false);
-                batchLabs(idx,:) = obj.labs.(obj.datasetMode)(imI,:);
-                obj.currI = obj.currI + 1;
+                batchLabs(1,1,:,idx) = obj.labs.(obj.datasetMode)(imI,:);
             end
             
             batch = bsxfun(@minus, batch, obj.meanIm);
-            batchLabs = permute(batchLabs, [4 3 2 1]);
             
-            batchData{1} = 'intput';
+            batchData{1} = 'input';
             batchData{2} = batch;
-            batchData{3} = 'label';
-            batchData{4} = batchLabs;
+            
+            if ~strcmp(obj.datasetMode, 'test');
+                batchData{3} = 'label';
+                batchData{4} = batchLabs;
+            end
         end        
     end
 end

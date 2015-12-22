@@ -10,6 +10,7 @@ testName = 'test';
 
 
 %% Setup VOC data (should be done using original VOC code). Below is minimal working example
+DATAopts.year = 2007;
 DATAopts.dataset = 'VOC2007';
 DATAopts.datadir = [MYDATADIR 'VOCdevkit/' DATAopts.dataset '/'];
 DATAopts.resultsPath = [DATAopts.datadir 'Results/'];
@@ -49,7 +50,7 @@ DATAopts.gStructPath = [DATAopts.resultsPath 'GStructs/'];
 %% Options for CNN training
 nnOpts.testFn = @CalvinNN.testDetection;
 nnOpts.batchSize = 2;
-nnOpts.numSubBatches = 2;
+nnOpts.numSubBatches = nnOpts.batchSize; % In Fast-RCNN numSubBatches needs to be equal to batchSize
 nnOpts.weightDecay = 5e-4;
 nnOpts.momentum = 0.9;
 nnOpts.numEpochs = 16;
