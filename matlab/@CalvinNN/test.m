@@ -30,7 +30,12 @@ end
 % Remove hinge loss layer
 hingeLossIdx = obj.net.getLayerIndex('hingeloss');
 if ~isnan(hingeLossIdx)
+    theInputs = obj.net.layers(hingeLossIdx).inputs;
+    finalLayerOutputIdx = find(ismember(theInputs, {'label'}) == 0);
+    assert(numel(finalLayerOutputIdx) == 1);
+    finalLayerOutputName = obj.net.layers(hingeLossIdx).inputs{finalLayerOutputIdx};
     obj.net.removeLayer('hingeloss');
+    obj.net.renameVar(finalLayerOutputName, 'scores');
 end
 
 % Set datasetMode in imdb

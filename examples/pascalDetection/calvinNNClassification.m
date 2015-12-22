@@ -51,13 +51,14 @@ DATAopts.gStructPath = [DATAopts.resultsPath 'GStructs/'];
 %% Options for CNN training
 nnOpts.fastRcnn = false;
 nnOpts.lossFnObjective = 'hinge';
-nnOpts.testFn = @CalvinNN.testDetection;
+nnOpts.testFn = @CalvinNN.testClassification;
 nnOpts.batchSize = 128;
 nnOpts.numSubBatches = 1;
 nnOpts.weightDecay = 5e-4;
 nnOpts.momentum = 0.9;
 nnOpts.numEpochs = 16;
 nnOpts.learningRate = cat(1, repmat(0.001, 12, 1), repmat(0.0001, 4, 1));
+
 nnOpts.derOutputs = {'objective', 1};
 
 if USEGPU
@@ -75,9 +76,8 @@ net = load([MYDATADIR 'MatconvnetModels/imagenet-vgg-f.mat']);
 % net = load([MYDATADIR 'MatconvnetModels/imagenet-vgg-verydeep-16.mat']);
 
 %% Setup the Imdb
-% Get and test images
-% Make label array
-set = 'train';
+% Get images and labels
+set = trainName;
 [trainIms, ~] = textread(sprintf(DATAopts.imgsetpath,set),'%s %d');
 trainLabs = zeros(length(trainIms), DATAopts.nclasses);
 
@@ -88,10 +88,10 @@ if (~strcmp(set,'test') || DATAopts.year == 2007)
         [~, trainLabs(:,classIdx)] = textread(sprintf(DATAopts.clsimgsetpath,class,set),'%s %d');
     end
 
-    trainLabs(trainLabs == -1) = 0;
+    trainLabs(trainLabs == 0) = -1;
 end
 
-set = 'test';
+set = testName;
 [testIms, ~] = textread(sprintf(DATAopts.imgsetpath,set),'%s %d');
 testLabs = zeros(length(testIms), DATAopts.nclasses);
 
@@ -113,6 +113,7 @@ datasetIdx{1} = (1:length(trainIms)-numValIms)';  % Last numValIms are val set
 datasetIdx{2} = (length(trainIms)-numValIms+1:length(trainIms))';
 datasetIdx{3} = (length(trainIms)+1:length(allIms))';
 
+% Setup the classification imdb
 ImdbPascal = ImdbClassification(DATAopts.imgpath(1:end-6), ...        % path
                                 DATAopts.imgpath(end-3:end), ...      % image extension
                                 allIms, ...                           % all images
@@ -121,10 +122,8 @@ ImdbPascal = ImdbClassification(DATAopts.imgpath(1:end-6), ...        % path
                                 net.normalization.averageImage, ...   % average image used to pretrain network
                                 20);                                  % num classes
 
-%% Create calvinNN CNN class. By default, network is transformed into fast-rcnn with bbox regression
+%% Create calvinNN CNN class. Note nnOpts above for classification
 calvinn = CalvinNN(net, ImdbPascal, nnOpts);
-
-
 
 %%%%%%%%%%%%%
 %% Train
@@ -138,4 +137,11 @@ stats = calvinn.test();
 
 
 %% Do evaluation
-[map, ap, conf] = MeanAveragePrecision(stats, testLabs);
+scores = zeros(size(testLabs));
+for i=1:length(stats.results)
+    scores(i,:) = stats.results(i).scores;
+end
+[map, ap, conf] = MeanAveragePrecision(scores, testLabs);
+
+ap
+map
