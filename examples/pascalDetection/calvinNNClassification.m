@@ -143,7 +143,9 @@ scores = zeros(size(testLabs));
 for i=1:length(stats.results)
     scores(i,:) = stats.results(i).scores;
 end
-[map, ap, conf] = MeanAveragePrecision(scores, testLabs);
+testLabsAp = testLabs;
+testLabsAp(testLabsAp == -1) = 0;
+[map, ap, conf] = MeanAveragePrecision(scores, testLabsAp);
 
 ap
 map
