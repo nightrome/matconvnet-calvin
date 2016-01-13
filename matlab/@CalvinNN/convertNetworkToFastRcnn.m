@@ -6,7 +6,7 @@ function convertNetworkToFastRcnn(obj, varargin)
 % Copyright by Holger Caesar, 2015
 % Updated by Jasper Uijlings:
 %  - Extra flexibility and possible bounding box regression
-%  - Added instanceWeights to loss layer
+%  - Added weights to loss layer
 
 % Initial settings
 p = inputParser;
@@ -19,17 +19,17 @@ lastConvPoolName = p.Results.lastConvPoolName;
 firstFCName = p.Results.firstFCName;
 finalFCName = p.Results.finalFCName;
 
-%%% Add instanceWeights to loss layer. Note that this field remains empty when not
-% given as input. So the loss layers should ignore empty instanceWeights.
+%%% Add weights to loss layer. Note that this field remains empty when not
+% given as input. So the loss layers should ignore empty weights.
 softmaxInputs = obj.net.layers(obj.net.getLayerIndex('softmaxloss')).inputs;
-if ~ismember('instanceWeights', softmaxInputs)
-    softmaxInputs{end+1} = 'instanceWeights';
+if ~ismember('weights', softmaxInputs)
+    softmaxInputs{end+1} = 'weights';
     obj.net.setLayerInputs('softmaxloss', softmaxInputs);
 end
 
-
 %%% Replace pooling layer of last convolution layer with roiPooling
 lastConvPoolIdx = obj.net.getLayerIndex(lastConvPoolName);
+assert(~isnan(lastConvPoolIdx));
 roiPoolName = ['roi', lastConvPoolName];
 firstFCIdx = obj.net.layers(lastConvPoolIdx).outputIndexes;
 assert(length(firstFCIdx) == 1);
@@ -51,7 +51,7 @@ if obj.nnOpts.bboxRegress
     obj.net.params(obj.net.layers(regressIdx).paramIndexes(2)).value = newParams{2};
 
     obj.net.addLayer('regressLoss', dagnn.LossRegress('loss', 'Smooth', 'smoothMaxDiff', 1), ...
-        {'regressionScore', 'regressionTargets', 'instanceWeights'}, 'regressObjective');
+        {'regressionScore', 'regressionTargets', 'weights'}, 'regressObjective');
 end
 
 %%% Set correct learning rates and biases (Girshick style)
