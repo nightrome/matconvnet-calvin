@@ -15,7 +15,7 @@ classdef CalvinNN < handle
     
     methods
         function obj = CalvinNN(net, imdb, nnOpts)
-            % obj = CalvinNN(imdb, [nnOpts])
+            % obj = CalvinNN(net, imdb, [nnOpts])
             
             % Default arguments
             if ~exist('nnOpts', 'var') || isempty(nnOpts)

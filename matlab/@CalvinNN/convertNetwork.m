@@ -36,7 +36,6 @@ switch obj.nnOpts.lossFnObjective
     otherwise
         error('Wrong loss specified');
 end
-        
 
 % Adapt number of classes in softmaxloss layer from 1000 to numClasses
 fc8Idx = net.getLayerIndex('fc8');
@@ -54,4 +53,4 @@ obj.net = net;
 % Modify for Fast Rcnn (ROI pooling, bbox regression etc.)
 if obj.nnOpts.fastRcnn
     obj.convertNetworkToFastRcnn();
-end;
+end
