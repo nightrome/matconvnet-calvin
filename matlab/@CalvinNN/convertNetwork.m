@@ -9,12 +9,17 @@ function convertNetwork(obj, net)
 % Use the default routine to convert an image class. network to FRCN
 net = dagnn.DagNN.fromSimpleNN(net);
 
-% Remove unused/incorrect fields from normalization
-if isfield(net.meta, 'normalization');
-    net.meta.normalization = rmfield(net.meta.normalization, 'keepAspect');
-    net.meta.normalization = rmfield(net.meta.normalization, 'border');
-    net.meta.normalization = rmfield(net.meta.normalization, 'imageSize');
-    net.meta.normalization = rmfield(net.meta.normalization, 'interpolation');
+% Remove unused/incorrect meta fields from old network
+if isfield(net, 'meta')
+    if isfield(net.meta, 'normalization')
+        net.meta.normalization = rmfield(net.meta.normalization, 'keepAspect');
+        net.meta.normalization = rmfield(net.meta.normalization, 'border');
+        net.meta.normalization = rmfield(net.meta.normalization, 'imageSize');
+        net.meta.normalization = rmfield(net.meta.normalization, 'interpolation');
+    end
+    if isfield(net.meta, 'classes')
+        net.meta = rmfield(net.meta, 'classes');
+    end
 end
 
 % Add dropout layers after relu6 and relu7

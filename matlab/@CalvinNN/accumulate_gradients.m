@@ -8,7 +8,7 @@ function state = accumulate_gradients(obj, state, net, batchSize, mmap)
 % Modified by Jasper Uijlings, 2015
 % Modified by Holger Caesar, 2015
 
-for i=1:numel(net.params)
+for i = 1 : numel(net.params)
   thisDecay = obj.nnOpts.weightDecay * net.params(i).weightDecay;
   thisLR = state.learningRate * net.params(i).learningRate;
 
