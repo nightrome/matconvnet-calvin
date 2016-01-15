@@ -82,7 +82,8 @@ classdef RoiPooling < dagnn.Layer
             end;
             
             % Debug: Visualize gradients
-%                 roiPooling_visualizeBackward(inputs{2}, boxes, obj.mask, dzdy, dzdx, 1, 1);
+%             oriImSize = inputs{2};
+%             roiPooling_visualizeBackward(oriImSize, boxes, obj.mask, dzdy, dzdx, 1, 1);
             
             % Store outputs
             derInputs{1} = dzdx;

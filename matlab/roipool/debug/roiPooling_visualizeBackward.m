@@ -1,5 +1,5 @@
-function roiPooling_visualizeBackward(oriImSize, boxes, masks, dzdx, dzdxout, channelIdx, boxIdx)
-% roiPooling_visualizeBackward(oriImSize, boxes, masks, dzdx, dzdxout, channelIdx, boxIdx)
+function roiPooling_visualizeBackward(oriImSize, boxes, masks, dzdy, dzdx, channelIdx, boxIdx)
+% roiPooling_visualizeBackward(oriImSize, boxes, masks, dzdy, dzdx, channelIdx, boxIdx)
 %
 % Visualize the input and output of the backward pass.
 %
@@ -20,7 +20,7 @@ end;
 assert(boxIdx <= size(boxes, 1));
 
 % Reshape box to convIm
-convImSize = [size(dzdxout, 1), size(dzdxout, 2), size(dzdxout, 3)];
+convImSize = [size(dzdx, 1), size(dzdx, 2), size(dzdx, 3)];
 reshapedBox = (...
     (boxes(boxIdx, :) - 1) ...
     ./ ([oriImSize(2), oriImSize(1), oriImSize(2), oriImSize(1)] - 1) ...
@@ -29,9 +29,9 @@ reshapedBox = (...
 reshapedBox = 1 + [floor(reshapedBox(1:2)), ceil(reshapedBox(3:4))];
 
 % Get relevant "image" regions
-dzdxoutAll = dzdxout(:, :, channelIdx, boxIdx);
-dzdxoutSelection = dzdxout(reshapedBox(2):reshapedBox(4), reshapedBox(1):reshapedBox(3), channelIdx);
-dzdxSelection = dzdx(:, :, channelIdx, boxIdx);
+dzdxoutAll = dzdx(:, :, channelIdx, boxIdx);
+dzdxoutSelection = dzdx(reshapedBox(2):reshapedBox(4), reshapedBox(1):reshapedBox(3), channelIdx);
+dzdxSelection = dzdy(:, :, channelIdx, boxIdx);
 
 % Take apart the masks (C-indexing!)
 curMasks = masks(:, :, channelIdx, boxIdx);

@@ -1,5 +1,5 @@
-function roiPooling_visualizeRois(boxes, oriImSize, convIm, rois, channelIdx, boxIdx)
-% roiPooling_visualizeRois(boxes, oriImSize, convIm, rois, channelIdx, boxIdx)
+function roiPooling_visualizeForward(boxes, oriImSize, convIm, rois, channelIdx, boxIdx)
+% roiPooling_visualizeForward(boxes, oriImSize, convIm, rois, channelIdx, boxIdx)
 %
 % Visualize the input and output of the forward pass.
 %

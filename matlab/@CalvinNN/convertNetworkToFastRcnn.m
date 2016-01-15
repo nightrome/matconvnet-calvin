@@ -56,7 +56,7 @@ end
 
 %%% Set correct learning rates and biases (Girshick style)
 % Biases have learning rate of 2 and no weight decay
-for lI=1:length(obj.net.layers)
+for lI = 1 : length(obj.net.layers)
     if isa(obj.net.layers(lI).block, 'dagnn.Conv')
         biasI = obj.net.layers(lI).paramIndexes(2);
         obj.net.params(biasI).learningRate = 2;
@@ -76,7 +76,7 @@ obj.net.params(obj.net.layers(conv1I).paramIndexes(1)).learningRate = 0;
 obj.net.params(obj.net.layers(conv1I).paramIndexes(2)).learningRate = 0;
 
 %%% If required, insert freeform pooling layer after roipool
-if isfield(obj.nnOpts.misc, 'roiPool'),
+if isfield(obj.nnOpts.misc, 'roiPool')
     roiPool = obj.nnOpts.misc.roiPool;
     if isfield(roiPool, 'freeform') && roiPool.freeform.use
         % Compute activations for foreground and entire box separately
