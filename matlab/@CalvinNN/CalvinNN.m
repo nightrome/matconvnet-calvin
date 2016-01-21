@@ -30,45 +30,18 @@ classdef CalvinNN < handle
             
             % Load network and convert to DAG format
             obj.loadNetwork(net);
-        end
-        
-        function loadNetwork(obj, netIn)
-            % loadNetwork(obj, netIn)
-            %
-            % Network can be:
-            %  - DAG (netIn.net, [netIn.stats])
-            %  - SimpleNN (netIn.layers, [netIn.normalization] , ...)
-            %  - Path to any of the above
             
-            % Load the network from file if necessary
-            if ischar(netIn),
-                netIn = load(netIn);
-            end
-            
-            % Store the network
-            if isfield(netIn, 'net')
-                % Store net
-                if isa(netIn.net, 'dagnn.DagNN')
-                    % The network is already a DAG
-                    obj.net = netIn.net;
-                elseif isfield(netIn.net, 'vars')
-                    % Convert a stored DAG to a proper class object
-                    obj.net = dagnn.DagNN.loadobj(netIn.net);
-                else
-                    error('Error: Network is neither in SimpleNN nor DAG format!');
-                end
+            if obj.nnOpts.convertToTrain
+                % Convert network from test to train (add loss layer,
+                % dropout etc.)
+                obj.convertNetwork();
                 
-                % Store stats
-                if isfield(netIn, 'stats')
-                    obj.stats = netIn.stats;
-                end;
-            elseif isfield(netIn, 'layers'),
-                % Convert a simpleNN network to DAG format
-                obj.convertNetwork(netIn);
-            else
-                error('Error: Network is neither in SimpleNN nor DAG format!');
+                % Modify for Fast Rcnn (ROI pooling, bbox regression etc.)
+                if obj.nnOpts.fastRcnn
+                    obj.convertNetworkToFastRcnn();
+                end
             end
-        end
+        end 
         
         % Declarations for methods that are in separate files
         convertNetwork(obj, net);

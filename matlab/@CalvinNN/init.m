@@ -19,10 +19,12 @@ defnnOpts.testFn = @(imdb, nnOpts, net, inputs, batchInds) error('Error: Test fu
 defnnOpts.misc = struct(); % fields used by custom layers are stored here
 
 % Fast R-CNN options
+defnnOpts.convertToTrain = true;
 defnnOpts.fastRcnn = true;
 defnnOpts.bboxRegress = true;
 defnnOpts.misc.roiPool.use = true;
 defnnOpts.misc.roiPool.freeform.use = false;
+defnnOpts.fastRcnnParams = true; % learning rates and weight decay
 
 % Merge input settings with default settings
 nnOpts = vl_argparse(defnnOpts, varargin, 'nonrecursive');
