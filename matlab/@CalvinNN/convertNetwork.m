@@ -10,7 +10,7 @@ function convertNetwork(obj, net)
 net = dagnn.DagNN.fromSimpleNN(net);
 
 % Remove unused/incorrect meta fields from old network
-if isfield(net, 'meta')
+if isprop(net, 'meta')
     if isfield(net.meta, 'normalization')
         net.meta.normalization = rmfield(net.meta.normalization, 'keepAspect');
         net.meta.normalization = rmfield(net.meta.normalization, 'border');
