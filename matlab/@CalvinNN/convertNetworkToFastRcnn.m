@@ -55,25 +55,27 @@ if obj.nnOpts.bboxRegress
 end
 
 %%% Set correct learning rates and biases (Girshick style)
-% Biases have learning rate of 2 and no weight decay
-for lI = 1 : length(obj.net.layers)
-    if isa(obj.net.layers(lI).block, 'dagnn.Conv')
-        biasI = obj.net.layers(lI).paramIndexes(2);
-        obj.net.params(biasI).learningRate = 2;
-        obj.net.params(biasI).weightDecay = 0;
+if obj.nnOpts.fastRcnnParams
+    % Biases have learning rate of 2 and no weight decay
+    for lI = 1 : length(obj.net.layers)
+        if isa(obj.net.layers(lI).block, 'dagnn.Conv')
+            biasI = obj.net.layers(lI).paramIndexes(2);
+            obj.net.params(biasI).learningRate = 2;
+            obj.net.params(biasI).weightDecay = 0;
+        end
     end
+    
+    % First convolutional layer should not learn
+    % Note that this is different from Fast R-CNN, but gives good results
+    % Also note that there is no speedup as Matconvnet still computes the
+    % gradients, but does not update the parameters.
+    conv1I = obj.net.getLayerIndex('conv1'); % AlexNet-style networks
+    if isnan(conv1I)
+        conv1I = obj.net.getLayerIndex('conv1_1'); % VGG-16 style networks
+    end
+    obj.net.params(obj.net.layers(conv1I).paramIndexes(1)).learningRate = 0;
+    obj.net.params(obj.net.layers(conv1I).paramIndexes(2)).learningRate = 0;
 end
-
-% First convolutional layer should not learn
-% Note that this is different from Fast R-CNN, but gives good results
-% Also note that there is no speedup as Matconvnet still computes the
-% gradients, but does not update the parameters.
-conv1I = obj.net.getLayerIndex('conv1'); % AlexNet-style networks
-if isnan(conv1I)
-    conv1I = obj.net.getLayerIndex('conv1_1'); % VGG-16 style networks
-end
-obj.net.params(obj.net.layers(conv1I).paramIndexes(1)).learningRate = 0;
-obj.net.params(obj.net.layers(conv1I).paramIndexes(2)).learningRate = 0;
 
 %%% If required, insert freeform pooling layer after roipool
 if isfield(obj.nnOpts.misc, 'roiPool')
