@@ -1,5 +1,6 @@
 classdef GeneralSigmoid < dagnn.ElementWise
     % GeneralSigmoid
+    %
     % Implements a general sigmoid layer (i.e. sigmoid of a 1d linear function):
     % S(x) = 1 / (1 + exp(- (ax + b) ))
     %
@@ -16,7 +17,7 @@ classdef GeneralSigmoid < dagnn.ElementWise
     
     methods
         function obj = GeneralSigmoid(varargin)
-            obj.load(varargin) ;
+            obj.load(varargin);
         end
         
         function outputs = forward(obj, inputs, params)
@@ -74,8 +75,8 @@ classdef GeneralSigmoid < dagnn.ElementWise
             % Note that compared to the Caesar BMVC 2015 paper, we use the proper
             % sigmoid function with the "-" sign. Hence the "a" parameter
             % should be positive!
-            params{1} = repmat(single(7), [obj.numClasses, 1]);
-            params{2} = zeros([obj.numClasses, 1], 'single');
+            params{1} = repmat(single(1), [obj.numClasses, 1]);
+            params{2} = repmat(single(0), [obj.numClasses, 1]); %zeros([obj.numClasses, 1], 'single');
         end
     end
     
