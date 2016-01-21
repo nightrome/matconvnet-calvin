@@ -90,7 +90,7 @@ else
         pixelSizesSP = sum(spLabelHistos, 2);
     end;
     
-    % Renormalize label weights to have on average a weight == boxCount
+    % Renormalize label weights to have on average a weight == 1 (!)
     % Note: division by the number of images on which these frequencies are
     % computed is now outsourced to getBatch.
     if inverseLabelFreqs,
