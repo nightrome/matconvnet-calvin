@@ -29,9 +29,9 @@ reshapedBox = (...
 reshapedBox = 1 + [floor(reshapedBox(1:2)), ceil(reshapedBox(3:4))];
 
 % Get relevant "image" regions
-dzdxoutAll = dzdx(:, :, channelIdx, boxIdx);
-dzdxoutSelection = dzdx(reshapedBox(2):reshapedBox(4), reshapedBox(1):reshapedBox(3), channelIdx);
-dzdxSelection = dzdy(:, :, channelIdx, boxIdx);
+dzdxAll = dzdx(:, :, channelIdx, boxIdx);
+dzdxSelection = dzdx(reshapedBox(2):reshapedBox(4), reshapedBox(1):reshapedBox(3), channelIdx);
+dzdySelection = dzdy(:, :, channelIdx, boxIdx);
 
 % Take apart the masks (C-indexing!)
 curMasks = masks(:, :, channelIdx, boxIdx);
@@ -46,25 +46,25 @@ curMasksX = curMasksX + 1;
 if doChecks,
     for imIdxY = 1 : convImSize(1),
         for imIdxX = 1 : convImSize(2),
-            gradientSum = sum(sum(dzdxSelection .* (curMasksY == imIdxY & curMasksX == imIdxX)));
-            condition = abs(gradientSum - dzdxoutAll(imIdxY, imIdxX)) < 1e-8;
+            gradientSum = sum(sum(dzdySelection .* (curMasksY == imIdxY & curMasksX == imIdxX)));
+            condition = abs(gradientSum - dzdxAll(imIdxY, imIdxX)) < 1e-8;
             assert(gather(condition));
         end;
     end;
 end;
 
 % Take the absolute values of all gradients (for visualization)
-dzdxoutAll = abs(dzdxoutAll);
-dzdxoutSelection = abs(dzdxoutSelection);
+dzdxAll = abs(dzdxAll);
 dzdxSelection = abs(dzdxSelection);
+dzdySelection = abs(dzdySelection);
 
 % Check if convolutional map is all zeros
-if sum(dzdxoutSelection(:)) == 0,
+if sum(dzdxSelection(:)) == 0,
     clims = [0, 1];
 else
-    range1 = minmax(dzdxoutAll(:)');
-    range2 = minmax(dzdxoutSelection(:)');
-    range3 = minmax(dzdxSelection(:)');
+    range1 = minmax(dzdxAll(:)');
+    range2 = minmax(dzdxSelection(:)');
+    range3 = minmax(dzdySelection(:)');
     clims = minmax([range1, range2, range3]);
 end;
 
@@ -78,7 +78,7 @@ end;
 
 % Plot entire left-hand side gradients
 subplot(2, 3, 4);
-imagesc(dzdxoutAll, clims);
+imagesc(dzdxAll, clims);
 x1 = reshapedBox(1)-0.5;
 x2 = reshapedBox(3)+0.5;
 y1 = reshapedBox(2)-0.5;
@@ -88,12 +88,12 @@ title('Left-hand side gradients (all)');
 
 % Plot relevant section of left-hand side gradients
 subplot(2, 3, 5);
-imagesc(dzdxoutSelection, clims);
+imagesc(dzdxSelection, clims);
 title('Left-hand side gradients (region)');
 
 % Plot right-hand side gradients
 subplot(2, 3, 6);
-imagesc(dzdxSelection, clims);
+imagesc(dzdySelection, clims);
 title('Right-hand side gradients');
 
 % Plot mask coordinates
