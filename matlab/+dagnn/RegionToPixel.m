@@ -5,8 +5,11 @@ classdef RegionToPixel < dagnn.Layer
     % inputs are: scoresAll, regionToPixelAux
     % outputs are: scoresSP, labelsSP, weightsSP
     %
-    % Note: The presence/absence of regionToPixelAux.spLabelHistos indicates
-    % whether we are in train/val or test mode.
+    % Note: 
+    % - The presence/absence of regionToPixelAux.spLabelHistos indicates
+    %   whether we are in train/val or test mode.
+    % - For weakly supervised learning the outputs labelsSP and weightsSP
+    %   are ignored.
     %
     % Copyright by Holger Caesar, 2015
     
