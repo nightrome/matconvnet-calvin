@@ -30,7 +30,7 @@ if isfield(netIn, 'net')
     end;
 elseif isfield(netIn, 'vars')
     % DagNN as struct: Only DAG formats have the 'vars' field
-    obj.net = dagnn.DagNN.loadobj(netIn.net);
+    obj.net = dagnn.DagNN.loadobj(netIn);
     
 elseif isfield(netIn, 'layers') && iscell(netIn.layers)
     % SimpleNN as struct
@@ -43,10 +43,13 @@ end
 % Remove unused/incorrect meta fields from old network
 if isprop(obj.net, 'meta')
     if isfield(obj.net.meta, 'normalization')
-        obj.net.meta.normalization = rmfield(obj.net.meta.normalization, 'keepAspect');
-        obj.net.meta.normalization = rmfield(obj.net.meta.normalization, 'border');
-        obj.net.meta.normalization = rmfield(obj.net.meta.normalization, 'imageSize');
-        obj.net.meta.normalization = rmfield(obj.net.meta.normalization, 'interpolation');
+        fields = {'keepAspect', 'border', 'imageSize', 'interpolation'};
+        for i = 1 : numel(fields)
+            fieldName = fields{i};
+            if isfield(obj.net.meta.normalization, fieldName)
+                obj.net.meta.normalization = rmfield(obj.net.meta.normalization, fieldName);
+            end
+        end
     end
     if isfield(obj.net.meta, 'classes')
         obj.net.meta = rmfield(obj.net.meta, 'classes');
