@@ -35,11 +35,6 @@ classdef CalvinNN < handle
                 % Convert network from test to train (add loss layer,
                 % dropout etc.)
                 obj.convertNetwork();
-                
-                % Modify for Fast Rcnn (ROI pooling, bbox regression etc.)
-                if obj.nnOpts.fastRcnn
-                    obj.convertNetworkToFastRcnn();
-                end
             end
         end 
         

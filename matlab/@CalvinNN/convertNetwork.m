@@ -35,3 +35,8 @@ obj.net.params(obj.net.layers(fc8Idx).paramIndexes(2)).value = newParams{2}';
 
 % Rename input
 obj.net.renameVar('x0', 'input');
+
+% Modify for Fast Rcnn (ROI pooling, bbox regression etc.)
+if obj.nnOpts.fastRcnn
+    obj.convertNetworkToFastRcnn();
+end
