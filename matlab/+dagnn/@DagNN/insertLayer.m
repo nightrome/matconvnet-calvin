@@ -3,7 +3,7 @@ function insertLayer(obj, leftLayerName, rightLayerName, newLayerName, newBlock,
 %
 % Takes a DAG and inserts a new layer before an existing layer.
 % The outputs of the previous layer and inputs of the following layer are
-% adapted accodingly.
+% adapted accordingly.
 %
 % Copyright by Holger Caesar, 2015
 
@@ -19,12 +19,16 @@ rightInputs = rightLayer.inputs;
 assert(leftLayerIdx ~= rightLayerIdx);
 
 % Introduce new free variables for new layer outputs
-rightInputs = replaceVariables(obj, rightInputs);
+rightInputs = obj.replaceVariables(rightInputs);
 
 % Change the input of the right layer (to avoid cycles)
 obj.layers(rightLayerIdx).inputs = rightInputs;
 
 newInputs = leftOutputs;
+
+% % % Automatic filtering is problematic for different variable names, do
+% % % everything manually!
+% % % newOutputs = rightInputs;
 
 % Remove special inputs from rightInputs (i.e. labels)
 newOutputs = regexp(rightInputs, '^(x\d+)', 'match', 'once');
@@ -43,41 +47,3 @@ end;
 
 % Add the new layer
 obj.addLayer(newLayerName, newBlock, newInputs, newOutputs, newParams);
-
-function[variables] = replaceVariables(obj, variables)
-% [variables] = replaceVariables(obj, variables)
-%
-% Replace all default variables (x\d+) with free variables.
-%
-% Copyright by Holger Caesar, 2015
-
-for i = 1 : numel(variables),
-    oldVariable = variables{i};
-    
-    if regexp(oldVariable, 'x\d+'),
-        freeVariable = getFreeVariable(obj);
-        variables{i} = freeVariable;
-    end;
-end;
-
-function[var] = getFreeVariable(obj)
-% [var] = getFreeVariable(obj)
-%
-% Returns the name of a new free variable.
-% The name is xi where i is the smallest unused integer in the existing
-% variables.
-%
-% Copyright by Holger Caesar, 2015
-
-names = {obj.vars.name};
-inds = nan(numel(names, 1));
-
-for i = 1 : numel(names),
-    [tok, ~] = regexp(names{i}, 'x(\d+)', 'tokens', 'match');
-    if ~isempty(tok),
-        inds(i) = str2double(tok{1});
-    end;
-end;
-
-maxInd = max(inds);
-var = sprintf('x%d', maxInd+1);
