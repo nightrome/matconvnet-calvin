@@ -16,7 +16,7 @@ classdef ImdbCalvin < handle
     methods (Abstract)
         % This is the main method which needs to be implemented.
         % It is used by CalvinNN.train()
-        [inputs, numElements] = getBatch(obj, batchInds, net);
+        [inputs, numElements] = getBatch(obj, batchInds, net, nnOpts);
     end
     
     methods
@@ -33,9 +33,9 @@ classdef ImdbCalvin < handle
             % Obtain the indices and ordering of all batches (for this epoch)
             switch obj.datasetMode
                 case 'train'
-                    allBatchInds = randperm(size(obj.data.train,1));
+                    allBatchInds = randperm(size(obj.data.train, 1));
                 otherwise
-                    allBatchInds = 1:size(obj.data.(obj.datasetMode),1);
+                    allBatchInds = 1:size(obj.data.(obj.datasetMode), 1);
             end
         end
         

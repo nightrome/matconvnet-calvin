@@ -58,7 +58,7 @@ classdef ImdbClassification < ImdbCalvin
             end
         end
         
-        function [batchData, currBatchSize] = getBatch(obj, batchInds, net)
+        function [batchData, currBatchSize] = getBatch(obj, batchInds, net, ~)
             if nargin == 2
                 gpuMode = false;
             else

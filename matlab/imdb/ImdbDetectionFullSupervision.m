@@ -10,7 +10,7 @@ classdef ImdbDetectionFullSupervision < ImdbMatbox
             obj@ImdbMatbox(imageDir, imExt, matboxDir, filenames, datasetIdx, meanIm);
         end
         
-        function [batchData, numElements] = getBatch(obj, batchInds, net)
+        function [batchData, numElements] = getBatch(obj, batchInds, net, ~)
             if length(batchInds) > 1
                 error('Only supports batches of 1');
             end
