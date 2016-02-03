@@ -24,7 +24,7 @@ classdef ImdbData < ImdbCalvin
             obj.labs.val   = trainLabels(randIdx(numTrain+1:end));
         end
         
-        function [inputs, numElements] = getBatch(obj, batchInds, ~)
+        function [inputs, numElements] = getBatch(obj, batchInds, ~, ~)
             inputs{1} = 'input';
             inputs{2} = obj.data.(obj.datasetMode)(:,:,:,batchInds);
             inputs{3} = 'label';

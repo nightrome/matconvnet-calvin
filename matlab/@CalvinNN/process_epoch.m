@@ -45,7 +45,7 @@ for t=1:obj.nnOpts.batchSize:numel(allBatchInds),
         num = num + numel(batchInds);
         if numel(batchInds) == 0, continue; end
         
-        [inputs, numElements] = obj.imdb.getBatch(batchInds, net);
+        [inputs, numElements] = obj.imdb.getBatch(batchInds, net, obj.nnOpts);
         % Skip empty subbatches
         if numElements == 0
             continue;
