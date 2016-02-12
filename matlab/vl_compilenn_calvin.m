@@ -1,4 +1,10 @@
 function vl_compilenn_calvin()
+% vl_compilenn_calvin()
+%
+% Compile the C code provided in Matconvnet-calvin.
+% You also need to execute vl_compilenn('EnableGpu', true).
+%
+% Copyright by Holger Caesar, 2016
 
 root = vl_rootnn();
 mexDir = fullfile(root, 'matlab', 'mex');
