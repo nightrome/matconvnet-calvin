@@ -12,32 +12,22 @@ function[rois, masks] = roiPooling_freeform_forward(rois, masks, blobMasks, comb
 %
 % Copyright by Holger Caesar, 2015
 
-% Perform freeform pooling
 % Store a copy of the box features if we still need them
 if combineFgBox,
     roisBox = rois;
     masksBox = masks;
 end;
 
-% Move inputs from GPU if necessary
-onGpu = isa(rois, 'gpuArray');
-if onGpu,
-    rois = gather(rois);
-end;
-
+% Perform freeform pooling and update mask for backpropagation
 assert(numel(blobMasks) == size(rois, 4));
-for blobIdx = 1 : numel(blobMasks),
-    % Determine background mask
-    [rois(:, :, :, blobIdx), masks(:, :, :, blobIdx)] = roiPooling_freeform_blob(blobMasks{blobIdx}, rois(:, :, :, blobIdx), masks(:, :, :, blobIdx));
-    
-    % Debug: To visualize each blob
-    % figure(1); imagesc(blobMaskOri); figure(2); imagesc(blobMask); nonEmptyChannel = maxInd(squeeze(sum(sum(rois(:, :, :, blobIdx), 1), 2))); figure(3); imagesc(rois(:, :, nonEmptyChannel, blobIdx)); figure(4); imagesc(masks(:, :, nonEmptyChannel, blobIdx))
-end;
+blobMasksMat = cat(4, blobMasks{:});
+blobMasksNanMat = double(~blobMasksMat);
+blobMasksNanMat(blobMasksNanMat(:) == 0) = nan;
+rois  = bsxfun(@times, rois,  blobMasksMat);
+masks = bsxfun(@times, masks, blobMasksNanMat);
 
-% Move outputs to GPU if necessary
-if onGpu,
-    rois = gpuArray(rois);
-end;
+% Debug: To visualize each blob (requires an update)
+% figure(1); imagesc(blobMaskOri); figure(2); imagesc(blobMask); nonEmptyChannel = maxInd(squeeze(sum(sum(rois(:, :, :, blobIdx), 1), 2))); figure(3); imagesc(rois(:, :, nonEmptyChannel, blobIdx)); figure(4); imagesc(masks(:, :, nonEmptyChannel, blobIdx))
 
 % Concatenate fg and box
 if combineFgBox,
