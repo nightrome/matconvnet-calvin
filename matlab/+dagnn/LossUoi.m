@@ -51,6 +51,12 @@ classdef LossUoi < dagnn.Loss
                 instanceWeights = ones(1, 1, 1, pixelCount);
             end
             
+            % Move to CPU
+            gpuMode = isa(scoresPred, 'gpuArray');
+            if gpuMode
+                scoresPred = gather(scoresPred);
+            end
+            
             % Reshape for convenience
             scoresPred = reshape(scoresPred, labelCount, pixelCount);
             labels = reshape(labels, 1, pixelCount);
@@ -82,6 +88,7 @@ classdef LossUoi < dagnn.Loss
             end
             uoi = nanmean(uois);
             outputs{1} = uoi;
+            fprintf('Uoi in LossUoi: %.4f\n', uoi);
             
             % Update statistics
             n = obj.numAveraged;
@@ -101,9 +108,24 @@ classdef LossUoi < dagnn.Loss
             instanceWeights = inputs{3};
             dzdy = derOutputs{1};
             
-            % Get dimensions and reshape for convenience
             labelCount = size(scoresPred, 3);
             pixelCount = size(scoresPred, 4);
+            
+            % Check or initialize instance weights
+            if ~isempty(instanceWeights)
+                assert(numel(instanceWeights) == size(scoresPred, 4));
+                assert(numel(instanceWeights) == size(labels, ndims(labels)));
+            else
+                instanceWeights = ones(1, 1, 1, pixelCount);
+            end
+            
+            % Move to CPU
+            gpuMode = isa(scoresPred, 'gpuArray');
+            if gpuMode
+                scoresPred = gather(scoresPred);
+            end
+            
+            % Reshape for convenience
             scoresPred = reshape(scoresPred, labelCount, pixelCount);
             labels = reshape(labels, 1, pixelCount);
             instanceWeights = reshape(instanceWeights, 1, pixelCount);
@@ -137,6 +159,7 @@ classdef LossUoi < dagnn.Loss
             
             % Reshape to original format
             dzdx = reshape(dzdx, 1, 1, labelCount, pixelCount);
+            fprintf('Max dzdx in LossUoi: %.4f\n', max(dzdx(:)));
             
             derInputs{1} = dzdx;
             derInputs{2} = [];
