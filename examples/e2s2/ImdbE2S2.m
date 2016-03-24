@@ -155,24 +155,26 @@ classdef ImdbE2S2 < ImdbCalvin
             assert(size(spLabelHistos, 1) == numel(blobsSP));
             clearvars spInds;
             
-            % Get GT structure
-            segmentPathGT = [obj.segmentFolderGT, filesep, imageName, '.mat'];
-            segmentStructGT = load(segmentPathGT, 'propBlobs', 'labelListGT');
-            blobsGT = segmentStructGT.propBlobs(:);
-            labelListGT = segmentStructGT.labelListGT;
-            if isempty(blobsGT),
-                % Skip images without GT regions
-                return;
-            end;
-            
-            % Get blobMasks from file
-            if roiPool.freeform.use,
-                segmentStructGT = load(segmentPathGT, blobMasksName);
-                blobMasksGT = segmentStructGT.(blobMasksName);
-            end;
+            if ~weaklySupervised.use
+                % Get GT structure
+                segmentPathGT = [obj.segmentFolderGT, filesep, imageName, '.mat'];
+                segmentStructGT = load(segmentPathGT, 'propBlobs', 'labelListGT');
+                blobsGT = segmentStructGT.propBlobs(:);
+                labelListGT = segmentStructGT.labelListGT;
+                if isempty(blobsGT),
+                    % Skip images without GT regions
+                    return;
+                end;
+                
+                % Get blobMasks from file
+                if roiPool.freeform.use,
+                    segmentStructGT = load(segmentPathGT, blobMasksName);
+                    blobMasksGT = segmentStructGT.(blobMasksName);
+                end;
+            end
             
             % Filter blobs according to IOU with GT
-            if batchOptsCopy.subsample,
+            if batchOptsCopy.subsample && ~weaklySupervised.use,
                 % Compute IOUs between RP and GT
                 overlapRPGT = scoreBlobIoUs(blobsRP, blobsGT);
                 
@@ -334,14 +336,16 @@ classdef ImdbE2S2 < ImdbCalvin
                 imLabelInds = find(ismember(labelNames, imLabelNames));
                 
                 % Determine image-level frequencies
-                % Assume all labels take the same number of pixels in that image                
+                % Assume all labels take the same number of pixels in that image
                 % Note: On average it should be: sum(imLabelWeights) = 1
+                % TODO: the labels are not weighted by superpixel size yet
+                %       would that even make sense?
                 if weaklySupervised.invLabelFreqs,
                     [labelImFreqs, ~] = obj.dataset.getLabelImFreqs();
                     labelImFreqsNorm = labelImFreqs / sum(labelImFreqs) * labelCount;
                     imLabelWeights = 1 ./ labelImFreqsNorm(imLabelInds);
                     
-                    % Renormalize to (average of) 1
+                    % Renormalize mass to (average of) 1
                     if weaklySupervised.normalizeImageMass,
                         imLabelWeights = imLabelWeights ./ sum(imLabelWeights);
                     end;
@@ -358,7 +362,7 @@ classdef ImdbE2S2 < ImdbCalvin
             end;
             
             % Convert boxes to transposed Girshick format
-            boxesAll = boxesAll(:, [2, 1, 4, 3])';            
+            boxesAll = boxesAll(:, [2, 1, 4, 3])';
             
             % Store in output struct
             inputs = {'input', image, 'oriImSize', oriImSize, 'boxes', boxesAll};
@@ -372,7 +376,7 @@ classdef ImdbE2S2 < ImdbCalvin
                 inputs = [inputs, {'blobMasks', blobMasksAll}];
             end;
             if weaklySupervised.use  ...
-                    && (weaklySupervised.labelPresence.use || weaklySupervised.labelReplication.use) ...
+                    && weaklySupervised.labelPresence.use ...
                     && ~testMode,
                 inputs = [inputs, {'labelImage', imLabelInds}];
                 inputs = [inputs, {'weightsImage', imLabelWeights}];
