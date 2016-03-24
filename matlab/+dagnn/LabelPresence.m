@@ -31,7 +31,7 @@ classdef LabelPresence < dagnn.Layer
             % Init
             labelList = unique(labelImage);
             labelListCount = numel(labelList);
-            scoresImage = nan(1, 1, labelCount, labelListCount); % score of the label, and all other labels
+            scoresImage = nan(1, 1, labelCount, labelListCount, 'single'); % score of the label, and all other labels
             obj.mask = nan(labelCount, labelListCount); % contains the label of each superpixel
             
             % For each label, get the scores of the highest scoring pixel
