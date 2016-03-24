@@ -25,10 +25,8 @@ classdef ImdbE2S2 < ImdbCalvin
             
             % Set default options
             obj.batchOpts.maxImageSize = 600;
-            obj.batchOpts.posFrac = 1.0;
             obj.batchOpts.negRange = [0.0, 0.1];
             obj.batchOpts.posRange = [0.1, 1.0];
-            obj.batchOpts.maxRegionsPerImage = Inf;
             obj.batchOpts.subsample = true;
             obj.batchOpts.removeGT = false;
             obj.batchOpts.overlapThreshGTSP = 0.5;
@@ -65,8 +63,6 @@ classdef ImdbE2S2 < ImdbCalvin
             
             % Check inputs
             assert(~isempty(obj.datasetMode));
-            assert(obj.batchOpts.posFrac == 1.0);
-            assert(isinf(obj.batchOpts.maxRegionsPerImage));
             assert(numel(batchIdx) == 1);
             
             % Dummy init
@@ -90,7 +86,6 @@ classdef ImdbE2S2 < ImdbCalvin
                 batchOptsCopy.subsample = false;
                 batchOptsCopy.removeGT = true;
                 batchOptsCopy.blobMaxSize = [];
-                batchOptsCopy.maxRegionsPerImage = Inf;
                 batchOptsCopy.imageFlipping = false;
                 batchOptsCopy.segments.switchColorTypesEpoch = false;
                 batchOptsCopy.segments.switchColorTypesBatch = false;
