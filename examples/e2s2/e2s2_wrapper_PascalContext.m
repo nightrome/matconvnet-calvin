@@ -1,8 +1,7 @@
  function e2s2_wrapper_PascalContext()
 % e2s2_wrapper_PascalContext()
 %
-% A wrapper for Fast-RCNN with Matconvnet that allows to train and test a
-% network.
+% A wrapper for Fast-RCNN with Matconvnet that allows to train and test a network.
 %
 % Copyright by Holger Caesar, 2015
 
@@ -33,15 +32,12 @@ lowLRNumEpochs  = numEpochs - highLRNumEpochs;
 highLR = repmat(1e-3, [1, highLRNumEpochs]);
 lowLR  = repmat(1e-4, [1,  lowLRNumEpochs]);
 learningRate = [highLR, lowLR];
-imageFlipping = true;
-sigmoidLoss.use = false;
-sigmoidLoss.learningRate = 0; %1e1; % Must be > 1 to have any affect
-labelPresence.use = false;
 segments.minSize = 400;
 segments.switchColorTypesEpoch = true;
 segments.switchColorTypesBatch = true;
 segments.colorTypes = {'Rgb', 'Hsv', 'Lab'};
 segments.colorTypeIdx = 1;
+fastRcnnParams = false;
 
 % Initialize random number generator seed
 if ~isempty(randSeed);
@@ -63,7 +59,7 @@ elseif strcmp(netName, '18beta-VGG16'),
 else
     error('Error: Unknown netName!');
 end;
-outputFolderName = sprintf('%s_finetune_frcnmcn_%s_e2s2_run%d_exp%d', dataset.name, netName, run, exp);
+outputFolderName = sprintf('%s_finetune_e2s2_%s_run%d_exp%d', dataset.name, netName, run, exp);
 segmentFolder = fullfile(glFeaturesFolder, projectName, dataset.name, 'segmentations');
 netPath = fullfile(glFeaturesFolder, 'CNN-Models', 'matconvnet', [netFileName, '.mat']);
 outputFolder = fullfile(glFeaturesFolder, 'CNN-Models', 'FastRcnnMatconvnet', 'SemSegm', dataset.name, sprintf('Run%d', run), outputFolderName);
@@ -90,9 +86,7 @@ imdb.data.train = imageListTrn( trainValList);
 imdb.data.val   = imageListTrn(~trainValList);
 imdb.data.test  = imageListTst;
 imdb.numClasses = dataset.labelCount;
-imdb.segmentFolder = segmentFolder;
-imdb.batchOpts.imageFlipping = imageFlipping;
-imdb.batchOpts.segments = segments;
+imdb.batchOpts.segments = structOverwriteFields(imdb.batchOpts.segments, segments);
 imdb.updateSegmentNames();
 
 % Create nnOpts
@@ -107,9 +101,8 @@ nnOpts.learningRate = learningRate;
 nnOpts.extractStatsFn = @E2S2NN.extractStats;
 nnOpts.misc.roiPool = roiPool;
 nnOpts.misc.regionToPixel = regionToPixel;
-nnOpts.misc.sigmoidLoss = sigmoidLoss;
-nnOpts.misc.labelPresence = labelPresence;
 nnOpts.bboxRegress = false;
+nnOpts.fastRcnnParams = fastRcnnParams;
 
 % Save the current options
 netOptsPath = fullfile(outputFolder, 'net-opts.mat');

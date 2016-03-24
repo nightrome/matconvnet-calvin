@@ -21,57 +21,6 @@ classdef E2S2NN < CalvinNN
                 regionToPixelOpts = struct2Varargin(regionToPixelOpts);
                 regionToPixelBlock = dagnn.RegionToPixel(regionToPixelOpts{:});
                 obj.net.insertLayer('fc8', 'softmaxloss', 'regiontopixel8', regionToPixelBlock, 'regionToPixelAux', {'label', 'instanceWeights'});
-                
-                % Convert softmax+logloss to sigmoid+loglossweighted
-                if isfield(obj.nnOpts.misc, 'sigmoidLoss') && obj.nnOpts.misc.sigmoidLoss.use,
-                    % Define new layer blocks
-                    sigmoidBlock = dagnn.GeneralSigmoid('numClasses', obj.imdb.numClasses);
-                    lossBlock = dagnn.LossWeighted('loss', 'log');
-                    sigmoidLearningRate = obj.nnOpts.misc.sigmoidLoss.learningRate;
-                    sigmoidInit = sigmoidBlock.initParams();
-                    sigmoidParams(1).name = 'sigmoidA';
-                    sigmoidParams(1).value = sigmoidInit{1};
-                    sigmoidParams(1).weightDecay = 0;
-                    sigmoidParams(1).learningRate = sigmoidLearningRate;
-                    sigmoidParams(2).name = 'sigmoidB';
-                    sigmoidParams(2).value = sigmoidInit{2};
-                    sigmoidParams(2).weightDecay = 0;
-                    sigmoidParams(2).learningRate = sigmoidLearningRate;
-                    
-                    % Replace one old layer with 2 new layers
-                    obj.net.replaceLayer('softmaxloss', 'logloss', lossBlock);
-                    obj.net.insertLayer('fc8', 'regiontopixel8', 'sigmoid', sigmoidBlock, {}, {}, {sigmoidParams.name});
-                    
-                    % Remove nonsense sigmoid parameters
-                    sigmoidIdx = obj.net.getLayerIndex('sigmoid');
-                    obj.net.layers(sigmoidIdx).inputs = obj.net.layers(sigmoidIdx).inputs{1};
-                    obj.net.rebuild();
-                    
-                    % Set parameter values
-                    for sigmoidParamsIdx = 1 : numel(sigmoidParams),
-                        param = sigmoidParams(sigmoidParamsIdx);
-                        paramIdx = obj.net.getParamIndex(param.name);
-                        obj.net.params(paramIdx).value = param.value;
-                        obj.net.params(paramIdx).weightDecay = param.weightDecay;
-                        obj.net.params(paramIdx).learningRate = param.learningRate;
-                    end;
-                end;
-                
-                if isfield(obj.nnOpts.misc, 'lossUoi') && obj.nnOpts.misc.lossUoi.use,
-                    % Union-over-Intersection loss, requires softmax before
-                    % it
-                    lossBlock = dagnn.LossUoi();
-                    softmaxBlock = dagnn.SoftMax();
-                    
-                    % Replace one old layer with 2 new layers
-                    obj.net.replaceLayer('softmaxloss', 'uoiloss', lossBlock);
-                    obj.net.insertLayer('regiontopixel8', 'uoiloss', 'softmax', softmaxBlock, {}, {}, {});
-                    
-                    % Remove nonsense softmax parameters
-                    softmaxIdx = obj.net.getLayerIndex('softmax');
-                    obj.net.layers(softmaxIdx).inputs = obj.net.layers(softmaxIdx).inputs{1};
-                    obj.net.rebuild();
-                end;
             end;
             
             %%% Weakly supervised learning options

@@ -128,7 +128,7 @@ classdef ImdbE2S2 < ImdbCalvin
             end;
             
             % Resize image and subtract mean image
-            [image, oriImSize] = frcnmcn_prepareImage(net, image, batchOptsCopy.maxImageSize);
+            [image, oriImSize] = e2s2_prepareImage(net, image, batchOptsCopy.maxImageSize);
             
             % Get segmentation structure
             segmentPathRP = [obj.segmentFolderRP, filesep, imageName, '.mat'];
