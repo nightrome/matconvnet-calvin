@@ -12,3 +12,4 @@ addpath(fullfile(root, 'matlab', 'regiontopixel'));
 addpath(fullfile(root, 'matlab', 'roipool'));
 addpath(fullfile(root, 'matlab', 'boxes'));
 addpath(fullfile(root, 'matlab', 'misc'));
+addpath(fullfile(root, 'examples', 'e2s2'));
