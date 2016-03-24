@@ -143,6 +143,9 @@ classdef ImdbE2S2 < ImdbCalvin
             if roiPool.freeform.use,
                 blobMasksName = sprintf('blobMasks%dx%d', roiPool.size(1), roiPool.size(2));
                 segmentStructRP = load(segmentPathRP, blobMasksName);
+                if ~isfield(segmentStructRP, 'blobMasksName'),
+                    error('Error: Missing blob masks, please run e2s2_storeBlobMasks()!');
+                end;
                 blobMasksRP = segmentStructRP.(blobMasksName);
                 clearvars segmentStructRP;
             end;

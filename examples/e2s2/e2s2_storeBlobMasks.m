@@ -14,6 +14,7 @@ addParameter(p, 'proposalName', 'Uijlings2013-ks100-sigma0.8-colorTypesRgb');
 addParameter(p, 'roiPoolFreeformDilateSize', []); % Don't change this!
 addParameter(p, 'roiPoolFreeformThresh', 0);      % Don't change this!
 addParameter(p, 'roiPoolSize', [7, 7]); %6x6 for AlexNet, 7x7 for VGG16
+addParameter(p, 'skipExisting', true);
 parse(p, varargin{:});
 
 dataset = p.Results.dataset;
@@ -22,10 +23,14 @@ proposalName = p.Results.proposalName;
 roiPoolFreeformDilateSize = p.Results.roiPoolFreeformDilateSize;
 roiPoolFreeformThresh = p.Results.roiPoolFreeformThresh;
 roiPoolSize = p.Results.roiPoolSize;
+skipExisting = p.Results.skipExisting;
 
 % Create paths
 global glFeaturesFolder;
 segmentFolder = fullfile(glFeaturesFolder, projectName, dataset.name, 'segmentations', proposalName);
+
+% Get blob mask variable name
+masksName = sprintf('blobMasks%dx%d', roiPoolSize(1), roiPoolSize(2));
 
 % Get image list
 [imageList, imageCount] = dataset.getImageList(true);
@@ -40,6 +45,10 @@ for imageIdx = 1 : imageCount,
     segmentStruct = load(segmentPath, 'propBlobs');
     propBlobs = segmentStruct.propBlobs;
     blobCount = numel(propBlobs);
+    if matFileHasField(segmentPath, masksName) && skipExisting,
+        fprintf('Skipping existing blob masks in file: %s\n', segmentPath);
+        continue;
+    end;
     
     % Compute blob masks
     blobMasks = cell(blobCount, 1);    
@@ -60,7 +69,6 @@ for imageIdx = 1 : imageCount,
     end;
 
     % Append the blobMasks to the existing segmentStruct
-    masksName = sprintf('blobMasks%dx%d', roiPoolSize(1), roiPoolSize(2));
     eval(sprintf('%s = blobMasks;', masksName));
     save(segmentPath, masksName, '-append');
 end;
