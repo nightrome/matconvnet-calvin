@@ -333,6 +333,10 @@ classdef ImdbE2S2 < ImdbCalvin
                 % in the regiontopixel layer.
                 [labelNames, labelCount] = obj.dataset.getLabelNames();
                 imLabelNames = obj.dataset.getImLabelList(imageName);
+                if isempty(imLabelNames),
+                    % Skip images that have no labels
+                    return;
+                end;
                 imLabelInds = find(ismember(labelNames, imLabelNames));
                 
                 % Determine image-level frequencies
