@@ -42,12 +42,11 @@ for spIdx = 1 : spCount,
 end;
 
 % Compute sample target labels and weights
-isTest = ~isfield(regionToPixelAux, 'spLabelHistos');
-if isTest,
+splitWeightUnpureSPs = isfield(regionToPixelAux, 'spLabelHistos');
+if ~splitWeightUnpureSPs,
     % Set dummy outputs
     labelsSP = [];
     weightsSP = [];
-    mapSP = [];
 else
     % Get input fields
     labelPixelFreqs = regionToPixelAux.labelPixelFreqs;
