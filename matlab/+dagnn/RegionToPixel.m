@@ -15,7 +15,7 @@ classdef RegionToPixel < dagnn.Layer
     
     properties
         inverseLabelFreqs = true;
-        oldWeightMode = true;
+        normalizeImageMass = true;
         replicateUnpureSPs = true;
         minPixFreq = []; % used only in getBatch
     end
@@ -27,7 +27,7 @@ classdef RegionToPixel < dagnn.Layer
     methods
         function outputs = forward(obj, inputs, params) %#ok<INUSD>
             assert(numel(inputs) == 2);
-            [scoresSP, labelsSP, weightsSP, obj.mask] = regionToPixel_forward(inputs{1}, inputs{2}, obj.inverseLabelFreqs, obj.oldWeightMode, obj.replicateUnpureSPs);
+            [scoresSP, labelsSP, weightsSP, obj.mask] = regionToPixel_forward(inputs{1}, inputs{2}, obj.inverseLabelFreqs, obj.normalizeImageMass, obj.replicateUnpureSPs);
             
             % Split labels into labels and instance weights
             outputs = cell(3, 1);

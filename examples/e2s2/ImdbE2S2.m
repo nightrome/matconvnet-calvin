@@ -342,7 +342,7 @@ classdef ImdbE2S2 < ImdbCalvin
                     imLabelWeights = 1 ./ labelImFreqsNorm(imLabelInds);
                     
                     % Renormalize to (average of) 1
-                    if weaklySupervised.oldWeightMode,
+                    if weaklySupervised.normalizeImageMass,
                         imLabelWeights = imLabelWeights ./ sum(imLabelWeights);
                     end;
                 else

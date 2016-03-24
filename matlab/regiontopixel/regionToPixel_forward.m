@@ -1,5 +1,5 @@
-function[scoresSP, labelsSP, weightsSP, mapSP] = regionToPixel_forward(scoresAll, regionToPixelAux, inverseLabelFreqs, oldWeightMode, replicateUnpureSPs)
-% [scoresSP, labelsSP, weightsSP, mapSP] = regionToPixel_forward(scoresAll, regionToPixelAux, inverseLabelFreqs, oldWeightMode, replicateUnpureSPs)
+function[scoresSP, labelsSP, weightsSP, mapSP] = regionToPixel_forward(scoresAll, regionToPixelAux, inverseLabelFreqs, normalizeImageMass, replicateUnpureSPs)
+% [scoresSP, labelsSP, weightsSP, mapSP] = regionToPixel_forward(scoresAll, regionToPixelAux, inverseLabelFreqs, normalizeImageMass, replicateUnpureSPs)
 %
 % Go from a region level to a pixel level.
 % (to be able to compute a loss there)
@@ -100,7 +100,7 @@ else
     end;
     
     % Renormalize to (average of) 1
-    if oldWeightMode,
+    if normalizeImageMass,
         weightsSP = weightsSP ./ sum(weightsSP);
     end;
     
