@@ -113,6 +113,11 @@ classdef ImdbE2S2 < ImdbCalvin
             regionToPixel = nnOpts.misc.regionToPixel;
             if isfield(nnOpts.misc, 'weaklySupervised'),
                 weaklySupervised = nnOpts.misc.weaklySupervised;
+                
+                if weaklySupervised.use,
+                    batchOptsCopy.subsample = false;
+                    batchOptsCopy.removeGT = true;
+                end;
             else
                 weaklySupervised.use = false;
             end;
@@ -143,7 +148,7 @@ classdef ImdbE2S2 < ImdbCalvin
             if roiPool.freeform.use,
                 blobMasksName = sprintf('blobMasks%dx%d', roiPool.size(1), roiPool.size(2));
                 segmentStructRP = load(segmentPathRP, blobMasksName);
-                if ~isfield(segmentStructRP, 'blobMasksName'),
+                if ~isfield(segmentStructRP, blobMasksName),
                     error('Error: Missing blob masks, please run e2s2_storeBlobMasks()!');
                 end;
                 blobMasksRP = segmentStructRP.(blobMasksName);
@@ -152,7 +157,6 @@ classdef ImdbE2S2 < ImdbCalvin
             
             % Get superpixels
             blobsSP = blobsRP(spInds);
-            assert(size(spLabelHistos, 1) == numel(blobsSP));
             clearvars spInds;
             
             if ~weaklySupervised.use
@@ -243,7 +247,7 @@ classdef ImdbE2S2 < ImdbCalvin
             end;
             
             % Compute pixel-level label frequencies (also used without inv-freqs)
-            if regionToPixel.use,
+            if regionToPixel.use && ~weaklySupervised.use,
                 global labelPixelFreqsOriginal; %#ok<TLEV>
                 if isempty(labelPixelFreqsOriginal),
                     [labelPixelFreqsSum, labelPixelImageCount] = obj.dataset.getLabelPixelFreqs();
@@ -312,7 +316,8 @@ classdef ImdbE2S2 < ImdbCalvin
             % Store regionToPixel info in a struct
             if regionToPixel.use,
                 regionToPixelAux.overlapListAll = overlapListAll;
-                if ~testMode,
+                if ~testMode && ~weaklySupervised.use,
+                    assert(size(spLabelHistos, 1) == numel(blobsSP));
                     regionToPixelAux.labelPixelFreqs = labelPixelFreqs;
                     regionToPixelAux.spLabelHistos = spLabelHistos;
                 end;
