@@ -94,7 +94,7 @@ classdef ImdbE2S2 < ImdbCalvin
                     obj.updateSegmentNames(batchOptsCopy);
                 end;
                 
-                if testMode && isfield(nnOpts.misc, 'testOpts'),
+                if isfield(nnOpts.misc, 'testOpts'),
                     if isfield(nnOpts.misc.testOpts, 'subsamplePosRange'),
                         batchOptsCopy.subsample = true;
                         batchOptsCopy.posRange = nnOpts.misc.testOpts.subsamplePosRange;
@@ -110,6 +110,7 @@ classdef ImdbE2S2 < ImdbCalvin
                 weaklySupervised = nnOpts.misc.weaklySupervised;
                 
                 if weaklySupervised.use,
+                    assert(weaklySupervised.labelPresence.use);
                     batchOptsCopy.subsample = false;
                     batchOptsCopy.removeGT = true;
                 end;
