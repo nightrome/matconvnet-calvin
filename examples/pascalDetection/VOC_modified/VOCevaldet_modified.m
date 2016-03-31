@@ -1,4 +1,4 @@
-function [rec,prec,ap] = VOCevaldetModified(DATAopts, cls, loadName, draw, flipBoxes)
+function [rec,prec,ap] = VOCevaldet_modified(DATAopts, cls, loadName, draw, flipBoxes)
 
 % load test set
 tic;
@@ -26,7 +26,7 @@ end
 fprintf('%s: pr: evaluating detections\n',cls);
 
 % hash image ids
-hash=VOChash_init(gtids);
+hash=VOChash_init_modified(gtids);
         
 % extract ground truth objects
 
@@ -70,7 +70,7 @@ for d=1:nd
     end
     
     % find ground truth image
-    i=VOChash_lookup(hash,ids{d});
+    i=VOChash_lookup_modified(hash,ids{d});
     if isempty(i)
         error('unrecognized image "%s"',ids{d});
     elseif length(i)>1

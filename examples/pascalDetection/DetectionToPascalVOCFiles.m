@@ -53,7 +53,7 @@ fclose(fid);
 fprintf('\n');
 
 if doEval
-    [recall, prec, ap] = VOCevaldetModified(DATAopts, className, resultsName, false);
+    [recall, prec, ap] = VOCevaldet_modified(DATAopts, className, resultsName, false);
     apUpperBound = max(recall);
 else
     recall = 0;

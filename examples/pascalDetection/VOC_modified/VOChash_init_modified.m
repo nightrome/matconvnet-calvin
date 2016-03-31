@@ -1,4 +1,4 @@
-function hash = VOChash_init(strs)
+function hash = VOChash_init_modified(strs)
 
 hsize=4999;
 hash.key=cell(hsize,1);

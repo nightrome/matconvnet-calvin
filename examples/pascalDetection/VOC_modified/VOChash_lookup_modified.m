@@ -1,4 +1,4 @@
-function ind = VOChash_lookup(hash,s)
+function ind = VOChash_lookup_modified(hash,s)
 
 hsize=numel(hash.key);
 if length(s) == 6
