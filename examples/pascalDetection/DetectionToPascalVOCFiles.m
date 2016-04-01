@@ -1,5 +1,5 @@
 function [recall, prec, ap, apUpperBound] = ...
-    DetectionToPascalVOCFiles(set, class, boxes, boxIms, boxClfs, compName, doEval, filterF)
+    DetectionToPascalVOCFiles(set, class, boxes, boxIms, boxClfs, compName, doEval, overlapNms)
 % Filters overlapping boxes (near duplicates), creates official VOC
 % detection files. Evaluates results.
 
@@ -21,8 +21,7 @@ boxIms = boxIms(sI);
 boxes = boxes(sI,:);
 
 % Filter boxes if wanted
-if exist('filterF', 'var')
-    if filterF > 0
+if exist('overlapNms', 'var') && overlapNms > 0
         [uIms uM uN] = unique(boxIms);
         keepIds = true(size(boxes,1), 1);
         fprintf('Filtering %d: ', length(uIms));
@@ -31,14 +30,13 @@ if exist('filterF', 'var')
                 fprintf('%d ', i);
             end
             currIds = find(uN == i);
-            [filteredBoxes, goodBoxesI] = BoxNMS(boxes(currIds,:), filterF);
+            [filteredBoxes, goodBoxesI] = BoxNMS(boxes(currIds,:), overlapNms);
             keepIds(currIds) = goodBoxesI;
         end
         boxClfs = boxClfs(keepIds);
         boxIms = boxIms(keepIds);
         boxes = boxes(keepIds,:);
         fprintf('\n');
-    end
 end
 
 

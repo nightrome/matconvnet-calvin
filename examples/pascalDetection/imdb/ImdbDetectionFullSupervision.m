@@ -28,7 +28,9 @@ classdef ImdbDetectionFullSupervision < ImdbMatbox
             % Sample boxes
             gStruct = obj.LoadGStruct(batchInds);
             
-            if obj.flipLR
+            % Flip the image and boxes at training time
+            % Note: flipLR alternates between true and false in ImdbMatbox.initEpoch()
+            if obj.flipLR && strcmp(obj.datasetMode, 'train')
                 currImT = fliplr(image);
                 currBoxesT = gStruct.boxes;
                 currBoxesT(:,3) = oriImSize(2) - gStruct.boxes(:,1) + 1;

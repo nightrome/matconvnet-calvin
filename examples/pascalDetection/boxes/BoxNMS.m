@@ -1,12 +1,12 @@
-function [boxesOut, idx] = BoxNMS(boxesIn, nmsT)
-% function [boxesOut idx] = BoxNMS(boxesIn, nmT)
+function [boxesOut, idx] = BoxNMS(boxesIn, overlapNms)
+% function [boxesOut idx] = BoxNMS(boxesIn, overlapNms)
 %
 % Performs non-maximum suppression: all boxes which have an overlap higher than
 % maxScore with another box higher in the boxesIn list will be filtered
 % out. The boxes must be already ordered
 %
 % boxesIn:              N x 4 array of boxes
-% maxScore:             Maximum overlapping value
+% overlapNms:           Maximum overlap threshold
 %
 % boxesOut:             M x 4 array of boxes, M <= N
 % idx:                  Logical array denoting kept boxes
@@ -15,7 +15,7 @@ function [boxesOut, idx] = BoxNMS(boxesIn, nmsT)
 
 
 if nargin < 2
-    nmsT = 0.3;
+    overlapNms = 0.3;
 end
 
 numBoxes = size(boxesIn,1);
@@ -40,7 +40,7 @@ for i=1:numBoxes-1
         
         % Calculate Intersection / Union. 
         scores = intersectSizes ./ (boxSizes(targetI) + boxSizes(i) - intersectSizes);
-        isGoodT = scores < nmsT;
+        isGoodT = scores < overlapNms;
         
         isGood(targetI) = isGood(targetI) & isGoodT;
     end

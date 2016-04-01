@@ -56,6 +56,7 @@ nnOpts.momentum = 0.9;
 nnOpts.numEpochs = 16;
 nnOpts.learningRate = cat(1, repmat(0.001, 12, 1), repmat(0.0001, 4, 1));
 nnOpts.derOutputs = {'objective', 1, 'regressObjective', 1};
+overlapNms = 0.3;
 
 if USEGPU
     nnOpts.gpus = SelectIdleGpu();
@@ -145,7 +146,7 @@ for cI = 1:20
     %%
     [recall{cI}, prec{cI}, ap(cI,1), upperBound{cI}] = ...
         DetectionToPascalVOCFiles(testName, cI, currBoxes, currFilenames, currScores, ...
-                                       'FastRcnnMatconvnet', 1, 0);
+                                       'FastRcnnMatconvnet', 1, overlapNms);
     ap(cI)
 end
 
@@ -192,7 +193,7 @@ if isfield(stats.results(1), 'boxesRegressed')
         %%
         [recall{cI}, prec{cI}, apRegressed(cI,1), upperBound{cI}] = ...
             DetectionToPascalVOCFiles(testName, cI, currBoxes, currFilenames, currScores, ...
-                                           'FastRcnnMatconvnet', 1, 0);
+                                           'FastRcnnMatconvnet', 1, overlapNms);
         apRegressed(cI)
     end
 
