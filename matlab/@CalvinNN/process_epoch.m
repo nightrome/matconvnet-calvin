@@ -97,7 +97,7 @@ for t=1:obj.nnOpts.batchSize:numel(allBatchInds),
             fix(t/obj.nnOpts.batchSize)+1, ceil(numel(allBatchInds)/obj.nnOpts.batchSize), ...
             stats.num/stats.time * max(numGpus, 1));
         for field = setdiff(fieldnames(stats)', {'num', 'time', 'results'}) 
-            field = char(field);
+            field = char(field); %#ok<FXSET>
             fprintf(' %s:', field);
             fprintf(' %.3f', stats.(field));
         end

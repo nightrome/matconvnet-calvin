@@ -72,7 +72,7 @@ for epoch=start+1:obj.nnOpts.numEpochs
         end
     end
     plot(1:epoch, values');
-    legend(leg{:}); xlabel('epoch'); ylabel('metric');
+    legend(leg{:}); xlabel('epoch'); ylabel('objective');
     grid on;
     drawnow;
     print(1, modelFigPath, '-dpdf');
