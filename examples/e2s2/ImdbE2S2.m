@@ -343,8 +343,6 @@ classdef ImdbE2S2 < ImdbCalvin
                 % Determine image-level frequencies
                 % Assume all labels take the same number of pixels in that image
                 % Note: On average it should be: sum(imLabelWeights) = 1
-                % TODO: the labels are not weighted by superpixel size yet
-                %       would that even make sense?
                 if weaklySupervised.invLabelFreqs,
                     [labelImFreqs, ~] = obj.dataset.getLabelImFreqs();
                     labelImFreqsNorm = labelImFreqs / sum(labelImFreqs) * labelCount;

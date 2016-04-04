@@ -1,5 +1,6 @@
 classdef CalvinNN < handle
     % CalvinNN
+    %
     % Default network training script in Matconvnet-Calvin.
     % This uses Matconvnet's Directed Acyclic Graph structure and is
     % heavily inspired by the cnn_train_dag example.

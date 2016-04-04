@@ -44,8 +44,8 @@ classdef E2S2NN < CalvinNN
                     obj.net.insertLayer('regiontopixel8', 'softmaxloss', 'labelpresence', labelPresenceBlock, {}, {'labelImage'}, {});
                     labelPresenceIdx = obj.net.getLayerIndex('labelpresence');
                     obj.net.layers(labelPresenceIdx).inputs{2} = 'labelImage';
-                    obj.net.layers(labelPresenceIdx).inputs(3)  = []; % Remove
-                    obj.net.layers(labelPresenceIdx).outputs(2) = []; %labelPresenceBlock Remove
+                    obj.net.layers(labelPresenceIdx).inputs(3)  = []; % Remove instanceWeights
+                    obj.net.layers(labelPresenceIdx).outputs(2) = []; % Remove labelImage
                     obj.net.rebuild();
                     
                     % Change parameters for loss
