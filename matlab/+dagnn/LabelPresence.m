@@ -25,12 +25,10 @@ classdef LabelPresence < dagnn.Layer
                 scoresSP = gather(scoresSP);
             end
             
-            % Loss for each gt label
-            labelCount = size(scoresSP, 3);
-            
             % Init
             labelList = unique(labelImage);
             labelListCount = numel(labelList);
+            labelCount = size(scoresSP, 3);
             scoresImage = nan(1, 1, labelCount, labelListCount, 'single'); % score of the label, and all other labels
             obj.mask = nan(labelCount, labelListCount); % contains the label of each superpixel
             

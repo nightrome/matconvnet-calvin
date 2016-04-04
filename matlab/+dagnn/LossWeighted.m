@@ -94,7 +94,7 @@ classdef LossWeighted < dagnn.Loss
             for v = in
                 net.numPendingVarRefs(v) = net.numPendingVarRefs(v) - 1;
                 if net.numPendingVarRefs(v) == 0
-                    if ~net.vars(v).precious & ~net.computingDerivative & net.conserveMemory
+                    if ~net.vars(v).precious && ~net.computingDerivative && net.conserveMemory
                         net.vars(v).value = [];
                     end
                 end
