@@ -57,23 +57,25 @@ for epoch=start+1:obj.nnOpts.numEpochs
     obj.saveState(modelPath(epoch));
     
     % Plot statistics
-    figure(1); clf;
-    values = [];
-    leg = {};
-    datasetModes = {'train', 'val'};
-    for datasetModeIdx = 1:numel(datasetModes)
-        datasetMode = datasetModes{datasetModeIdx};
-        
-        for f = setdiff(fieldnames(obj.stats.train)', {'num', 'time'})
-            f = char(f); %#ok<FXSET>
-            leg{end+1} = sprintf('%s (%s)', f, datasetMode); %#ok<AGROW>
-            tmp = [obj.stats.(datasetMode).(f)];
-            values(end+1,:) = tmp(1,:)'; %#ok<AGROW>
+    if obj.nnOpts.plotEval
+        figure(1); clf;
+        values = [];
+        leg = {};
+        datasetModes = {'train', 'val'};
+        for datasetModeIdx = 1:numel(datasetModes)
+            datasetMode = datasetModes{datasetModeIdx};
+            
+            for f = setdiff(fieldnames(obj.stats.train)', {'num', 'time'})
+                f = char(f); %#ok<FXSET>
+                leg{end+1} = sprintf('%s (%s)', f, datasetMode); %#ok<AGROW>
+                tmp = [obj.stats.(datasetMode).(f)];
+                values(end+1,:) = tmp(1,:)'; %#ok<AGROW>
+            end
         end
+        plot(1:epoch, values');
+        legend(leg{:}); xlabel('epoch'); ylabel('objective');
+        grid on;
+        drawnow;
+        print(1, modelFigPath, '-dpdf');
     end
-    plot(1:epoch, values');
-    legend(leg{:}); xlabel('epoch'); ylabel('objective');
-    grid on;
-    drawnow;
-    print(1, modelFigPath, '-dpdf');
 end
