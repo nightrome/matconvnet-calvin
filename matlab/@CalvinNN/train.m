@@ -76,6 +76,6 @@ for epoch=start+1:obj.nnOpts.numEpochs
         legend(leg{:}); xlabel('epoch'); ylabel('objective');
         grid on;
         drawnow;
-        print(1, modelFigPath, '-dpdf');
+        print(1, modelFigPath, '-dpdf'); %#ok<MCPRT>
     end
 end
