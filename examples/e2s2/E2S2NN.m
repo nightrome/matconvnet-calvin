@@ -23,6 +23,43 @@ classdef E2S2NN < CalvinNN
                 obj.net.insertLayer('fc8', 'softmaxloss', 'regiontopixel8', regionToPixelBlock, 'regionToPixelAux', {'label', 'instanceWeights'});
             end;
             
+            % Add batch normalization before ReLUs if specified
+            if isfield(obj.nnOpts.misc, 'batchNorm') && obj.nnOpts.misc.batchNorm,
+                reluInds = find(arrayfun(@(x) isa(x.block, 'dagnn.ReLU'), obj.net.layers));
+                
+                for i = 1 : numel(reluInds),
+                    % Relu
+                    reluIdx = reluInds(i);
+                    reluLayerName = obj.net.layers(reluIdx).name;
+                    reluInputIdx = obj.net.layers(reluIdx).inputIndexes;
+                    assert(numel(reluInputIdx) == 1);
+                    
+                    % Left layer
+                    leftLayerIdx = find(arrayfun(@(x) ismember(reluInputIdx, x.outputIndexes), obj.net.layers));
+                    assert(numel(leftLayerIdx) == 1);
+                    leftLayerName = obj.net.layers(leftLayerIdx).name;
+                    leftParamIdx = obj.net.layers(leftLayerIdx).paramIndexes(1);
+                    numChannels = size(obj.net.params(leftParamIdx).value, 4); % equals size(var, 3) of the input variable
+                    
+                    % Insert new layer
+                    layerBlock = dagnn.BatchNorm('numChannels', numChannels);
+                    layerParamValues = layerBlock.initParams();
+                    layerName = sprintf('bn_%s', reluLayerName);
+                    layerParamNames = cell(1, numel(layerParamValues));
+                    for i = 1 : numel(layerParamValues), %#ok<FXSET>
+                        layerParamNames{i} = sprintf('%s_%d', layerName, i);
+                    end;
+                    obj.net.insertLayer(leftLayerName, reluLayerName, layerName, layerBlock, {}, {}, layerParamNames);
+                    
+                    for i = 1 : numel(layerParamValues), %#ok<FXSET>
+                        paramIdx = obj.net.getParamIndex(layerParamNames{i});
+                        obj.net.params(paramIdx).value = layerParamValues{i};
+                        obj.net.params(paramIdx).learningRate = 1; %TODO: are these good values?
+                        obj.net.params(paramIdx).weightDecay = 0;
+                    end;
+                end;
+            end;
+            
             %%% Weakly supervised learning options
             % Check that only one ws option is chosen
             if isfield(obj.nnOpts.misc, 'weaklySupervised'),
