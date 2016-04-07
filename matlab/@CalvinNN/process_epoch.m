@@ -36,7 +36,7 @@ for t=1:obj.nnOpts.batchSize:numel(allBatchInds),
     
     for s=1:obj.nnOpts.numSubBatches,
         % get this image batch and prefetch the next
-        batchStart = t + (labindex-1) + (s-1) * numlabs;
+        batchStart = t + (s-1) * numlabs;
         batchEnd = min(t+obj.nnOpts.batchSize-1, numel(allBatchInds));
         batchInds = allBatchInds(batchStart : obj.nnOpts.numSubBatches * numlabs : batchEnd);
         num = num + numel(batchInds);
