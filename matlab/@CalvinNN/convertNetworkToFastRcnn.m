@@ -87,7 +87,6 @@ if isfield(obj.nnOpts.misc, 'roiPool')
         obj.net.insertLayer(roiPoolName, firstFCName, 'roipoolfreeform5', roiPoolFreeformBlock, 'blobMasks');
         
         % Share fully connected layer weights for foreground and entire box
-        % (by default on)
         if isfield(roiPool.freeform, 'shareWeights') && ~roiPool.freeform.shareWeights
             fcLayers = {obj.net.layers(~cellfun(@isempty, regexp({obj.net.layers.name}, 'fc.*'))).name};
             for relIdx = 1 : numel(fcLayers)

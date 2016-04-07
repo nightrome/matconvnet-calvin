@@ -1,5 +1,5 @@
-function[image, oriImSize] = frcnmcn_prepareImage(net, image, maxImageSize)
-% [image, oriImSize] = frcnmcn_prepareImage(net, image, maxImageSize)
+function[image, oriImSize] = e2s2_prepareImage(net, image, maxImageSize)
+% [image, oriImSize] = e2s2_prepareImage(net, image, maxImageSize)
 %
 % Resize the image and subtract the mean image.
 %

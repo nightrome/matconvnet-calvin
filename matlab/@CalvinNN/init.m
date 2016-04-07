@@ -1,5 +1,10 @@
 function init(obj, varargin)
-% init(obj, nnOpts)
+% init(obj, varargin)
+%
+% Initialize the CalvinNN network with the default options.
+% Also starts up GPU pool.
+%
+% Copyright by Holger Caesar, 2016
 
 defnnOpts.expDir = fullfile('data', 'exp');
 defnnOpts.continue = false;
@@ -22,10 +27,10 @@ defnnOpts.plotEval = true;
 % Fast R-CNN options
 defnnOpts.convertToTrain = true;
 defnnOpts.fastRcnn = true;
-defnnOpts.bboxRegress = true;
+defnnOpts.fastRcnnParams = true; % learning rates and weight decay
 defnnOpts.misc.roiPool.use = true;
 defnnOpts.misc.roiPool.freeform.use = false;
-defnnOpts.fastRcnnParams = true; % learning rates and weight decay
+defnnOpts.bboxRegress = true;
 
 % Merge input settings with default settings
 nnOpts = vl_argparse(defnnOpts, varargin, 'nonrecursive');
