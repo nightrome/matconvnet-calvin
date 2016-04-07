@@ -3,6 +3,8 @@ function saveState(obj, fileName)
 %
 % Save network and statistics for the current epoch.
 % Files are saved in v7.3 format to allow nets with > 2GB memory.
+%
+% Copyright by Holger Caesar, 2016
 
 % Get fields from CalvinNN
 net = obj.net;

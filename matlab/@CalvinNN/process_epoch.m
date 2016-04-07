@@ -1,8 +1,10 @@
 function stats = process_epoch(obj, net, state)
 % stats = process_epoch(obj, net, state)
 %
-% Note that net needs to be a separate argument (not obj.net) to support
-% multiple GPUs.
+% Processes one training/validation epoch.
+%
+% Copyright by Matconvnet
+% Modified by Holger Caesar, 2016
 
 % Initialize momentum on this worker
 if strcmp(obj.imdb.datasetMode, 'train')
@@ -16,11 +18,6 @@ if numGpus >= 1
     if strcmp(obj.imdb.datasetMode, 'train')
         state.momentum = cellfun(@gpuArray, state.momentum, 'UniformOutput', false);
     end
-end
-if numGpus > 1
-    mmap = obj.map_gradients(net);
-else
-    mmap = [];
 end
 
 % Get the indices of all batches
@@ -78,18 +75,14 @@ for t=1:obj.nnOpts.batchSize:numel(allBatchInds),
     
     % Accumulate gradients
     if strcmp(obj.imdb.datasetMode, 'train')
-        if ~isempty(mmap)
-            obj.write_gradients(mmap, net);
-            labBarrier();
-        end
-        state = obj.accumulate_gradients(state, net, batchNumElements, mmap);
+        state = obj.accumulate_gradients(state, net, batchNumElements);
     end
     
     % Print learning statistics
     stats.num = num;
     stats.time = toc(start);
     
-    if stats.time > targetTime
+    if stats.time > targetTime || numel(allBatchInds) <= obj.nnOpts.batchSize
         targetTime = targetTime + waitTime;
         fprintf('%s: epoch %02d: %3d/%3d: %.1f Hz', ...
             obj.imdb.datasetMode, ...

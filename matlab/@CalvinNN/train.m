@@ -1,12 +1,15 @@
 function train(obj)
 % train(obj)
 %
-% TODO:
-% - Only <= 2 GPUs at the same time seem to work
+% Main training script used for training and validation.
+% Only <= 1 GPUs supported.
+% 
+% Copyright by Holger Caesar, 2016
 
 modelPath = @(ep) fullfile(obj.nnOpts.expDir, sprintf('net-epoch-%d.mat', ep));
 modelFigPath = fullfile(obj.nnOpts.expDir, 'net-train.pdf');
 numGpus = numel(obj.nnOpts.gpus);
+assert(numGpus <= 1);
 
 % Load previous training snapshot
 start = obj.nnOpts.continue * CalvinNN.findLastCheckpoint(obj.nnOpts.expDir);
@@ -38,19 +41,7 @@ for epoch=start+1:obj.nnOpts.numEpochs
         end;
         state.allBatchInds = obj.imdb.getAllBatchInds();
         
-        if numGpus <= 1
-            obj.stats.(datasetMode)(epoch) = obj.process_epoch(obj.net, state);
-        else
-            savedNet = obj.net.saveobj();
-            spmd
-                net_ = dagnn.DagNN.loadobj(savedNet); %TODO: using multiple GPUs, it crashes here, since loadobj is not known
-                stats_.(datasetMode) = obj.process_epoch(net_, state);
-                if labindex == 1, savedNet_ = net_.saveobj(); end
-            end
-            obj.net = dagnn.DagNN.loadobj(savedNet_{1});
-            stats__ = obj.accumulateStats(stats_);
-            obj.stats.(datasetMode)(epoch) = stats__.(datasetMode);
-        end
+        obj.stats.(datasetMode)(epoch) = obj.process_epoch(obj.net, state);
     end
     
     % Save current snapshot

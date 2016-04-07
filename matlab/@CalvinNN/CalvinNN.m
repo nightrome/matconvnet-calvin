@@ -51,10 +51,8 @@ classdef CalvinNN < handle
     methods (Access = protected)
         % Declarations for methods that are in separate files
         stats = accumulateStats(obj, stats_);
-        state = accumulate_gradients(obj, state, net, batchSize, mmap);
-        mmap = map_gradients(fname, net, numGpus);
+        state = accumulate_gradients(obj, state, net, batchSize);
         stats = process_epoch(obj, net, state);
-        write_gradients(mmap, net);
     end
     
     methods (Static)

@@ -18,7 +18,6 @@ defnnOpts.weightDecay = 0.0005;
 defnnOpts.momentum = 0.9;
 defnnOpts.derOutputs = {'objective', 1};
 defnnOpts.lossFnObjective = 'softmaxlog'; % Default is softmax
-defnnOpts.memoryMapFile = fullfile(tempdir, 'matconvnet.bin');
 defnnOpts.extractStatsFn = @CalvinNN.extractStats;
 defnnOpts.testFn = @(imdb, nnOpts, net, inputs, batchInds) error('Error: Test function not implemented'); % function used at test time to evaluate performance
 defnnOpts.misc = struct(); % fields used by custom layers are stored here
@@ -44,31 +43,10 @@ if ~exist(nnOpts.expDir, 'dir') && ~isempty(nnOpts.expDir),
     mkdir(nnOpts.expDir);
 end
 
-% Setup GPUs and memory map file
+% Setup GPU
 numGpus = numel(nnOpts.gpus);
-if numGpus > 1,
-    pool = gcp('nocreate');
-    
-    % Delete parpool with wrong size
-    if ~isempty(pool) && pool.NumWorkers ~= numGpus
-        delete(gcp);
-    end
-    
-    % Create new parpool
-    if isempty(pool) || ~pool.isvalid()
-        parpool('local', numGpus);
-    end
-    
-    % Assign GPUs to SPMD workers
-    spmd,
-        gpuDevice(nnOpts.gpus(labindex))
-    end
-    
-    % Delete previous memory mapping files
-    if exist(nnOpts.memoryMapFile, 'file')
-        delete(nnOpts.memoryMapFile);
-    end
-elseif numGpus == 1,
+assert(numGpus <= 1);
+if numGpus == 1,
     gpuDevice(nnOpts.gpus);
 end
 
