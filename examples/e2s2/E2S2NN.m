@@ -54,7 +54,7 @@ classdef E2S2NN < CalvinNN
                     for i = 1 : numel(layerParamValues), %#ok<FXSET>
                         paramIdx = obj.net.getParamIndex(layerParamNames{i});
                         obj.net.params(paramIdx).value = layerParamValues{i};
-                        obj.net.params(paramIdx).learningRate = 1; %TODO: are these good values?
+                        obj.net.params(paramIdx).learningRate = 0.1; %TODO: are these good values?
                         obj.net.params(paramIdx).weightDecay = 0;
                     end;
                 end;
