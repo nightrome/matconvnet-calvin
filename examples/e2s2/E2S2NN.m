@@ -344,47 +344,5 @@ classdef E2S2NN < CalvinNN
                 stats.(net.layers(layerIdx).outputs{1}) = objective;
             end
         end
-        
-        function[imageSamplingProbCum] = invFreqSumImageProbs(imdb, minImPixFreq, datasetMode)
-            % [imageSamplingProbCum] = invFreqSumImageProbs(imdb, minImPixFreq, datasetMode)
-            %
-            % Compute a vector with the cumulative probs for each image.
-            % This vector can directly be used to sample an image.
-            % The weighting uses (possibly clamped) inverse frequency weights.
-            %
-            % Should be run for train and val, but not test.
-            %
-            % Copyright by Holger Caesar, 2015
-            
-            labelCount = imdb.numClasses;
-            
-            % Compute pixel-level label frequencies (also used without inv-freqs)
-            labelImPixelFreqs = imdb.dataset.getLabelPixelFreqs();
-            
-            % Compute image-level frequencies
-            % This is the simplified version of the frequencies used in the
-            % RegionToPixel layer
-            imageCount = numel(imdb.data.(datasetMode));
-            imageSamplingProb = nan(imageCount, 1);
-            for imageIdx = 1 : imageCount,
-                printProgress('Computing image sampling prob. for image', imageIdx, imageCount);
-                imageName = imdb.data.(datasetMode){imageIdx};
-                labelMap = imdb.dataset.getImLabelMap(imageName);
-                histo = histc(labelMap(:), 1:labelCount);
-                nonZero = histo ~= 0;
-                imageSamplingProb(imageIdx) = sum(histo(nonZero) ./ labelImPixelFreqs(nonZero));
-            end;
-            
-            % Turn them into probabilities
-            imageSamplingProb = imageSamplingProb / sum(imageSamplingProb);
-            
-            % Cutoff extreme sampling frequencies if required
-            if ~isempty(minImPixFreq),
-                imageSamplingProb = freqClampMinimum(imageSamplingProb, minImPixFreq);
-            end;
-            
-            % Compute cumulate sum for lookup table
-            imageSamplingProbCum = cumsum(imageSamplingProb);
-        end
     end
 end
