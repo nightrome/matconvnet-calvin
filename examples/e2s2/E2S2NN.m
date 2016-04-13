@@ -23,9 +23,19 @@ classdef E2S2NN < CalvinNN
                 obj.net.insertLayer('fc8', 'softmaxloss', 'regiontopixel8', regionToPixelBlock, 'regionToPixelAux', {'label', 'instanceWeights'});
             end;
             
-            % Add batch normalization before ReLUs if specified
+            % Add batch normalization before ReLUs if specified (conv only,
+            % not fc layers)
             if isfield(obj.nnOpts.misc, 'batchNorm') && obj.nnOpts.misc.batchNorm,
+                % Get relus that have no FC layer before them
                 reluInds = find(arrayfun(@(x) isa(x.block, 'dagnn.ReLU'), obj.net.layers));
+                order = obj.net.getLayerExecutionOrder();
+                for i = 1 : numel(reluInds),
+                    predIdx = order(find(order == reluInds(i)) - 1);
+                    if strStartsWith(obj.net.layers(predIdx).name, 'fc'),
+                        reluInds(i) = nan;
+                    end;
+                end;
+                reluInds = reluInds(~isnan(reluInds));
                 
                 for i = 1 : numel(reluInds),
                     % Relu
