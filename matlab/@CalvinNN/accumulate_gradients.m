@@ -10,22 +10,22 @@ function state = accumulate_gradients(obj, state, net, batchSize)
 for p=1:numel(net.params)
     switch net.params(p).trainMethod
         case 'average' % mainly for batch normalization
-            thisLR = net.params(p).learningRate ;
+            thisLR = net.params(p).learningRate;
             net.params(p).value = ...
                 (1 - thisLR) * net.params(p).value + ...
-                (thisLR/batchSize/net.params(p).fanout) * net.params(p).der ;
+                (thisLR / batchSize / net.params(p).fanout) * net.params(p).der;
             
         case 'gradient'
-            thisDecay = obj.nnOpts.weightDecay * net.params(p).weightDecay ;
-            thisLR = state.learningRate * net.params(p).learningRate ;
+            thisDecay = obj.nnOpts.weightDecay * net.params(p).weightDecay;
+            thisLR = state.learningRate * net.params(p).learningRate;
             state.momentum{p} = obj.nnOpts.momentum * state.momentum{p} ...
                 - thisDecay * net.params(p).value ...
-                - (1 / batchSize) * net.params(p).der ;
-            net.params(p).value = net.params(p).value + thisLR * state.momentum{p} ;
+                - (1 / batchSize) * net.params(p).der;
+            net.params(p).value = net.params(p).value + thisLR * state.momentum{p};
             
         case 'otherwise'
             error('Unknown training method ''%s'' for parameter ''%s''.', ...
                 net.params(p).trainMethod, ...
-                net.params(p).name) ;
+                net.params(p).name);
     end
 end
