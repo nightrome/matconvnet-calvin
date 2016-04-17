@@ -61,8 +61,8 @@ void mexFunction(int nlhs, mxArray *out[], int nrhs, const mxArray *input[])
             // matrices as they are always 1
             int labelMapIdx = labelIdx + labelListIdx * labelCount;
             double boxIdxD = labelMap[labelMapIdx];
-            int boxIdx = (int) boxIdxD - 1; // Convert from Matlab to C indexing
             if (!mxIsNaN(boxIdxD)) {
+                int boxIdx = (int) boxIdxD - 1; // Convert from Matlab to C indexing
                 int dzdxIdx = labelIdx + boxIdx * labelCount;
                 dzdx[dzdxIdx] = dzdx[dzdxIdx] + dzdy[labelMapIdx];
             }
