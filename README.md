@@ -29,5 +29,5 @@ Copyrights by Holger Caesar and Jasper Uijlings, 2015-2016.
 - For missing files please contact the authors
 
 **Dependencies:**
-- **MatConvNet**: 
-- **MatConvNet-FCN**: repository linked in examples/fcn/matconvnet-fcn
+- **MatConvNet**: hard-copy of beta18 (http://github.com/vlfeat/matconvnet).
+- **MatConvNet-FCN**: repository linked in examples/fcn/matconvnet-fcn (http://github.com/vlfeat/matconvnet-fcn)
