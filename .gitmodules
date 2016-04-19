@@ -1,3 +1,0 @@
-[submodule "examples/fcn/matconvnet-fcn"]
-	path = examples/fcn/matconvnet-fcn
-	url = https://github.com/vlfeat/tree/b5f38359d7bea137c69695ec65fd8c07c631b450
