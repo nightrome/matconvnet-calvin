@@ -31,3 +31,4 @@ Copyrights for all added files by Holger Caesar and Jasper Uijlings, 2015-2016.
 - Install MatConvNet
 - Run matlab/vl_compilenn_calvin()
 - Run matlab/vl_setupnn_calvin()
+- For missing files please contact the authors
