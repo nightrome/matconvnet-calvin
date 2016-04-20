@@ -1,56 +1,80 @@
 classdef SegmentationLossWeighted < dagnn.Loss
-    % Same as SegmentationLoss, but allows external instanceWeights as
-    % inputs{3}. Doesn't do anything so far
+    % SegmentationLossWeighted
     %
-    % Inputs: scores, labels, instanceWeights
+    % Same as SegmentationLoss, but allows additional weights.
+    %
+    % Inputs: scores, labels, pixelWeights, instanceWeights
     % Outputs: loss
+    %
+    % Note: All weights can be empty, which means they are ignored.
+    %
+    % Copyright by Holger Caesar, 2016
     
     methods
         function outputs = forward(obj, inputs, params) %#ok<INUSD>
-            assert(numel(inputs) == 2 || numel(inputs) == 3);
+            assert(numel(inputs) == 4);
+            
+            % Get inputs
+            scores = inputs{1};
+            labels = inputs{2};
+            pixelWeights = inputs{3};
+            instanceWeights = inputs{4};
             
             % Compute instanceWeights
-            mass = sum(sum(inputs{2} > 0, 2), 1) + 1;
-            instanceWeights = 1 ./ mass;
-            if numel(inputs) == 3
-                pixelWeights = inputs{3};
-                assert(~any(isnan(pixelWeights(:))))
+            mass = sum(sum(labels > 0, 2), 1); % Removed the +1
+            invMass = zeros(size(mass));
+            nonEmpty = mass ~= 0;
+            invMass(nonEmpty) = 1 ./ mass(nonEmpty);
+            if isempty(instanceWeights)
+                instanceWeights = invMass;
             else
-                pixelWeights = [];
+                instanceWeights = instanceWeights .* invMass;
+            end
+                
+            % Checks
+            if ~isempty(pixelWeights)
+                assert(~any(isnan(pixelWeights(:))))
             end
             
-            outputs{1} = vl_nnloss_pixelweighted(inputs{1}, inputs{2}, [], ...
+            outputs{1} = vl_nnloss_pixelweighted(scores, labels, [], ...
                 'loss', obj.loss, ...
                 'instanceWeights', instanceWeights, ...
                 'pixelWeights', pixelWeights);
             assert(gather(~isnan(outputs{1})));
             n = obj.numAveraged;
-            m = n + size(inputs{1}, 4);
+            m = n + size(scores, 4);
             obj.average = (n * obj.average + double(gather(outputs{1}))) / m;
             obj.numAveraged = m;
         end
         
-        function [derInputs, derParams] = backward(obj, inputs, params, derOutputs)
+        function [derInputs, derParams] = backward(obj, inputs, params, derOutputs) %#ok<INUSL>
+            
+            % Get inputs
+            scores = inputs{1};
+            labels = inputs{2};
+            pixelWeights = inputs{3};
+            instanceWeights = inputs{4};
+            
             % Compute instanceWeights
-            mass = sum(sum(inputs{2} > 0,2),1) + 1;
-            instanceWeights = 1./mass;
-            if numel(inputs) == 3
-                pixelWeights = inputs{3};
+            mass = sum(sum(labels > 0, 2), 1) + 1;
+            invMass = 1 ./ mass;
+            if isempty(instanceWeights)
+                instanceWeights = invMass;
             else
-                pixelWeights = [];
+                instanceWeights = instanceWeights .* invMass;
             end
             
-            
-            derInputs{1} = vl_nnloss_pixelweighted(inputs{1}, inputs{2}, derOutputs{1}, ...
+            derInputs{1} = vl_nnloss_pixelweighted(scores, labels, derOutputs{1}, ...
                 'loss', obj.loss, ...
                 'instanceWeights', instanceWeights, ...
                 'pixelWeights', pixelWeights);
             derInputs{2} = [];
             derInputs{3} = [];
+            derInputs{4} = [];
             derParams = {};
         end
         
-        function obj = SegmentationLoss(varargin)
+        function obj = SegmentationLoss(varargin) %#ok<STOUT>
             obj.load(varargin);
         end
         
