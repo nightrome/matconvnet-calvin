@@ -99,6 +99,11 @@ end;
 switch opts.modelFamily
     case 'matconvnet'
         net = load(opts.modelPath);
+        
+        % Compatibility mode for former settings
+        addDagNN = find(~strStartsWith({net.net.layers.type}, 'dagnn.'));
+        for i = 1 : numel(addDagNN), net.net.layers(addDagNN(i)).type = ['dagnn.', net.net.layers(addDagNN(i)).type]; end;
+        
         net = dagnn.DagNN.loadobj(net.net);
         net.mode = 'test';
         for name = {'objective', 'accuracy'}
