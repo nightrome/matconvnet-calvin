@@ -160,33 +160,27 @@ end
 net.meta.normalization.rgbMean = rgbMean;
 net.meta.classes = imdb.classes.name;
 
-
-% Replace loss by weighted loss
-objIdx = net.getLayerIndex('objective');
-assert(strcmp(net.layers(objIdx).block.loss, 'softmaxlog'));
-objInputs = net.layers(objIdx).inputs;
-objOutputs = net.layers(objIdx).outputs;
-net.removeLayer('objective');
-net.addLayer('objective', dagnn.SegmentationLossWeighted(), objInputs, objOutputs, {});
-
 if weaklySupervised,
-    % Insert a labelpresence layer
-    predVarIdx = net.getVarIndex('prediction');
-    predLastLayerIdx = cellfun(@(x) ismember(predVarIdx, x), {net.layers.outputIndexes});
-    predLastLayerName = net.layers(predLastLayerIdx).name;
-    
-    labelPresenceBlock = dagnn.SegmentationLabelPresence();
-    net.insertLayer(predLastLayerName, 'objective', 'labelpresence', labelPresenceBlock, {}, {'predictionImage'}, {});
-    net.setLayerInputs('labelpresence', {'prediction', 'labelImages'});
-    
-    % Update inputs of loss layer
-    objInputs = {'predictionImage', 'labelsImageFlat'};
-    net.setLayerInputs('objective', objInputs);
+    % Replace loss by weakly supervised instance-weighted loss
+    objIdx = net.getLayerIndex('objective');
+    assert(strcmp(net.layers(objIdx).block.loss, 'softmaxlog'));
+    objInputs = [net.layers(objIdx).inputs(1), {'labelImages', 'classWeights'}];
+    objOutputs = net.layers(objIdx).outputs;
+    net.removeLayer('objective');
+    net.addLayer('objective', dagnn.SegmentationLossImage(), objInputs, objOutputs, {});
     
     % Remove accuracy layer if no pixel-level labels exist
     if ~imdb.dataset.annotation.hasPixelLabels,
         net.removeLayer('accuracy');
     end;
+else
+    % Replace loss by pixel-weighted loss
+    objIdx = net.getLayerIndex('objective');
+    assert(strcmp(net.layers(objIdx).block.loss, 'softmaxlog'));
+    objInputs = [net.layers(objIdx).inputs, {'classWeights'}];
+    objOutputs = net.layers(objIdx).outputs;
+    net.removeLayer('objective');
+    net.addLayer('objective', dagnn.SegmentationLossWeighted(), objInputs, objOutputs, {});
 end;
 
 % Replace accuracy layer with 21 classes by flexible accuracy layer
@@ -207,10 +201,6 @@ if useInvFreqWeights,
     else
         classWeights = imdb.dataset.getLabelPixelFreqs('train');
     end;
-    
-    % Add weight as input of loss layer
-    objInputs = [net.layers(net.getLayerIndex('objective')).inputs, {'pixelWeights', 'instanceWeights'}];
-    net.setLayerInputs('objective', objInputs);
     
     % Inv freq and normalize classWeights
     classWeights = classWeights ./ sum(classWeights);
@@ -368,45 +358,40 @@ for i=1:imageCount
     end
 end
 
-% Collapse image labels into matrix
-if imdb.weaklySupervised
-    labelsImageFlat = reshape(cell2mat(labelsImage), 1, 1, 1, []);
-end;
-
 %%% Create pixel/instance weighting
-pixelWeights = [];
-if imdb.weaklySupervised
-    instanceWeightsCell = cellfun(@(x) ones(size(x)), labelsImage, 'UniformOutput', false);
-else
-    instanceWeightsCell = arrayfun(@(x) x, ones(imageCount, 1), 'UniformOutput', false);
-end;
+% pixelWeights = [];
+% if imdb.weaklySupervised
+%     instanceWeightsCell = cellfun(@(x) ones(size(x)), labelsImage, 'UniformOutput', false);
+% else
+%     instanceWeightsCell = arrayfun(@(x) x, ones(imageCount, 1), 'UniformOutput', false);
+% end;
 
-if ~isempty(opts.classWeights)
-    classWeightsPad = [0; opts.classWeights(:)];
-    if imdb.weaklySupervised,
-        %%% Instance weighting
-        multiplierCell = cellfun(@(x) classWeightsPad(x+1), labelsImage, 'UniformOutput', false);
-        
-        % Multiply with prev. weights
-        instanceWeightsCell = cellfun(@(x, y) x .* y, instanceWeightsCell, multiplierCell, 'UniformOutput', false);
-    else
-        %%% Pixel weighting
-        pixelWeights = classWeightsPad(labels + 1);
-        
-        % Make sure mass of the image does not change
-        targetMasses = sum(sum(labels > 0, 1), 2);
-        curMasses = sum(sum(pixelWeights, 1), 2);
-        divisor = curMasses ./ targetMasses;
-        nonZero = targetMasses ~= 0;
-        pixelWeights(:, :, :, nonZero) = bsxfun(@rdivide, pixelWeights(:, :, :, nonZero), divisor(nonZero));
-        % assert(all(abs(sum(sum(pixelWeights, 1), 2) - targetMasses) < 1e-9))
-    end;
-end;
+% if ~isempty(opts.classWeights)
+%     classWeightsPad = [0; opts.classWeights(:)];
+%     if imdb.weaklySupervised,
+%         %% Instance weighting
+%         multiplierCell = cellfun(@(x) classWeightsPad(x+1), labelsImage, 'UniformOutput', false);
+%         
+% %         Multiply with prev. weights
+%         instanceWeightsCell = cellfun(@(x, y) x .* y, instanceWeightsCell, multiplierCell, 'UniformOutput', false);
+%     else
+%         %% Pixel weighting
+%         pixelWeights = classWeightsPad(labels + 1);
+%         
+% %         Make sure mass of the image does not change
+%         targetMasses = sum(sum(labels > 0, 1), 2);
+%         curMasses = sum(sum(pixelWeights, 1), 2);
+%         divisor = curMasses ./ targetMasses;
+%         nonZero = targetMasses ~= 0;
+%         pixelWeights(:, :, :, nonZero) = bsxfun(@rdivide, pixelWeights(:, :, :, nonZero), divisor(nonZero));
+%         assert(all(abs(sum(sum(pixelWeights, 1), 2) - targetMasses) < 1e-9))
+%     end;
+% end;
 
-% Normalize mass to 1 per image
-instanceWeightsCell = cellfun(@(x) x ./ sum(x), instanceWeightsCell, 'UniformOutput', false);
-instanceWeights = cell2mat(instanceWeightsCell);
-instanceWeights = reshape(instanceWeights, 1, 1, 1, []);
+% % Normalize mass to 1 per image
+% instanceWeightsCell = cellfun(@(x) x ./ sum(x), instanceWeightsCell, 'UniformOutput', false);
+% instanceWeights = cell2mat(instanceWeightsCell);
+% instanceWeights = reshape(instanceWeights, 1, 1, 1, []);
 
 % Move image to GPU
 if opts.useGpu
@@ -415,12 +400,12 @@ end
 
 %%% Create outputs
 y = {'input', ims};
-if imdb.dataset.annotation.hasPixelLabels,
+if imdb.dataset.annotation.hasPixelLabels
     y = [y, {'label', labels}];
-end;
-if imdb.weaklySupervised,
-    y = [y, {'labelImages', labelsImage, 'labelsImageFlat', labelsImageFlat}];
-end;
+end
+if imdb.weaklySupervised
+    y = [y, {'labelImages', labelsImage}];
+end
 
 % Instance/pixel weights, can be left empty
-y = [y, {'pixelWeights', pixelWeights, 'instanceWeights', instanceWeights}];
+y = [y, {'classWeights', opts.classWeights}];

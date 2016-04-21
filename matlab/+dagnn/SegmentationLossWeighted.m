@@ -3,22 +3,24 @@ classdef SegmentationLossWeighted < dagnn.Loss
     %
     % Same as SegmentationLoss, but allows additional weights.
     %
-    % Inputs: scores, labels, pixelWeights, instanceWeights
+    % Inputs: scores, labels, classWeights
     % Outputs: loss
     %
     % Note: All weights can be empty, which means they are ignored.
+    % Note: If you use this for weakly supervised, the loss output will be
+    % wrong (divided by instances, not images)
     %
     % Copyright by Holger Caesar, 2016
     
     methods
         function outputs = forward(obj, inputs, params) %#ok<INUSD>
-            assert(numel(inputs) == 4);
+            assert(numel(inputs) == 3);
             
             % Get inputs
             scores = inputs{1};
             labels = inputs{2};
-            pixelWeights = inputs{3};
-            instanceWeights = inputs{4};
+            classWeights = inputs{3};
+            %TODO: fix weights
             
             % Compute instanceWeights
             mass = sum(sum(labels > 0, 2), 1); % Removed the +1
@@ -40,6 +42,7 @@ classdef SegmentationLossWeighted < dagnn.Loss
                 'loss', obj.loss, ...
                 'instanceWeights', instanceWeights, ...
                 'pixelWeights', pixelWeights);
+            
             assert(gather(~isnan(outputs{1})));
             n = obj.numAveraged;
             m = n + size(scores, 4);
