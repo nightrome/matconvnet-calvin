@@ -12,36 +12,56 @@ classdef SegmentationLossWeighted < dagnn.Loss
     %
     % Copyright by Holger Caesar, 2016
     
+    properties (Transient)
+        instanceWeights
+    end
+    
     methods
         function outputs = forward(obj, inputs, params) %#ok<INUSD>
-            assert(numel(inputs) == 3);
-            
+
             % Get inputs
+            assert(numel(inputs) == 3);
             scores = inputs{1};
             labels = inputs{2};
             classWeights = inputs{3};
-            %TODO: fix weights
             
-            % Compute instanceWeights
+            % Compute invMass
             mass = sum(sum(labels > 0, 2), 1); % Removed the +1
             invMass = zeros(size(mass));
             nonEmpty = mass ~= 0;
             invMass(nonEmpty) = 1 ./ mass(nonEmpty);
-            if isempty(instanceWeights)
-                instanceWeights = invMass;
+            
+            % Compute pixelWeights
+            if isempty(classWeights)
+                pixelWeights = [];
             else
-                instanceWeights = instanceWeights .* invMass;
+                classWeightsPad = [0; classWeights(:)];
+                
+                %%% Pixel weighting
+                pixelWeights = classWeightsPad(labels + 1);
+                
+                % Make sure mass of the image does not change
+                curMasses = sum(sum(pixelWeights, 1), 2);
+                divisor = curMasses ./ mass;
+                nonZero = mass ~= 0;
+                pixelWeights(:, :, :, nonZero) = bsxfun(@rdivide, pixelWeights(:, :, :, nonZero), divisor(nonZero));
+                assert(all(abs(sum(sum(pixelWeights, 1), 2) - mass) < 1e-6));
+            end;
+            
+            % Combine mass invMass and pixelWeights in instanceWeights
+            obj.instanceWeights = invMass;
+            if ~isempty(pixelWeights)
+                obj.instanceWeights = bsxfun(@times, obj.instanceWeights, pixelWeights);
             end
                 
             % Checks
-            if ~isempty(pixelWeights)
-                assert(~any(isnan(pixelWeights(:))))
+            if ~isempty(obj.instanceWeights)
+                assert(~any(isnan(obj.instanceWeights(:))))
             end
             
-            outputs{1} = vl_nnloss_pixelweighted(scores, labels, [], ...
+            outputs{1} = vl_nnloss(scores, labels, [], ...
                 'loss', obj.loss, ...
-                'instanceWeights', instanceWeights, ...
-                'pixelWeights', pixelWeights);
+                'instanceWeights', obj.instanceWeights);
             
             assert(gather(~isnan(outputs{1})));
             n = obj.numAveraged;
@@ -55,22 +75,10 @@ classdef SegmentationLossWeighted < dagnn.Loss
             % Get inputs
             scores = inputs{1};
             labels = inputs{2};
-            pixelWeights = inputs{3};
-            instanceWeights = inputs{4};
             
-            % Compute instanceWeights
-            mass = sum(sum(labels > 0, 2), 1) + 1;
-            invMass = 1 ./ mass;
-            if isempty(instanceWeights)
-                instanceWeights = invMass;
-            else
-                instanceWeights = instanceWeights .* invMass;
-            end
-            
-            derInputs{1} = vl_nnloss_pixelweighted(scores, labels, derOutputs{1}, ...
+            derInputs{1} = vl_nnloss(scores, labels, derOutputs{1}, ...
                 'loss', obj.loss, ...
-                'instanceWeights', instanceWeights, ...
-                'pixelWeights', pixelWeights);
+                'instanceWeights', obj.instanceWeights);
             derInputs{2} = [];
             derInputs{3} = [];
             derInputs{4} = [];
@@ -82,29 +90,14 @@ classdef SegmentationLossWeighted < dagnn.Loss
         end
         
         function forwardAdvanced(obj, layer)
-            %FORWARDADVANCED  Advanced driver for forward computation
-            %  FORWARDADVANCED(OBJ, LAYER) is the advanced interface to compute
-            %  the forward step of the layer.
-            %
-            %  The advanced interface can be changed in order to extend DagNN
-            %  non-trivially, or to optimise certain blocks.
-            %
-            % Jasper: Overrides standard forward pass to avoid giving up when any of
+            % Modification: Overrides standard forward pass to avoid giving up when any of
             % the inputs is empty.
             
             in = layer.inputIndexes;
             out = layer.outputIndexes;
             par = layer.paramIndexes;
             net = obj.net;
-            
             inputs = {net.vars(in).value};
-            
-            % give up if any of the inputs is empty (this allows to run
-            % subnetworks by specifying only some of the variables as input --
-            % however it is somewhat dangerous as inputs could be legitimaly
-            % empty)
-            % Jasper: Indeed. Removed this option to enable not using pixelWeights
-            %              if any(cellfun(@isempty, inputs)), return; end
             
             % clear inputs if not needed anymore
             for v = in
@@ -115,8 +108,6 @@ classdef SegmentationLossWeighted < dagnn.Loss
                     end
                 end
             end
-            
-            %[net.vars(out).value] = deal([]);
             
             % call the simplified interface
             outputs = obj.forward(inputs, {net.params(par).value});

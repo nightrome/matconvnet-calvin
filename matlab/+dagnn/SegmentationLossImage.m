@@ -45,24 +45,24 @@ classdef SegmentationLossImage < dagnn.Loss
             if gpuMode
                 scoresMap = gather(scoresMap);
             end
-            assert(~any(isnan(scoresMap(:))))
             
             if true
                 % Count total number of samples and init scores
                 obj.scoresImage = nan(1, 1, labelCount, sampleCount, 'single');
                 obj.mask = nan(sampleCount, 1); % contains the coordinates of the pixel with highest score per class
                 
-                % Process each image/crop separately
+                % Process each image/crop separately % very slow (!!)
                 for imageIdx = 1 : imageCount
-                    % For each label, get the scores of the highest scoring pixel
-                    labelMax = max(max(scoresMap(:, :, :, imageIdx), [], 1), [], 2);
                     
+                    offset = (imageIdx-1) * labelCount;
                     for labelIdx = 1 : labelCount
-                        offset = (imageIdx-1) * labelCount;
                         sampleIdx = offset + labelIdx;
                         
-                        [y, x] = find(scoresMap(:, :, labelIdx, imageIdx) == labelMax(labelIdx), 1); % always take first pix with max score
-                        obj.scoresImage(:, :, :, sampleIdx) = scoresMap(y, x, :, imageIdx);
+                        s = scoresMap(:, :, labelIdx, imageIdx);
+                        [~, ind] = max(s(:)); % always take first pix with max score
+                        x = 1 + floor((ind-1) / size(scoresMap, 1));
+                        y = ind - (x-1) * size(scoresMap, 1);
+                        obj.scoresImage(1, 1, :, sampleIdx) = scoresMap(y, x, :, imageIdx);
                         obj.mask(sampleIdx, 1) = y + (x - 1) * size(scoresMap, 1);
                     end
                 end
@@ -74,8 +74,8 @@ classdef SegmentationLossImage < dagnn.Loss
                 c = labelsDummy;
                 
                 % from category labels to indexes
-                inputSize = [size(X,1) size(X,2) size(X,3) size(X,4)];
-                labelSize = [size(c,1) size(c,2) size(c,3) size(c,4)];
+                inputSize = [size(X, 1) size(X, 2) size(X, 3) size(X, 4)];
+                labelSize = [size(c, 1) size(c, 2) size(c, 3) size(c, 4)];
                 numPixelsPerImage = prod(inputSize(1:2));
                 numPixels = numPixelsPerImage * inputSize(4);
                 imageVolume = numPixelsPerImage * inputSize(3);
@@ -122,7 +122,8 @@ classdef SegmentationLossImage < dagnn.Loss
                     sel = sampleImage == imageIdx & ~obj.isPresent;
                     
                     if obj.useAbsent
-                        obj.instanceWeights(sel) = obj.instanceWeights(sel) ./ (sum(obj.instanceWeights(sel)) / presentWeight);
+                        absentWeight = 1 - presentWeight;
+                        obj.instanceWeights(sel) = obj.instanceWeights(sel) ./ (sum(obj.instanceWeights(sel)) / absentWeight);
                     else
                         obj.instanceWeights(sel) = 0;
                     end
@@ -130,6 +131,17 @@ classdef SegmentationLossImage < dagnn.Loss
                 
                 loss = sum(t .* obj.instanceWeights);
             end;
+            
+            % Debug: how many labels are really present?
+            if false
+                imageIdx = 1; %#ok<UNRCH>
+                [~, pixPred] = max(scoresMap(:, :, :, imageIdx), [], 3);
+                histo = histc(pixPred(:), 1:labelCount);
+                [histo, ismember(1:labelCount, labelsImageCell{imageIdx})'];
+                presentPredCount = nnz(histo);
+                presentGtCount = numel(labelsImageCell{imageIdx});
+                presentDiff = presentGtCount - presentPredCount;
+            end
             
             %%%% Assign outputs
             outputs{1} = loss;
@@ -217,7 +229,7 @@ classdef SegmentationLossImage < dagnn.Loss
             derParams = {};
         end
         
-        function obj = SegmentationLoss(varargin) %#ok<STOUT>
+        function obj = SegmentationLossImage(varargin)
             obj.load(varargin);
         end
         
@@ -229,7 +241,6 @@ classdef SegmentationLossImage < dagnn.Loss
             out = layer.outputIndexes;
             par = layer.paramIndexes;
             net = obj.net;
-            
             inputs = {net.vars(in).value};
             
             % clear inputs if not needed anymore

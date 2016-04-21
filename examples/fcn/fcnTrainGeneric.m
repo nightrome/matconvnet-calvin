@@ -15,6 +15,7 @@ addParameter(p, 'expNameAppend', 'test');
 addParameter(p, 'weaklySupervised', false);
 addParameter(p, 'numEpochs', 50);
 addParameter(p, 'useInvFreqWeights', false);
+addParameter(p, 'wsUseAbsent', false);
 parse(p, varargin{:});
 
 dataset = p.Results.dataset;
@@ -25,6 +26,7 @@ expNameAppend = p.Results.expNameAppend;
 weaklySupervised = p.Results.weaklySupervised;
 numEpochs = p.Results.numEpochs;
 useInvFreqWeights = p.Results.useInvFreqWeights;
+wsUseAbsent = p.Results.wsUseAbsent;
 callArgs = p.Results; %#ok<NASGU>
 
 % experiment and data paths
@@ -167,7 +169,7 @@ if weaklySupervised,
     objInputs = [net.layers(objIdx).inputs(1), {'labelImages', 'classWeights'}];
     objOutputs = net.layers(objIdx).outputs;
     net.removeLayer('objective');
-    net.addLayer('objective', dagnn.SegmentationLossImage(), objInputs, objOutputs, {});
+    net.addLayer('objective', dagnn.SegmentationLossImage('useAbsent', wsUseAbsent), objInputs, objOutputs, {});
     
     % Remove accuracy layer if no pixel-level labels exist
     if ~imdb.dataset.annotation.hasPixelLabels,
@@ -357,41 +359,6 @@ for i=1:imageCount
         si = si + 1;
     end
 end
-
-%%% Create pixel/instance weighting
-% pixelWeights = [];
-% if imdb.weaklySupervised
-%     instanceWeightsCell = cellfun(@(x) ones(size(x)), labelsImage, 'UniformOutput', false);
-% else
-%     instanceWeightsCell = arrayfun(@(x) x, ones(imageCount, 1), 'UniformOutput', false);
-% end;
-
-% if ~isempty(opts.classWeights)
-%     classWeightsPad = [0; opts.classWeights(:)];
-%     if imdb.weaklySupervised,
-%         %% Instance weighting
-%         multiplierCell = cellfun(@(x) classWeightsPad(x+1), labelsImage, 'UniformOutput', false);
-%         
-% %         Multiply with prev. weights
-%         instanceWeightsCell = cellfun(@(x, y) x .* y, instanceWeightsCell, multiplierCell, 'UniformOutput', false);
-%     else
-%         %% Pixel weighting
-%         pixelWeights = classWeightsPad(labels + 1);
-%         
-% %         Make sure mass of the image does not change
-%         targetMasses = sum(sum(labels > 0, 1), 2);
-%         curMasses = sum(sum(pixelWeights, 1), 2);
-%         divisor = curMasses ./ targetMasses;
-%         nonZero = targetMasses ~= 0;
-%         pixelWeights(:, :, :, nonZero) = bsxfun(@rdivide, pixelWeights(:, :, :, nonZero), divisor(nonZero));
-%         assert(all(abs(sum(sum(pixelWeights, 1), 2) - targetMasses) < 1e-9))
-%     end;
-% end;
-
-% % Normalize mass to 1 per image
-% instanceWeightsCell = cellfun(@(x) x ./ sum(x), instanceWeightsCell, 'UniformOutput', false);
-% instanceWeights = cell2mat(instanceWeightsCell);
-% instanceWeights = reshape(instanceWeights, 1, 1, 1, []);
 
 % Move image to GPU
 if opts.useGpu
