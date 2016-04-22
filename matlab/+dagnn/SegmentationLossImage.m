@@ -286,7 +286,6 @@ classdef SegmentationLossImage < dagnn.Loss
                 end
             end
             
-            
             % call the simplified interface
             outputs = obj.forward(inputs, {net.params(par).value});
             [net.vars(out).value] = deal(outputs{:});

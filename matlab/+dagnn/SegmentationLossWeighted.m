@@ -1,9 +1,9 @@
 classdef SegmentationLossWeighted < dagnn.Loss
     % SegmentationLossWeighted
     %
-    % Same as SegmentationLoss, but allows additional weights.
+    % Similar to dagnn.SegmentationLoss, but also sets pixel weights.
     %
-    % Inputs: scores, labels, classWeights
+    % Inputs: scoresMap, labels, classWeights
     % Outputs: loss
     %
     % Note: All weights can be empty, which means they are ignored.
@@ -85,7 +85,7 @@ classdef SegmentationLossWeighted < dagnn.Loss
             derParams = {};
         end
         
-        function obj = SegmentationLoss(varargin) %#ok<STOUT>
+        function obj = SegmentationLossWeighted(varargin)
             obj.load(varargin);
         end
         

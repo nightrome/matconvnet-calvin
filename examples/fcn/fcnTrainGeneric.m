@@ -16,6 +16,8 @@ addParameter(p, 'weaklySupervised', false);
 addParameter(p, 'numEpochs', 50);
 addParameter(p, 'useInvFreqWeights', false);
 addParameter(p, 'wsUseAbsent', false);
+addParameter(p, 'semiSupervised', false);
+addParameter(p, 'semiSupervisedRate', 0.1); % rate of images with full supervision
 parse(p, varargin{:});
 
 dataset = p.Results.dataset;
@@ -27,11 +29,20 @@ weaklySupervised = p.Results.weaklySupervised;
 numEpochs = p.Results.numEpochs;
 useInvFreqWeights = p.Results.useInvFreqWeights;
 wsUseAbsent = p.Results.wsUseAbsent;
+semiSupervised = p.Results.semiSupervised;
+semiSupervisedRate = p.Results.semiSupervisedRate;
 callArgs = p.Results; %#ok<NASGU>
+
+% Check settings for consistency
+if semiSupervised
+    assert(weaklySupervised);
+end
+if isa(dataset, 'VOC2011Dataset')
+    assert(~useInvFreqWeights);
+end;
 
 % experiment and data paths
 global glBaseFolder glFeaturesFolder;
-% mcnDir = filePathRemoveFile(which('fcnTrain'));
 dataRootDir = fullfile(glBaseFolder, 'CodeForeign', 'CNN', 'matconvnet-fcn', 'data');
 expName = [modelType, prependNotEmpty(expNameAppend, '-')];
 opts.expDir = fullfile(glFeaturesFolder, 'CNN-Models', 'FCN', dataset.name, expName);
@@ -98,9 +109,11 @@ else
     imdb.dataset = dataset;
     imdb.labelCount = labelCount;
     imdb.weaklySupervised = weaklySupervised;
+    imdb.semiSupervised = semiSupervised;
+    imdb.semiSupervisedRate = semiSupervisedRate;
     imdb.useInvFreqWeights = useInvFreqWeights;
     
-    % Save IMDB
+    % Save imdb
     save(opts.imdbPath, '-struct', 'imdb');
 end;
 
@@ -124,22 +137,22 @@ if strStartsWith(dataset.name, 'VOC'),
     translateLabels = true;
 else
     % Get trn+val images
-    [imageList, imageCount] = dataset.getImageListTrn();
+    imageList = dataset.getImageListTrn();
     
     % Remove images without labels
-    if isa(dataset, 'EdiStuffDataset') || isa(dataset, 'EdiStuffSubsetDataset'),
+    if true
         missingImageIndices = dataset.getMissingImageIndices('train');
         imageList(missingImageIndices) = [];
         imageCount = numel(imageList);
-    end;
+    end
     
     % Get training and test/validation subsets
     perm = randperm(imageCount)';
     split = round(0.9 * imageCount);
     train = perm(1:split);
     val = perm(split+1:end);
-    imdb.images.name = imageList;
     
+    imdb.images.name = imageList;
     rgbMean = imdb.dataset.getMeanColor();
     translateLabels = false;
 end;
@@ -162,28 +175,46 @@ end
 net.meta.normalization.rgbMean = rgbMean;
 net.meta.classes = imdb.classes.name;
 
-if weaklySupervised,
-    % Replace loss by weakly supervised instance-weighted loss
+if ~semiSupervised
+    if weaklySupervised
+        % Replace loss by weakly supervised instance-weighted loss
+        objIdx = net.getLayerIndex('objective');
+        assert(strcmp(net.layers(objIdx).block.loss, 'softmaxlog'));
+        objInputs = [net.layers(objIdx).inputs(1), {'labelsImage', 'classWeights'}];
+        objOutputs = net.layers(objIdx).outputs;
+        net.removeLayer('objective');
+        net.addLayer('objective', dagnn.SegmentationLossImage('useAbsent', wsUseAbsent), objInputs, objOutputs, {});
+        
+        % Remove accuracy layer if no pixel-level labels exist
+        if ~imdb.dataset.annotation.hasPixelLabels,
+            net.removeLayer('accuracy');
+        end;
+    else
+        % Replace loss by pixel-weighted loss
+        objIdx = net.getLayerIndex('objective');
+        assert(strcmp(net.layers(objIdx).block.loss, 'softmaxlog'));
+        objInputs = [net.layers(objIdx).inputs, {'classWeights'}];
+        objOutputs = net.layers(objIdx).outputs;
+        net.removeLayer('objective');
+        net.addLayer('objective', dagnn.SegmentationLossWeighted(), objInputs, objOutputs, {});
+    end;
+else
+    % Add a layer that automatically decides whether to use FS or WS
     objIdx = net.getLayerIndex('objective');
     assert(strcmp(net.layers(objIdx).block.loss, 'softmaxlog'));
-    objInputs = [net.layers(objIdx).inputs(1), {'labelImages', 'classWeights'}];
+    layerFS = dagnn.SegmentationLossWeighted();
+    layerWS = dagnn.SegmentationLossImage('useAbsent', wsUseAbsent);
+    objBlock = dagnn.SegmentationLossSemiSupervised('layerFS', layerFS, 'layerWS', layerWS);
+    objInputs = [net.layers(objIdx).inputs, {'labelsImage', 'classWeights', 'isWeaklySupervised'}];
     objOutputs = net.layers(objIdx).outputs;
     net.removeLayer('objective');
-    net.addLayer('objective', dagnn.SegmentationLossImage('useAbsent', wsUseAbsent), objInputs, objOutputs, {});
+    net.addLayer('objective', objBlock, objInputs, objOutputs, {});
     
     % Remove accuracy layer if no pixel-level labels exist
     if ~imdb.dataset.annotation.hasPixelLabels,
         net.removeLayer('accuracy');
     end;
-else
-    % Replace loss by pixel-weighted loss
-    objIdx = net.getLayerIndex('objective');
-    assert(strcmp(net.layers(objIdx).block.loss, 'softmaxlog'));
-    objInputs = [net.layers(objIdx).inputs, {'classWeights'}];
-    objOutputs = net.layers(objIdx).outputs;
-    net.removeLayer('objective');
-    net.addLayer('objective', dagnn.SegmentationLossWeighted(), objInputs, objOutputs, {});
-end;
+end
 
 % Replace accuracy layer with 21 classes by flexible accuracy layer
 if imdb.dataset.annotation.hasPixelLabels
@@ -378,8 +409,17 @@ if imdb.dataset.annotation.hasPixelLabels
     y = [y, {'label', labels}];
 end
 if imdb.weaklySupervised
-    y = [y, {'labelImages', labelsImage}];
+    y = [y, {'labelsImage', labelsImage}];
 end
 
 % Instance/pixel weights, can be left empty
 y = [y, {'classWeights', opts.classWeights}];
+
+% Decide which level of supervision to pick
+if imdb.semiSupervised
+    isWeaklySupervised = rand() > imdb.semiSupervisedRate;
+    if isWeaklySupervised
+        assert(imdb.dataset.annotation.hasPixelLabels);
+    end
+    y = [y, {'isWeaklySupervised', isWeaklySupervised}];
+end
