@@ -306,6 +306,8 @@ for i=1:imageCount
     % acquire pixel-level GT
     if imdb.dataset.annotation.hasPixelLabels,
         anno = uint16(opts.imageNameToLabelMap(imageName, imdb));
+        
+        % Translate labels s.t. 255 is mapped to 0
         if opts.translateLabels,
             % Before: 255 = ignore, 0 = bkg, 1:labelCount = classes
             % After : 0 = ignore, 1 = bkg, 2:labelCount+1 = classes
@@ -351,6 +353,11 @@ for i=1:imageCount
                 labelsImage{si} = single(curLabelsImage);
             else
                 curLabelsImage = imdb.dataset.getImLabelInds(imageName);
+                
+                % Translate labels s.t. 255 is mapped to 0
+                if opts.translateLabels
+                    curLabelsImage = mod(curLabelsImage + 1, 256);
+                end
                 
                 labelsImage{si} = curLabelsImage;
             end;
