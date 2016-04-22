@@ -50,6 +50,13 @@ classdef SegmentationLossImage < dagnn.Loss
                 scoresMap = gather(scoresMap);
             end
             
+%             % Debug: Check if scores are still in meaningful range
+%             if true
+%                 mm = minmax(scoresMap(:)');
+%                 mmDiff = mm(2) - mm(1);
+%                 fprintf('mmDiff: %f\n', mmDiff);
+%             end
+            
             % Softmax pixel-level scores
             if true
                 % Compute loss
@@ -63,8 +70,8 @@ classdef SegmentationLossImage < dagnn.Loss
             
             if true
                 % Count total number of samples and init scores
-                scoresImageSoftmax = nan(1, 1, labelCount, sampleCount, 'single');
-                obj.mask = nan(sampleCount, 1); % contains the coordinates of the pixel with highest score per class
+                scoresImageSoftmax = nan(1, 1, labelCount, sampleCount, 'like', obj.scoresMapSoftmax);
+                obj.mask = nan(sampleCount, 1, 'like', obj.scoresMapSoftmax); % contains the coordinates of the pixel with highest score per class
                 
                 % Process each image/crop separately % very slow (!!)
                 for imageIdx = 1 : imageCount
@@ -94,10 +101,16 @@ classdef SegmentationLossImage < dagnn.Loss
                 obj.isPresent = ismember(1:sampleCount, presentInds)';
                 
                 % Take 1 - p for classes missing in the image
+                % (make sure that no probability becomes 0, as that will
+                % cause infs in the loss)
                 obj.scoresImageSoftmaxAbs = scoresImageSoftmax;
                 if obj.useAbsent
                     obj.scoresImageSoftmaxAbs(:, :, :, ~obj.isPresent) = 1 - obj.scoresImageSoftmaxAbs(:, :, :, ~obj.isPresent);
-                    obj.scoresImageSoftmaxAbs = max(obj.scoresImageSoftmaxAbs, 1e-6);
+                    obj.scoresImageSoftmaxAbs = max(1e-8, obj.scoresImageSoftmaxAbs);
+                    
+                    % Renormalize the absent scores
+                    divisor = sum(obj.scoresImageSoftmaxAbs(:, :, :, ~obj.isPresent), 3) / (labelCount-1);
+                    obj.scoresImageSoftmaxAbs(:, :, :, ~obj.isPresent) = bsxfun(@rdivide, obj.scoresImageSoftmaxAbs(:, :, :, ~obj.isPresent), divisor);
                 end
                 
                 X = obj.scoresImageSoftmaxAbs;
@@ -144,7 +157,9 @@ classdef SegmentationLossImage < dagnn.Loss
                     end
                 end
                 
+                % Apply weights
                 loss = sum(t .* obj.instanceWeights);
+                assert(abs(imageCount - sum(obj.instanceWeights(:))) < 1e-4);
             end;
             
             % Debug: how many labels are really present?
@@ -170,6 +185,9 @@ classdef SegmentationLossImage < dagnn.Loss
         end
         
         function [derInputs, derParams] = backward(obj, inputs, params, derOutputs) %#ok<INUSL>
+            % Modifications for absent classes: 1 / x becomes - 1 / (1 - x)
+            % scoresImageSoftmaxAbs contains 1 - x
+            % - dzdImageSoftmax(ci(~obj.isPresent)) changes the sign
             
             %%%% Get inputs
             assert(numel(inputs) == 3);
@@ -210,10 +228,11 @@ classdef SegmentationLossImage < dagnn.Loss
                 % Compute gradients for log-loss
                 dzdImageSoftmax = zeros(size(X), 'like', X);
                 dzdImageSoftmax(ci) = - dzdOutput ./ X(ci);
+                dzdImageSoftmax(ci(~obj.isPresent)) = - dzdImageSoftmax(ci(~obj.isPresent));
             end;
             
             %%% Image to pixel-level
-            dzdxMapSoftmax = zeros(size(scoresMap), 'single');
+            dzdxMapSoftmax = zeros(size(scoresMap), 'like', obj.scoresImageSoftmaxAbs);
             for imageIdx = 1 : imageCount
                 for labelIdx = 1 : labelCount
                     offset = (imageIdx-1) * labelCount;
@@ -266,6 +285,7 @@ classdef SegmentationLossImage < dagnn.Loss
                     end
                 end
             end
+            
             
             % call the simplified interface
             outputs = obj.forward(inputs, {net.params(par).value});
