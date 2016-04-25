@@ -228,9 +228,28 @@ for i = 1:numel(val)
             drawnow;
         end;
         
+        % Create tiled image with image+gt+pred
+        labelNames = dataset.getLabelNames();
+        if isa(dataset, 'VOC2011Dataset'),
+            skipLabelInds = 1;
+        else
+            skipLabelInds = [];
+        end;
+        
+        tile = ImageTile();
+        tile.addImage(rgb/255);
+        colorMapping = labelColors(imdb);
+        annoIm = ind2rgb(double(anno), colorMapping);
+        annoIm = imageInsertBlobLabels(annoIm, anno, labelNames, 'skipLabelInds', skipLabelInds);
+        tile.addImage(annoIm);
+        predIm = ind2rgb(pred, colorMapping);
+        predIm = imageInsertBlobLabels(predIm, pred, labelNames, 'skipLabelInds', skipLabelInds);
+        tile.addImage(predIm);
+        image = tile.getTiling('totalX', 3, 'delimiterPixels', 1, 'backgroundBlack', false);
+        
         % Save segmentation
         imPath = fullfile(opts.labelingDir, [imageName '.png']);
-        imwrite(pred, labelColors(imdb), imPath, 'png');
+        imwrite(image, imPath);
     end
 end
 
@@ -239,8 +258,7 @@ end
 % classes
 [info.iu, info.miu, info.pacc, info.macc] = getAccuracies(confusion);
 fprintf('Results without missing classes:\n');
-fprintf('IU ');
-fprintf('%4.1f ', 100 * info.iu);
+fprintf('IU %4.1f ', 100 * info.iu);
 fprintf('\n meanIU: %5.2f pixelAcc: %5.2f, meanAcc: %5.2f\n', ...
     100*info.miu, 100*info.pacc, 100*info.macc);
 
