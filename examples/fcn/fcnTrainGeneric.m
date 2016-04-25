@@ -51,7 +51,7 @@ logFilePath = fullfile(opts.expDir, 'log.txt');
 
 % training options (SGD)
 opts.train.batchSize = 20;
-opts.train.numSubBatches = 10;
+opts.train.numSubBatches = opts.train.batchSize;
 opts.train.continue = true;
 opts.train.gpus = gpus;
 opts.train.prefetch = true;
@@ -112,6 +112,13 @@ else
     imdb.semiSupervised = semiSupervised;
     imdb.semiSupervisedRate = semiSupervisedRate;
     imdb.useInvFreqWeights = useInvFreqWeights;
+    
+    % Specify level of supervision for each image
+    imdb.images.isFullySupervised = true(numel(imdb.images.name), 1);
+    if semiSupervised
+        perm = randperm(numel(imdb.images.name))';
+        imdb.images.isFullySupervised = perm / numel(imdb.images.name) <= semiSupervisedRate;
+    end
     
     % Save imdb
     save(opts.imdbPath, '-struct', 'imdb');
@@ -303,6 +310,7 @@ if opts.prefetch
 end
 
 imageCount = numel(images);
+assert(imageCount == 1);
 
 if ~isempty(opts.rgbVariance) && isempty(opts.rgbMean)
     opts.rgbMean = single([128;128;128]);
@@ -325,7 +333,7 @@ end;
 
 si = 1;
 
-for i=1:imageCount
+for i = 1 : imageCount
     
     % acquire image
     imageName = imdb.images.name{images(i)};
@@ -417,7 +425,7 @@ y = [y, {'classWeights', opts.classWeights}];
 
 % Decide which level of supervision to pick
 if imdb.semiSupervised
-    isWeaklySupervised = rand() > imdb.semiSupervisedRate;
+    isWeaklySupervised = ~imdb.images.isFullySupervised(images);
     if isWeaklySupervised
         assert(imdb.dataset.annotation.hasPixelLabels);
     end
