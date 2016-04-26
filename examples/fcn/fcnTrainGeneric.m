@@ -16,6 +16,7 @@ addParameter(p, 'weaklySupervised', false);
 addParameter(p, 'numEpochs', 50);
 addParameter(p, 'useInvFreqWeights', false);
 addParameter(p, 'wsUseAbsent', false);
+addParameter(p, 'wsEqualWeight', false);
 addParameter(p, 'semiSupervised', false);
 addParameter(p, 'semiSupervisedRate', 0.1); % rate of images with full supervision
 addParameter(p, 'semiSupervisedOnlyFS', false); % use only the x% fully supervised images
@@ -30,6 +31,7 @@ weaklySupervised = p.Results.weaklySupervised;
 numEpochs = p.Results.numEpochs;
 useInvFreqWeights = p.Results.useInvFreqWeights;
 wsUseAbsent = p.Results.wsUseAbsent;
+wsEqualWeight = p.Results.wsEqualWeight;
 semiSupervised = p.Results.semiSupervised;
 semiSupervisedRate = p.Results.semiSupervisedRate;
 semiSupervisedOnlyFS = p.Results.semiSupervisedOnlyFS;
@@ -185,6 +187,8 @@ end;
 % -------------------------------------------------------------------------
 
 if opts.train.continue
+    net = {};
+else
     % Get initial model from VGG-VD-16
     net = fcnInitializeModelGeneric(imdb.labelCount, 'sourceModelPath', opts.sourceModelPath);
     if any(strcmp(opts.modelType, {'fcn16s', 'fcn8s'}))
@@ -198,6 +202,16 @@ if opts.train.continue
     net.meta.normalization.rgbMean = rgbMean;
     net.meta.classes = imdb.classes.name;
     
+    if weaklySupervised
+        wsPresentWeight = 1 / (1 + wsUseAbsent);
+        
+        if wsEqualWeight
+            wsAbsentWeight = imdb.labelCount * wsUseAbsent; % TODO: try -log(2/21) / -log(1-2/21)
+        else
+            wsAbsentWeight = 1 - wsPresentWeight;
+        end
+    end
+    
     if ~semiSupervised
         if weaklySupervised
             % Replace loss by weakly supervised instance-weighted loss
@@ -206,7 +220,7 @@ if opts.train.continue
             objInputs = [net.layers(objIdx).inputs(1), {'labelsImage', 'classWeights'}];
             objOutputs = net.layers(objIdx).outputs;
             net.removeLayer('objective');
-            net.addLayer('objective', dagnn.SegmentationLossImage('useAbsent', wsUseAbsent), objInputs, objOutputs, {});
+            net.addLayer('objective', dagnn.SegmentationLossImage('useAbsent', wsUseAbsent, 'presentWeight', wsPresentWeight, 'absentWeight', wsAbsentWeight), objInputs, objOutputs, {});
             
             % Remove accuracy layer if no pixel-level labels exist
             if ~imdb.dataset.annotation.hasPixelLabels,
@@ -226,7 +240,7 @@ if opts.train.continue
         objIdx = net.getLayerIndex('objective');
         assert(strcmp(net.layers(objIdx).block.loss, 'softmaxlog'));
         layerFS = dagnn.SegmentationLossWeighted();
-        layerWS = dagnn.SegmentationLossImage('useAbsent', wsUseAbsent);
+        layerWS = dagnn.SegmentationLossImage('useAbsent', wsUseAbsent, 'presentWeight', wsPresentWeight, 'absentWeight', wsAbsentWeight);
         objBlock = dagnn.SegmentationLossSemiSupervised('layerFS', layerFS, 'layerWS', layerWS);
         objInputs = [net.layers(objIdx).inputs, {'labelsImage', 'classWeights', 'isWeaklySupervised'}];
         objOutputs = net.layers(objIdx).outputs;
@@ -249,8 +263,6 @@ if opts.train.continue
         net.removeLayer('accuracy');
         net.addLayer('accuracy', accBlock, accInputs, accOutputs, {});
     end
-else
-    net = {};
 end
 
 % Extract inverse class frequencies from dataset

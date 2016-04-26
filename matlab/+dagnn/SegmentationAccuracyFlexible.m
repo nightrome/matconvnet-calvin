@@ -24,7 +24,7 @@ classdef SegmentationAccuracyFlexible < dagnn.Loss
       ok = labels > 0;
       numPixels = sum(ok(:));
       obj.confusion = obj.confusion + ...
-        accumarray([labels(ok),predictions(ok)],1,[obj.labelCount obj.labelCount]);
+        accumarray([labels(ok),predictions(ok)], 1, [obj.labelCount, obj.labelCount]);
 
       % compute various statistics of the confusion matrix
       pos = sum(obj.confusion,2);

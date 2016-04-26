@@ -14,10 +14,12 @@ classdef SegmentationLossImage < dagnn.Loss
     % Note: All weights can be empty, which means they are ignored.
     %
     % Copyright by Holger Caesar, 2016
-
+    
     
     properties
         useAbsent = true;
+        presentWeight = 1 / 2;
+        absentWeight = 1 / 2
     end
     
     properties (Transient)
@@ -42,20 +44,14 @@ classdef SegmentationLossImage < dagnn.Loss
             labelsDummy = repmat(1:labelCount, [1, imageCount]);
             labelsDummy = reshape(labelsDummy, 1, 1, 1, []);
             assert(~any(cellfun(@(x) isempty(x), labelsImageCell)));
-
+            assert((obj.absentWeight == 0 & ~obj.useAbsent) | (obj.absentWeight == 1 & obj.useAbsent == 1));
+            
             %%%% Pixel to image mapping
             % Move to CPU
             gpuMode = isa(scoresMap, 'gpuArray');
             if gpuMode
                 scoresMap = gather(scoresMap);
             end
-            
-%             % Debug: Check if scores are still in meaningful range
-%             if true
-%                 mm = minmax(scoresMap(:)');
-%                 mmDiff = mm(2) - mm(1);
-%                 fprintf('mmDiff: %f\n', mmDiff);
-%             end
             
             % Softmax pixel-level scores
             if true
@@ -137,29 +133,20 @@ classdef SegmentationLossImage < dagnn.Loss
                     obj.instanceWeights = obj.instanceWeights .* classWeights(labelsDummy);
                 end
                 
-                % Renormalize present labels per image
+                % Normalize weights per image
                 sampleImage = repmatEach(1:imageCount, labelCount);
-                presentWeight = 1 / (1 + obj.useAbsent); % give all or half of the weight to presence
                 for imageIdx = 1 : imageCount
-                    sel = sampleImage == imageIdx & obj.isPresent;
-                    obj.instanceWeights(sel) = obj.instanceWeights(sel) ./ (sum(obj.instanceWeights(sel)) / presentWeight);
-                end
-                
-                % Renormalize or disable absent labels per image
-                for imageIdx = 1 : imageCount,
-                    sel = sampleImage == imageIdx & ~obj.isPresent;
-                    
-                    if obj.useAbsent
-                        absentWeight = 1 - presentWeight;
-                        obj.instanceWeights(sel) = obj.instanceWeights(sel) ./ (sum(obj.instanceWeights(sel)) / absentWeight);
-                    else
-                        obj.instanceWeights(sel) = 0;
-                    end
+                    selPresent = sampleImage == imageIdx &  obj.isPresent;
+                    selAbsent  = sampleImage == imageIdx & ~obj.isPresent;
+                    obj.instanceWeights(selPresent) = obj.instanceWeights(selPresent) ./ (sum(obj.instanceWeights(selPresent)) / obj.presentWeight);
+                    obj.instanceWeights(selAbsent)  = obj.instanceWeights(selAbsent ) ./ (sum(obj.instanceWeights(selAbsent )) / obj.absentWeight );
                 end
                 
                 % Apply weights
                 loss = sum(t .* obj.instanceWeights);
-                assert(abs(imageCount - sum(obj.instanceWeights(:))) < 1e-4);
+%                 presentLoss = sum(t( obj.isPresent) .* obj.instanceWeights( obj.isPresent));
+%                 absentLoss  = sum(t(~obj.isPresent) .* obj.instanceWeights(~obj.isPresent));
+%                 assert(abs(imageCount - sum(obj.instanceWeights(:))) < 1e-4);
             end;
             
             % Debug: how many labels are really present?
