@@ -16,6 +16,7 @@ addParameter(p, 'plotFreq', 30);
 addParameter(p, 'showPlot', false);
 addParameter(p, 'maxImSize', 700);
 addParameter(p, 'mapOutputFolder', ''); % Optional: output predicted labels to file
+addParameter(p, 'doCache', true);
 parse(p, varargin{:});
 
 dataset = p.Results.dataset;
@@ -29,6 +30,7 @@ plotFreq = p.Results.plotFreq;
 maxImSize = p.Results.maxImSize;
 showPlot = p.Results.showPlot;
 mapOutputFolder = p.Results.mapOutputFolder;
+doCache = p.Results.doCache;
 callArgs = p.Results; %#ok<NASGU>
 
 % experiment and data paths
@@ -46,8 +48,9 @@ opts.modelType = modelType;
 % Fix randomness
 rng(randSeed);
 
+% Early abort if we already know the result
 resPath = fullfile(opts.expDir, sprintf('results-epoch-%d.mat', epoch));
-if exist(resPath, 'file')
+if exist(resPath, 'file') && doCache
     info = load(resPath);
     return;
 end
@@ -55,13 +58,13 @@ end
 % Create dirs
 if ~exist(opts.labelingDir, 'dir'),
     mkdir(opts.labelingDir);
-end;
+end
 
 % -------------------------------------------------------------------------
 % Setup data
 % -------------------------------------------------------------------------
 
-if strStartsWith(dataset.name, 'VOC'),
+if strStartsWith(dataset.name, 'VOC')
     % Get PASCAL VOC 11/12 segmentation dataset plus Berkeley's additional
     % segmentations
     opts.imdbPath = fullfile(opts.expDir, 'imdb.mat');
@@ -90,7 +93,7 @@ else
     
     bopts.imageNameToLabelMap = @(imageName, imdb) imdb.dataset.getImLabelMap(imageName);
     bopts.translateLabels = false;
-end;
+end
 
 % -------------------------------------------------------------------------
 % Setup model
@@ -263,7 +266,9 @@ fprintf('\n meanIU: %5.2f pixelAcc: %5.2f, meanAcc: %5.2f\n', ...
     100*info.miu, 100*info.pacc, 100*info.macc);
 
 % Save results
-save(resPath, '-struct', 'info');
+if doCache
+    save(resPath, '-struct', 'info');
+end
 
 % -------------------------------------------------------------------------
 function [IU, meanIU, pixelAccuracy, meanAccuracy] = getAccuracies(confusion)
