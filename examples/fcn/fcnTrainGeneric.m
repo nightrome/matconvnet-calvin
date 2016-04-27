@@ -233,13 +233,13 @@ else
             objInputs = [net.layers(objIdx).inputs, {'classWeights'}];
             objOutputs = net.layers(objIdx).outputs;
             net.removeLayer('objective');
-            net.addLayer('objective', dagnn.SegmentationLossWeighted(), objInputs, objOutputs, {});
+            net.addLayer('objective', dagnn.SegmentationLossPixel(), objInputs, objOutputs, {});
         end;
     else
         % Add a layer that automatically decides whether to use FS or WS
         objIdx = net.getLayerIndex('objective');
         assert(strcmp(net.layers(objIdx).block.loss, 'softmaxlog'));
-        layerFS = dagnn.SegmentationLossWeighted();
+        layerFS = dagnn.SegmentationLossPixel();
         layerWS = dagnn.SegmentationLossImage('useAbsent', wsUseAbsent, 'presentWeight', wsPresentWeight, 'absentWeight', wsAbsentWeight);
         objBlock = dagnn.SegmentationLossSemiSupervised('layerFS', layerFS, 'layerWS', layerWS);
         objInputs = [net.layers(objIdx).inputs, {'labelsImage', 'classWeights', 'isWeaklySupervised'}];

@@ -1,7 +1,7 @@
 classdef SegmentationLossImage < dagnn.Loss
     % SegmentationLossImage
     %
-    % Same as SegmentationLossWeighted, but weakly supervised following
+    % Same as SegmentationLossPixel, but weakly supervised following
     % "What's the point: Semantic segmentation with point supervision" by
     % Russakovsky et al., arxiv 2015
     %

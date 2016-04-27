@@ -1,5 +1,5 @@
-classdef SegmentationLossWeighted < dagnn.Loss
-    % SegmentationLossWeighted
+classdef SegmentationLossPixel < dagnn.Loss
+    % SegmentationLossPixel
     %
     % Similar to dagnn.SegmentationLoss, but also sets pixel weights.
     %
@@ -85,7 +85,7 @@ classdef SegmentationLossWeighted < dagnn.Loss
             derParams = {};
         end
         
-        function obj = SegmentationLossWeighted(varargin)
+        function obj = SegmentationLossPixel(varargin)
             obj.load(varargin);
         end
         
