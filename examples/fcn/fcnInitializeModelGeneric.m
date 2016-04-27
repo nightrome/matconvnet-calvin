@@ -3,6 +3,7 @@ function net = fcnInitializeModelGeneric(labelCount, varargin)
 
 opts.sourceModelUrl = 'http://www.vlfeat.org/matconvnet/models/imagenet-vgg-verydeep-16.mat' ;
 opts.sourceModelPath = 'data/models/imagenet-vgg-verydeep-16.mat' ;
+opts.vocInitIlsvrc = false;
 opts = vl_argparse(opts, varargin) ;
 
 % -------------------------------------------------------------------------
@@ -47,11 +48,36 @@ for i = 1:numel(net.layers)-1
 end
 
 % Modify the last fully-connected layer to have labelCount output classes
-% Initialize the new filters to zero
-for i = net.getParamIndex(net.layers(end-1).params) ;
-  sz = size(net.params(i).value) ;
-  sz(end) = labelCount ;
-  net.params(i).value = zeros(sz, 'single') ;
+if opts.vocInitIlsvrc
+    % Overwrite weights from known closest class in ILSVRC
+    clsClassInds = vocFindClosestIlsvrcClsClass();
+    vocInds = 1:21;
+    sel = ~isnan(clsClassInds);
+    clsClassInds = clsClassInds(sel);
+    vocInds = vocInds(sel);
+    
+    % Weights
+    i = net.layers(end-1).paramIndexes(1);
+    temp = net.params(i).value;
+    sz = size(net.params(i).value) ;
+    sz(end) = labelCount ;
+    net.params(i).value = zeros(sz, 'single') ;
+    net.params(i).value(:, :, :, vocInds) = temp(:, :, :, clsClassInds);
+    
+    % Biases
+    i = net.layers(end-1).paramIndexes(2);
+    temp = net.params(i).value;
+    sz = size(net.params(i).value) ;
+    sz(end) = labelCount ;
+    net.params(i).value = zeros(sz, 'single') ;
+    net.params(i).value(:, vocInds) = temp(:, clsClassInds);
+else
+    % Initialize the new filters to zero
+    for i = net.getParamIndex(net.layers(end-1).params) ;
+        sz = size(net.params(i).value) ;
+        sz(end) = labelCount ;
+        net.params(i).value = zeros(sz, 'single') ;
+    end
 end
 net.layers(end-1).block.size = size(...
   net.params(net.getParamIndex(net.layers(end-1).params{1})).value) ;

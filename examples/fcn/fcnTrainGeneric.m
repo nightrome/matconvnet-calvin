@@ -20,6 +20,7 @@ addParameter(p, 'wsEqualWeight', false);
 addParameter(p, 'semiSupervised', false);
 addParameter(p, 'semiSupervisedRate', 0.1); % rate of images with full supervision
 addParameter(p, 'semiSupervisedOnlyFS', false); % use only the x% fully supervised images
+addParameter(p, 'vocInitIlsvrc', false);
 parse(p, varargin{:});
 
 dataset = p.Results.dataset;
@@ -35,6 +36,7 @@ wsEqualWeight = p.Results.wsEqualWeight;
 semiSupervised = p.Results.semiSupervised;
 semiSupervisedRate = p.Results.semiSupervisedRate;
 semiSupervisedOnlyFS = p.Results.semiSupervisedOnlyFS;
+vocInitIlsvrc = p.Results.vocInitIlsvrc;
 callArgs = p.Results; %#ok<NASGU>
 
 % Check settings for consistency
@@ -190,7 +192,7 @@ if opts.train.continue
     net = {};
 else
     % Get initial model from VGG-VD-16
-    net = fcnInitializeModelGeneric(imdb.labelCount, 'sourceModelPath', opts.sourceModelPath);
+    net = fcnInitializeModelGeneric(imdb.labelCount, 'sourceModelPath', opts.sourceModelPath, 'vocInitIlsvrc', vocInitIlsvrc);
     if any(strcmp(opts.modelType, {'fcn16s', 'fcn8s'}))
         % upgrade model to FCN16s
         net = fcnInitializeModel16sGeneric(imdb.labelCount, net);
@@ -301,6 +303,15 @@ bopts.translateLabels = translateLabels;
 % Save important settings
 settingsPath = fullfile(opts.expDir, 'settings.mat');
 save(settingsPath, 'callArgs', 'opts', 'bopts');
+
+% Save net before training
+if true
+    modelPath = fullfile(opts.expDir, sprintf('net-epoch-%d.mat', 0));
+    saveStruct.net = net.saveobj();
+    saveStruct.stats = []; %#ok<STRNU>
+    save(modelPath, '-struct', 'saveStruct');
+    clearvars saveStruct;
+end
 
 % Launch SGD
 [~, stats] = cnn_train_dag(net, imdb, getBatchWrapper(bopts), opts.train, ...
