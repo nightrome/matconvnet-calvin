@@ -44,7 +44,7 @@ classdef SegmentationLossImage < dagnn.Loss
             labelsDummy = repmat(1:labelCount, [1, imageCount]);
             labelsDummy = reshape(labelsDummy, 1, 1, 1, []);
             assert(~any(cellfun(@(x) isempty(x), labelsImageCell)));
-            assert((obj.absentWeight == 0 & ~obj.useAbsent) | (obj.absentWeight == 1 & obj.useAbsent == 1));
+            assert((obj.absentWeight == 0 & ~obj.useAbsent) | (obj.absentWeight ~= 0 & obj.useAbsent == 1));
             
             %%%% Pixel to image mapping
             % Move to CPU
