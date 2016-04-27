@@ -55,6 +55,11 @@ if exist(resPath, 'file') && doCache
     return;
 end
 
+% Check if directory exists
+if ~exist(opts.expDir, 'dir')
+    error('Error: Experiment directory does not exist %s\n', opts.expDir);
+end;
+
 % Create dirs
 if ~exist(opts.labelingDir, 'dir'),
     mkdir(opts.labelingDir);
