@@ -18,6 +18,7 @@ addParameter(p, 'maxImSize', 700);
 addParameter(p, 'mapOutputFolder', ''); % Optional: output predicted labels to file
 addParameter(p, 'doCache', true);
 addParameter(p, 'testOnTrn', false);
+addParameter(p, 'expSubFolder', '');
 
 % Options for finding the best possible label mapping from ILSVRC to target dataset
 addParameter(p, 'doComputePerf', true);
@@ -38,6 +39,7 @@ showPlot = p.Results.showPlot;
 mapOutputFolder = p.Results.mapOutputFolder;
 doCache = p.Results.doCache;
 testOnTrn = p.Results.testOnTrn;
+expSubFolder = p.Results.expSubFolder;
 doComputePerf = p.Results.doComputePerf;
 labelNamesReplace = p.Results.labelNamesReplace;
 findMapping = p.Results.findMapping;
@@ -46,7 +48,7 @@ callArgs = p.Results; %#ok<NASGU>
 % experiment and data paths
 global glFeaturesFolder;
 expName = [modelType, prependNotEmpty(expNameAppend, '-')];
-opts.expDir = fullfile(glFeaturesFolder, 'CNN-Models', 'FCN', dataset.name, expName);
+opts.expDir = fullfile(glFeaturesFolder, 'CNN-Models', 'FCN', dataset.name, expSubFolder, expName);
 opts.modelPath = fullfile(opts.expDir, sprintf('net-epoch-%d.mat', epoch));
 opts.labelingDir = fullfile(opts.expDir, sprintf('labelings-epoch-%d', epoch));
 
@@ -292,13 +294,32 @@ for i = 1:numel(target)
             annoIm = imageInsertBlobLabels(annoIm, anno, labelNames, 'skipLabelInds', skipLabelInds);
             tile.addImage(annoIm);
             
-            % Add output image
+            % Add prediction image
             predIm = ind2rgb(pred, colorMappingRepl);
             predIm = imageInsertBlobLabels(predIm, pred, labelNamesReplace, 'skipLabelInds', skipLabelInds);
             tile.addImage(predIm);
             
+            % Highlight differences between GT and prediction
+            % (assumes bg is 1 and void is 0)
+            errorMap = ones(size(anno));
+            tooMuch = anno ~= pred & anno == 1 & pred >= 2;
+            tooFew  = anno ~= pred & anno >= 2 & pred == 1;
+            rightClass = anno == pred & anno > 1 & pred >= 2;
+            wrongClass = anno ~= pred & anno > 1 & pred >= 2;
+            errorMap(tooMuch) = 2;
+            errorMap(tooFew) = 3;
+            errorMap(rightClass) = 4;
+            errorMap(wrongClass) = 5;
+            colorMapping = [0, 0, 0; ...    % background
+                            1, 0, 0; ...    % too much
+                            1, 1, 0; ...    % too few
+                            0, 1, 0; ...    % rightClass
+                            0, 0, 1];       % wrongClass
+            errorIm = ind2rgb(double(errorMap), colorMapping);
+            tile.addImage(errorIm);
+            
             % Save segmentation
-            image = tile.getTiling('totalX', 3, 'delimiterPixels', 1, 'backgroundBlack', false);
+            image = tile.getTiling('totalX', 4, 'delimiterPixels', 1, 'backgroundBlack', false);
             imPath = fullfile(opts.labelingDir, [imageName '.png']);
             imwrite(image, imPath);
         end
