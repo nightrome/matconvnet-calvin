@@ -6,7 +6,7 @@ function[info] = fcnTestGeneric(varargin)
 % Initial settings
 p = inputParser;
 addParameter(p, 'dataset', VOC2011Dataset());
-addParameter(p, 'modelType', 'fcn8s');
+addParameter(p, 'modelType', 'fcn16s');
 addParameter(p, 'gpus', 1);
 addParameter(p, 'randSeed', 42);
 addParameter(p, 'expNameAppend', 'test');
@@ -17,6 +17,12 @@ addParameter(p, 'showPlot', false);
 addParameter(p, 'maxImSize', 700);
 addParameter(p, 'mapOutputFolder', ''); % Optional: output predicted labels to file
 addParameter(p, 'doCache', true);
+addParameter(p, 'testOnTrn', false);
+
+% Options for finding the best possible label mapping from ILSVRC to target dataset
+addParameter(p, 'doComputePerf', true);
+addParameter(p, 'labelNamesReplace', {}); % Use these if the outputs of the network don't correspond to the current dataset
+addParameter(p, 'findMapping', false);
 parse(p, varargin{:});
 
 dataset = p.Results.dataset;
@@ -31,6 +37,10 @@ maxImSize = p.Results.maxImSize;
 showPlot = p.Results.showPlot;
 mapOutputFolder = p.Results.mapOutputFolder;
 doCache = p.Results.doCache;
+testOnTrn = p.Results.testOnTrn;
+doComputePerf = p.Results.doComputePerf;
+labelNamesReplace = p.Results.labelNamesReplace;
+findMapping = p.Results.findMapping;
 callArgs = p.Results; %#ok<NASGU>
 
 % experiment and data paths
@@ -81,6 +91,7 @@ if strStartsWith(dataset.name, 'VOC')
         imdb.dataset = dataset;
     end
     % Get validation subset
+    trn = find(imdb.images.set == 1 & imdb.images.segmentation);
     val = find(imdb.images.set == 2 & imdb.images.segmentation);
     
     bopts.imageNameToLabelMap = @(imageName, imdb) imread(sprintf(imdb.paths.classSegmentation, imageName));
@@ -91,10 +102,15 @@ else
     % imdb.paths.classSegmentation, imdb.dataset, imdb.labelCount
     imdb.dataset = dataset;
     [imdb.classes.name, imdb.labelCount] = dataset.getLabelNames();
-    imdb.images.name = dataset.getImageListTst();
     imdb.paths.image = fullfile(dataset.getImagePath(), sprintf('%%s%s', dataset.imageExt));
     
-    val = 1:numel(imdb.images.name);
+    if testOnTrn
+        imdb.images.name = dataset.getImageListTrn();
+        trn = 1:numel(imdb.images.name);
+    else
+        imdb.images.name = dataset.getImageListTst();
+        val = 1:numel(imdb.images.name);
+    end
     
     bopts.imageNameToLabelMap = @(imageName, imdb) imdb.dataset.getImLabelMap(imageName);
     bopts.translateLabels = false;
@@ -150,11 +166,21 @@ net.mode = 'test';
 % -------------------------------------------------------------------------
 % Test
 % -------------------------------------------------------------------------
+if doComputePerf
+    confusion = zeros(imdb.labelCount);
+end
+if findMapping
+    confusionMapping = zeros(imdb.labelCount, numel(labelNamesReplace));
+end
+if testOnTrn
+    target = trn;
+else
+    target = val;
+end
+targetCount = numel(target);
 
-confusion = zeros(imdb.labelCount);
-
-for i = 1:numel(val)
-    imId = val(i);
+for i = 1:numel(target)
+    imId = target(i);
     imageName = imdb.images.name{imId};
     
     % Load an image and gt segmentation
@@ -222,11 +248,16 @@ for i = 1:numel(val)
     
     % Accumulate errors
     ok = anno > 0;
-    confusion = confusion + accumarray([anno(ok), pred(ok)], 1, [imdb.labelCount imdb.labelCount]);
+    if doComputePerf
+        confusion = confusion + accumarray([anno(ok), pred(ok)], 1, [imdb.labelCount imdb.labelCount]);
+    end
+    if findMapping
+        confusionMapping = confusionMapping + accumarray([anno(ok), pred(ok)], 1, size(confusionMapping));
+    end
     
     % Plots
-    if mod(i - 1, plotFreq) == 0 || i == numel(val)        
-        fprintf('Processing image %d of %d...\n', i, numel(val))
+    if mod(i - 1, plotFreq) == 0 || i == targetCount      
+        fprintf('Processing image %d of %d...\n', i, targetCount)
         
         % Print segmentation
         if showPlot,
@@ -237,42 +268,66 @@ for i = 1:numel(val)
         end;
         
         % Create tiled image with image+gt+pred
-        labelNames = dataset.getLabelNames();
-        if isa(dataset, 'VOC2011Dataset'),
-            skipLabelInds = 1;
-        else
-            skipLabelInds = [];
-        end;
-        
-        tile = ImageTile();
-        tile.addImage(rgb/255);
-        colorMapping = labelColors(imdb);
-        annoIm = ind2rgb(double(anno), colorMapping);
-        annoIm = imageInsertBlobLabels(annoIm, anno, labelNames, 'skipLabelInds', skipLabelInds);
-        tile.addImage(annoIm);
-        predIm = ind2rgb(pred, colorMapping);
-        predIm = imageInsertBlobLabels(predIm, pred, labelNames, 'skipLabelInds', skipLabelInds);
-        tile.addImage(predIm);
-        image = tile.getTiling('totalX', 3, 'delimiterPixels', 1, 'backgroundBlack', false);
-        
-        % Save segmentation
-        imPath = fullfile(opts.labelingDir, [imageName '.png']);
-        imwrite(image, imPath);
+        if true
+            labelNames = dataset.getLabelNames();
+            colorMapping = labelColors(imdb.labelCount);
+            if isempty(labelNamesReplace)
+                labelNamesReplace = labelNames;
+                colorMappingRepl = colorMapping;
+            else
+                colorMappingRepl = labelColors(numel(labelNamesReplace));
+            end;
+            if isa(dataset, 'VOC2011Dataset'),
+                skipLabelInds = 1;
+            else
+                skipLabelInds = [];
+            end;
+            
+            % Create tiling
+            tile = ImageTile();
+            
+            % Add GT image
+            tile.addImage(rgb/255);
+            annoIm = ind2rgb(double(anno), colorMapping);
+            annoIm = imageInsertBlobLabels(annoIm, anno, labelNames, 'skipLabelInds', skipLabelInds);
+            tile.addImage(annoIm);
+            
+            % Add output image
+            predIm = ind2rgb(pred, colorMappingRepl);
+            predIm = imageInsertBlobLabels(predIm, pred, labelNamesReplace, 'skipLabelInds', skipLabelInds);
+            tile.addImage(predIm);
+            
+            % Save segmentation
+            image = tile.getTiling('totalX', 3, 'delimiterPixels', 1, 'backgroundBlack', false);
+            imPath = fullfile(opts.labelingDir, [imageName '.png']);
+            imwrite(image, imPath);
+        end
     end
 end
 
 % Final statistics, remove classes missing in test
 % Note: Printing statistics earlier does not make sense if we remove missing
 % classes
-[info.iu, info.miu, info.pacc, info.macc] = getAccuracies(confusion);
-fprintf('Results without missing classes:\n');
-fprintf('IU %4.1f ', 100 * info.iu);
-fprintf('\n meanIU: %5.2f pixelAcc: %5.2f, meanAcc: %5.2f\n', ...
-    100*info.miu, 100*info.pacc, 100*info.macc);
-
-% Save results
-if doCache
-    save(resPath, '-struct', 'info');
+if doComputePerf
+    [info.iu, info.miu, info.pacc, info.macc] = getAccuracies(confusion);
+    fprintf('Results without missing classes:\n');
+    fprintf('IU %4.1f ', 100 * info.iu);
+    fprintf('\n meanIU: %5.2f pixelAcc: %5.2f, meanAcc: %5.2f\n', ...
+        100*info.miu, 100*info.pacc, 100*info.macc);
+    
+    % Save results
+    if doCache
+        save(resPath, '-struct', 'info');
+    end
+end
+if findMapping
+    if testOnTrn
+        subset = 'trn';
+    else
+        subset = 'tst';
+    end
+    mappingPath = fullfile(opts.expDir, sprintf('mapping-%s.mat', subset));
+    save(mappingPath, 'confusionMapping');
 end
 
 % -------------------------------------------------------------------------
@@ -300,7 +355,7 @@ image(uint8(lb-1));
 axis image;
 title('ground truth')
 
-cmap = labelColors(imdb);
+cmap = labelColors(imdb.labelCount);
 subplot(2,2,3);
 image(uint8(pred-1));
 axis image;
@@ -309,9 +364,9 @@ title('predicted');
 colormap(cmap);
 
 % -------------------------------------------------------------------------
-function cmap = labelColors(imdb)
+function cmap = labelColors(labelCount)
 % -------------------------------------------------------------------------
-N=imdb.labelCount;
+N=labelCount;
 cmap = zeros(N,3);
 for i=1:N
     id = i-1; r=0;g=0;b=0;

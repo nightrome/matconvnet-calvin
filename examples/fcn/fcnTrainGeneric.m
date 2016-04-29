@@ -18,9 +18,10 @@ addParameter(p, 'useInvFreqWeights', false);
 addParameter(p, 'wsUseAbsent', false);
 addParameter(p, 'wsEqualWeight', false);
 addParameter(p, 'semiSupervised', false);
-addParameter(p, 'semiSupervisedRate', 0.1); % rate of images with full supervision
+addParameter(p, 'semiSupervisedRate', 0.1); % ratio of images with full supervision
 addParameter(p, 'semiSupervisedOnlyFS', false); % use only the x% fully supervised images
 addParameter(p, 'vocInitIlsvrc', false);
+addParameter(p, 'initLinComb', false);
 parse(p, varargin{:});
 
 dataset = p.Results.dataset;
@@ -37,6 +38,7 @@ semiSupervised = p.Results.semiSupervised;
 semiSupervisedRate = p.Results.semiSupervisedRate;
 semiSupervisedOnlyFS = p.Results.semiSupervisedOnlyFS;
 vocInitIlsvrc = p.Results.vocInitIlsvrc;
+initLinComb = p.Results.initLinComb;
 callArgs = p.Results; %#ok<NASGU>
 
 % Check settings for consistency
@@ -54,6 +56,7 @@ expName = [modelType, prependNotEmpty(expNameAppend, '-')];
 opts.expDir = fullfile(glFeaturesFolder, 'CNN-Models', 'FCN', dataset.name, expName);
 opts.sourceModelPath = fullfile(dataRootDir, 'models', 'imagenet-vgg-verydeep-16.mat');
 logFilePath = fullfile(opts.expDir, 'log.txt');
+initLinCombPath = fullfile(glFeaturesFolder, 'CNN-Models', 'FCN', dataset.name, 'fcn16s-notrain-ilsvrc-auto-lincomb-trn', 'linearCombination-trn.mat');
 
 % training options (SGD)
 opts.train.batchSize = 20;
@@ -101,7 +104,6 @@ else
             imdb = vocSetupAdditionalSegmentations(imdb, 'dataDir', opts.dataDir);
         end
         labelCount = 21;
-        
     else
         % Imdb must have the following fields:
         % imdb.images.name, imdb.classes.name, imdb.labelCount, imdb.dataset
@@ -192,7 +194,7 @@ if opts.train.continue
     net = {};
 else
     % Get initial model from VGG-VD-16
-    net = fcnInitializeModelGeneric(imdb.labelCount, 'sourceModelPath', opts.sourceModelPath, 'vocInitIlsvrc', vocInitIlsvrc);
+    net = fcnInitializeModelGeneric(imdb.labelCount, 'sourceModelPath', opts.sourceModelPath, 'vocInitIlsvrc', vocInitIlsvrc, 'initLinComb', initLinComb, 'initLinCombPath', initLinCombPath);
     if any(strcmp(opts.modelType, {'fcn16s', 'fcn8s'}))
         % upgrade model to FCN16s
         net = fcnInitializeModel16sGeneric(imdb.labelCount, net);
