@@ -5,7 +5,11 @@ function epoch = findLastCheckpoint(modelDir)
 %
 % Copyright by Holger Caesar, 2015
 
-list = dir(fullfile(modelDir, 'net-epoch-*.mat')) ;
-tokens = regexp({list.name}, 'net-epoch-([\d]+).mat', 'tokens') ;
-epoch = cellfun(@(x) sscanf(x{1}{1}, '%d'), tokens) ;
-epoch = max([epoch 0]) ;
+list = dir(fullfile(modelDir, 'net-epoch-*.mat'));
+tokens = regexp({list.name}, 'net-epoch-([\d]+).mat', 'tokens');
+epoch = cellfun(@(x) sscanf(x{1}{1}, '%d'), tokens);
+if isempty(epoch)
+    epoch = NaN;
+else
+    epoch = max(epoch);
+end

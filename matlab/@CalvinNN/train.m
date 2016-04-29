@@ -12,7 +12,11 @@ numGpus = numel(obj.nnOpts.gpus);
 assert(numGpus <= 1);
 
 % Load previous training snapshot
-start = obj.nnOpts.continue * CalvinNN.findLastCheckpoint(obj.nnOpts.expDir);
+lastCheckPoint = CalvinNN.findLastCheckpoint(obj.nnOpts.expDir);
+if isnan(lastCheckPoint)
+    lastCheckPoint = 0;
+end;
+start = obj.nnOpts.continue * lastCheckPoint;
 if start >= 1
     fprintf('Resuming by loading epoch %d\n', start);
     [obj.net, obj.stats] = CalvinNN.loadState(modelPath(start));
