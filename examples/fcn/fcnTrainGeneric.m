@@ -57,11 +57,13 @@ opts.expDir = fullfile(glFeaturesFolder, 'CNN-Models', 'FCN', dataset.name, expN
 opts.sourceModelPath = fullfile(dataRootDir, 'models', 'imagenet-vgg-verydeep-16.mat');
 logFilePath = fullfile(opts.expDir, 'log.txt');
 initLinCombPath = fullfile(glFeaturesFolder, 'CNN-Models', 'FCN', dataset.name, 'fcn16s-notrain-ilsvrc-auto-lincomb-trn', 'linearCombination-trn.mat');
+modelPathFunc = @(epoch) fullfile(opts.expDir, sprintf('net-epoch-%d.mat', epoch));
 
 % training options (SGD)
+existingEpoch = CalvinNN.findLastCheckpoint(opts.expDir);
 opts.train.batchSize = 20;
 opts.train.numSubBatches = opts.train.batchSize;
-opts.train.continue = CalvinNN.findLastCheckpoint(opts.expDir) > 0;
+opts.train.continue = existingEpoch > 0;
 opts.train.gpus = gpus;
 opts.train.prefetch = true;
 opts.train.expDir = opts.expDir;
@@ -190,9 +192,13 @@ end;
 % Setup model
 % -------------------------------------------------------------------------
 
-if opts.train.continue
+if existingEpoch == 0
+    netStruct = load(modelPathFunc(existingEpoch), 'net');
+    net = dagnn.DagNN.loadobj(netStruct.net);
+    clearvars netStruct;
+elseif existingEpoch > 0
     net = {};
-else
+elseif isnan(existingEpoch)
     % Get initial model from VGG-VD-16
     net = fcnInitializeModelGeneric(imdb.labelCount, 'sourceModelPath', opts.sourceModelPath, 'vocInitIlsvrc', vocInitIlsvrc, 'initLinComb', initLinComb, 'initLinCombPath', initLinCombPath);
     if any(strcmp(opts.modelType, {'fcn16s', 'fcn8s'}))
@@ -307,10 +313,11 @@ settingsPath = fullfile(opts.expDir, 'settings.mat');
 save(settingsPath, 'callArgs', 'opts', 'bopts');
 
 % Save net before training
-if true
-    modelPath = fullfile(opts.expDir, sprintf('net-epoch-%d.mat', 0));
+if isnan(existingEpoch)
     saveStruct.net = net.saveobj();
     saveStruct.stats = []; %#ok<STRNU>
+    modelPath = modelPathFunc(0);
+    assert(~exist(modelPath, 'file'));
     save(modelPath, '-struct', 'saveStruct');
     clearvars saveStruct;
 end
@@ -431,9 +438,6 @@ for i = 1 : imageCount
         if imdb.weaklySupervised,
             if imdb.dataset.annotation.hasPixelLabels,
                 curLabelsImage = unique(anno);
-                curLabelsImage(curLabelsImage == 0) = [];
-                curLabelsImage = curLabelsImage(:);
-                labelsImage{si} = single(curLabelsImage);
             else
                 curLabelsImage = imdb.dataset.getImLabelInds(imageName);
                 
@@ -441,9 +445,18 @@ for i = 1 : imageCount
                 if opts.translateLabels
                     curLabelsImage = mod(curLabelsImage + 1, 256);
                 end
-                
-                labelsImage{si} = curLabelsImage;
             end;
+            
+            if isa(imdb.dataset, 'VOC2011Dataset')
+                % Remove background from image-level labels
+                curLabelsImage(curLabelsImage == 1) = [];
+            end
+            
+            % Remove invalid pixels
+            curLabelsImage(curLabelsImage == 0) = [];
+            
+            % Store image-level labels
+            labelsImage{si} = single(curLabelsImage(:));
         end;
         
         si = si + 1;

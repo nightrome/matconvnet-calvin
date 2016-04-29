@@ -11,7 +11,7 @@ opts = vl_argparse(opts, varargin);
 % -------------------------------------------------------------------------
 %                    Load & download the source model if needed (VGG VD 16)
 % -------------------------------------------------------------------------
-if ~exist(opts.sourceModelPath)
+if ~exist(opts.sourceModelPath, 'file')
   fprintf('%s: downloading %s\n', opts.sourceModelUrl);
   mkdir(fileparts(opts.sourceModelPath));
   urlwrite('http://www.vlfeat.org/matconvnet/models/imagenet-vgg-verydeep-16.mat', opts.sourceModelPath);
@@ -51,11 +51,11 @@ end
 
 % Modify the last fully-connected layer to have labelCount output classes
 if opts.vocInitIlsvrc
-    if opts.initLinComp
+    if opts.initLinComb
         
         % Load linear combination weights
-        assert(~isempty(initLinCombPath));
-        load(initLinCompPath, 'linearCombination');
+        assert(~isempty(opts.initLinCombPath));
+        load(opts.initLinCombPath, 'linearCombination');
         
         % Weights
         i = net.layers(end-1).paramIndexes(1);
@@ -66,6 +66,9 @@ if opts.vocInitIlsvrc
         newTemp = reshape(temp, [size(temp, 3), size(temp, 4)]);
         newTemp = newTemp * linearCombination';
         newTemp = reshape(newTemp, [1, 1, size(newTemp)]);
+        if false
+            newTemp(:, :, :, 1) = 0;
+        end
         net.params(i).value = newTemp;
         
         % Biases
@@ -76,6 +79,9 @@ if opts.vocInitIlsvrc
         net.params(i).value = zeros(sz, 'single');
         newTemp = temp;
         newTemp = newTemp * linearCombination';
+        if false
+            newTemp(1) = 0;
+        end
         net.params(i).value = newTemp;
     else
         % Overwrite weights from known closest class in ILSVRC
