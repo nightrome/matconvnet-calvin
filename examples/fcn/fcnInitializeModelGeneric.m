@@ -3,9 +3,10 @@ function net = fcnInitializeModelGeneric(labelCount, varargin)
 
 opts.sourceModelUrl = 'http://www.vlfeat.org/matconvnet/models/imagenet-vgg-verydeep-16.mat';
 opts.sourceModelPath = 'data/models/imagenet-vgg-verydeep-16.mat';
-opts.vocInitIlsvrc = false;
+opts.initIlsvrc = false;
 opts.initLinComb = false;
 opts.initLinCombPath = '';
+opts.initAutoBias = false;
 opts = vl_argparse(opts, varargin);
 
 % -------------------------------------------------------------------------
@@ -50,7 +51,7 @@ for i = 1:numel(net.layers)-1
 end
 
 % Modify the last fully-connected layer to have labelCount output classes
-if opts.vocInitIlsvrc
+if opts.initIlsvrc
     if opts.initLinComb
         
         % Load linear combination weights
@@ -66,7 +67,7 @@ if opts.vocInitIlsvrc
         newTemp = reshape(temp, [size(temp, 3), size(temp, 4)]);
         newTemp = newTemp * linearCombination';
         newTemp = reshape(newTemp, [1, 1, size(newTemp)]);
-        if false
+        if opts.initAutoBias
             newTemp(:, :, :, 1) = 0;
         end
         net.params(i).value = newTemp;
@@ -79,8 +80,11 @@ if opts.vocInitIlsvrc
         net.params(i).value = zeros(sz, 'single');
         newTemp = temp;
         newTemp = newTemp * linearCombination';
-        if false
-            newTemp(1) = 0;
+        if opts.initAutoBias
+            % Set bias s.t. roughly half of the pixels will be bg
+            % (median max score)
+            % TODO: adapt this for other datasets
+            newTemp(1) = 4.0266;
         end
         net.params(i).value = newTemp;
     else

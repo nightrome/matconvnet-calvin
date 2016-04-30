@@ -5,8 +5,9 @@ classdef SegmentationLossImage < dagnn.Loss
     % "What's the point: Semantic segmentation with point supervision" by
     % Russakovsky et al., arxiv 2015
     %
-    % scoresMap -> scoresMapSoftmax -> scoresImageSoftmax ->
-    % scoresImageSoftmaxAbs -> loss
+    % scoresMap -> scoresMapSoftmax -> scoresImageSoftmax -> scoresImageSoftmaxAbs
+    % -> loss <-
+    % dzdImageSoftmax <- dzdMapSoftmax <- dzdMap
     %
     % Inputs: scoresMap, labelsImage, classWeights
     % Outputs: loss
@@ -53,6 +54,10 @@ classdef SegmentationLossImage < dagnn.Loss
                 scoresMap = gather(scoresMap);
             end
             
+            %%%% DEBUG: set score of of bg to sth. very small
+%             assert(size(scoresMap, 4) == 1);
+%             scoresMap(:, :, 1, 1) = min(scoresMap(:, :, 2:end, 1), [], 3);
+            
             % Softmax pixel-level scores
             if true
                 % Compute loss
@@ -76,7 +81,8 @@ classdef SegmentationLossImage < dagnn.Loss
                     for labelIdx = 1 : labelCount
                         sampleIdx = offset + labelIdx;
                         
-                        s = obj.scoresMapSoftmax(:, :, labelIdx, imageIdx);
+%                         s = obj.scoresMapSoftmax(:, :, labelIdx, imageIdx);
+                        s = obj.scoresMapSoftmax(:, :, labelIdx, imageIdx) - max(obj.scoresMapSoftmax(:, :, setdiff(1:labelCount, labelIdx), imageIdx), [], 3);
                         [~, ind] = max(s(:)); % always take first pix with max score
                         x = 1 + floor((ind-1) / size(obj.scoresMapSoftmax, 1));
                         y = ind - (x-1) * size(obj.scoresMapSoftmax, 1);
@@ -215,34 +221,46 @@ classdef SegmentationLossImage < dagnn.Loss
                 % Compute gradients for log-loss
                 dzdImageSoftmax = zeros(size(X), 'like', X);
                 dzdImageSoftmax(ci) = - dzdOutput ./ X(ci);
-                dzdImageSoftmax(ci(~obj.isPresent)) = - dzdImageSoftmax(ci(~obj.isPresent));
+                if obj.useAbsent
+                    % For opposite probabilities the gradients includes an
+                    % additional minus sign
+                    dzdImageSoftmax(ci(~obj.isPresent)) = - dzdImageSoftmax(ci(~obj.isPresent));
+                end
             end;
             
             %%% Image to pixel-level
-            dzdxMapSoftmax = zeros(size(scoresMap), 'like', obj.scoresImageSoftmaxAbs);
+            dzdMapSoftmax = zeros(size(scoresMap), 'like', obj.scoresImageSoftmaxAbs);
             for imageIdx = 1 : imageCount
                 for labelIdx = 1 : labelCount
+                    if ~obj.useAbsent && ~obj.isPresent(labelIdx)
+                        % Skip irrelevant labels
+                        continue;
+                    end
                     offset = (imageIdx-1) * labelCount;
                     sampleIdx = offset + labelIdx;
                     pos = obj.mask(sampleIdx, 1);
                     x = 1 + floor((pos-1) / imageSizeY);
                     y = pos - (x-1) * imageSizeY;
                     
-                    dzdxMapSoftmax(y, x, :, imageIdx) = dzdxMapSoftmax(y, x, :, imageIdx) + dzdImageSoftmax(1, 1, :, sampleIdx);
+                    dzdMapSoftmax(y, x, :, imageIdx) = dzdMapSoftmax(y, x, :, imageIdx) + dzdImageSoftmax(1, 1, :, sampleIdx);
                 end
             end
             
             %%% Softmax to non-softmax
-            dzdxMap = obj.scoresMapSoftmax .* bsxfun(@minus, dzdxMapSoftmax, sum(dzdxMapSoftmax .* obj.scoresMapSoftmax, 3));
+            dzdMap = obj.scoresMapSoftmax .* bsxfun(@minus, dzdMapSoftmax, sum(dzdMapSoftmax .* obj.scoresMapSoftmax, 3));
+            
+            %%% DEBUG: Fix all bg gradients to 0
+%             dzdMap(:, :, 1, :) = 0;
+%             dzdMap(:) = 0;
             
             % Move outputs to GPU if necessary
             gpuMode = isa(inputs{1}, 'gpuArray');
             if gpuMode
-                dzdxMap = gpuArray(dzdxMap);
+                dzdMap = gpuArray(dzdMap);
             end
             
             %%%% Assign outputs
-            derInputs{1} = dzdxMap;
+            derInputs{1} = dzdMap;
             derInputs{2} = [];
             derInputs{3} = [];
             derInputs{4} = [];

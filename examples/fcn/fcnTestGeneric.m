@@ -15,7 +15,7 @@ addParameter(p, 'modelFamily', 'matconvnet');
 addParameter(p, 'plotFreq', 30);
 addParameter(p, 'showPlot', false);
 addParameter(p, 'maxImSize', 700);
-addParameter(p, 'mapOutputFolder', ''); % Optional: output predicted labels to file
+addParameter(p, 'doOutputMaps', false); % Optional: output predicted labels to file
 addParameter(p, 'doCache', true);
 addParameter(p, 'testOnTrn', false);
 addParameter(p, 'expSubFolder', '');
@@ -36,7 +36,7 @@ modelFamily = p.Results.modelFamily;
 plotFreq = p.Results.plotFreq;
 maxImSize = p.Results.maxImSize;
 showPlot = p.Results.showPlot;
-mapOutputFolder = p.Results.mapOutputFolder;
+doOutputMaps = p.Results.doOutputMaps;
 doCache = p.Results.doCache;
 testOnTrn = p.Results.testOnTrn;
 expSubFolder = p.Results.expSubFolder;
@@ -51,6 +51,7 @@ expName = [modelType, prependNotEmpty(expNameAppend, '-')];
 opts.expDir = fullfile(glFeaturesFolder, 'CNN-Models', 'FCN', dataset.name, expSubFolder, expName);
 opts.modelPath = fullfile(opts.expDir, sprintf('net-epoch-%d.mat', epoch));
 opts.labelingDir = fullfile(opts.expDir, sprintf('labelings-epoch-%d', epoch));
+mapOutputFolder = fullfile(opts.expDir, sprintf('outputMaps-epoch-%d', epoch));
 
 % experiment setup
 opts.gpus = gpus;
@@ -73,8 +74,11 @@ if ~exist(opts.expDir, 'dir')
 end;
 
 % Create dirs
-if ~exist(opts.labelingDir, 'dir'),
+if ~exist(opts.labelingDir, 'dir')
     mkdir(opts.labelingDir);
+end
+if doOutputMaps && ~exist(mapOutputFolder, 'dir')
+    mkdir(mapOutputFolder)
 end
 
 % -------------------------------------------------------------------------
@@ -187,7 +191,6 @@ for i = 1:numel(target)
     
     % Load an image and gt segmentation
     rgb = double(imdb.dataset.getImage(imageName)) * 255;
-    %   rgb = round(imresize(rgb, imageSize));
     anno = uint16(bopts.imageNameToLabelMap(imageName, imdb));
     
     if bopts.translateLabels,
@@ -209,7 +212,7 @@ for i = 1:numel(target)
         end;
     end;
     
-    % Soome networks requires the image to be a multiple of 32 pixels
+    % Some networks requires the image to be a multiple of 32 pixels
     if imageNeedsToBeMultiple
         sz = [size(im, 1), size(im, 2)];
         sz_ = round(sz / 32) * 32;
@@ -242,10 +245,11 @@ for i = 1:numel(target)
     end
     
     % If a folder was specified, output the predicted label maps
-    if ~isempty(mapOutputFolder),
+    if doOutputMaps
         outputMap = pred; %#ok<NASGU>
+        scoresDownsized = scores_; %#ok<NASGU>
         outputPath = fullfile(mapOutputFolder, [imageName, '.mat']);
-        save(outputPath, 'outputMap');
+        save(outputPath, 'outputMap', 'scoresDownsized');
     end;
     
     % Accumulate errors
@@ -301,11 +305,12 @@ for i = 1:numel(target)
             
             % Highlight differences between GT and prediction
             % (assumes bg is 1 and void is 0)
+            % TODO: adapt to other datasets without bg
             errorMap = ones(size(anno));
             tooMuch = anno ~= pred & anno == 1 & pred >= 2;
             tooFew  = anno ~= pred & anno >= 2 & pred == 1;
-            rightClass = anno == pred & anno > 1 & pred >= 2;
-            wrongClass = anno ~= pred & anno > 1 & pred >= 2;
+            rightClass = anno == pred & anno >= 2 & pred >= 2;
+            wrongClass = anno ~= pred & anno >= 2 & pred >= 2;
             errorMap(tooMuch) = 2;
             errorMap(tooFew) = 3;
             errorMap(rightClass) = 4;

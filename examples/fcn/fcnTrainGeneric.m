@@ -20,8 +20,9 @@ addParameter(p, 'wsEqualWeight', false);
 addParameter(p, 'semiSupervised', false);
 addParameter(p, 'semiSupervisedRate', 0.1); % ratio of images with full supervision
 addParameter(p, 'semiSupervisedOnlyFS', false); % use only the x% fully supervised images
-addParameter(p, 'vocInitIlsvrc', false);
+addParameter(p, 'initIlsvrc', false);
 addParameter(p, 'initLinComb', false);
+addParameter(p, 'initAutoBias', false);
 parse(p, varargin{:});
 
 dataset = p.Results.dataset;
@@ -37,8 +38,9 @@ wsEqualWeight = p.Results.wsEqualWeight;
 semiSupervised = p.Results.semiSupervised;
 semiSupervisedRate = p.Results.semiSupervisedRate;
 semiSupervisedOnlyFS = p.Results.semiSupervisedOnlyFS;
-vocInitIlsvrc = p.Results.vocInitIlsvrc;
+initIlsvrc = p.Results.initIlsvrc;
 initLinComb = p.Results.initLinComb;
+initAutoBias = p.Results.initAutoBias;
 callArgs = p.Results; %#ok<NASGU>
 
 % Check settings for consistency
@@ -200,7 +202,7 @@ elseif existingEpoch > 0
     net = {};
 elseif isnan(existingEpoch)
     % Get initial model from VGG-VD-16
-    net = fcnInitializeModelGeneric(imdb.labelCount, 'sourceModelPath', opts.sourceModelPath, 'vocInitIlsvrc', vocInitIlsvrc, 'initLinComb', initLinComb, 'initLinCombPath', initLinCombPath);
+    net = fcnInitializeModelGeneric(imdb.labelCount, 'sourceModelPath', opts.sourceModelPath, 'initIlsvrc', initIlsvrc, 'initLinComb', initLinComb, 'initLinCombPath', initLinCombPath, 'initAutoBias', initAutoBias);
     if any(strcmp(opts.modelType, {'fcn16s', 'fcn8s'}))
         % upgrade model to FCN16s
         net = fcnInitializeModel16sGeneric(imdb.labelCount, net);
@@ -431,26 +433,28 @@ for i = 1 : imageCount
             tlabels = zeros(sz(1), sz(2), 'double');
             tlabels(oky,okx) = anno(sy(oky), sx(okx));
             tlabels = single(tlabels(ly,lx));
-            labels(:,:,1,si) = tlabels; % 0: ignore
+            labels(:, :, 1, si) = tlabels; % 0: ignore
         end;
         
         % Weakly supervised: extract image-level labels
         if imdb.weaklySupervised,
             if imdb.dataset.annotation.hasPixelLabels,
+                % Get image labels from pixel labels
+                % These are already translated (if necessary)
                 curLabelsImage = unique(anno);
             else
                 curLabelsImage = imdb.dataset.getImLabelInds(imageName);
+                
+                if isa(imdb.dataset, 'VOC2011Dataset')
+                    % Add background label
+                    curLabelsImage = unique([0; curLabelsImage(:)]);
+                end
                 
                 % Translate labels s.t. 255 is mapped to 0
                 if opts.translateLabels
                     curLabelsImage = mod(curLabelsImage + 1, 256);
                 end
             end;
-            
-            if isa(imdb.dataset, 'VOC2011Dataset')
-                % Remove background from image-level labels
-                curLabelsImage(curLabelsImage == 1) = [];
-            end
             
             % Remove invalid pixels
             curLabelsImage(curLabelsImage == 0) = [];
