@@ -7,17 +7,16 @@ Copyrights by Holger Caesar and Jasper Uijlings, 2015-2016.
 
 **Implementations:**
 - **Fast R-CNN** by Girshick et al.
-  (http://arxiv.org/abs/1504.08083)
+  [[1]]
   (incl. bounding box regression, ROI pooling)
 - **End-to-end region based semantic segmentation** by Caesar et al.
-  (TBD)
+  [[2]]
   (incl. freeform ROI pooling, region-to-pixel layer)
 - **Fully Convolutional Networks for Semantic Segmentation** by Long et al.
-  (http://arxiv.org/abs/1411.4038)
+  [[3]]
   (based on matconvnet-fcn, extended for arbitrary classes)
-  (https://github.com/vlfeat/matconvnet-fcn)
 - **Fully Convolutional Multi-Class Multipe Instance Learning** by Pathak et al.
-  (http://arxiv.org/abs/1412.7144)
+  [[4]]
   (based on matconvnet-fcn and a modified loss using the SegmentationLabelPresence layer)
 
 **Installation:**
@@ -38,3 +37,9 @@ Copyrights by Holger Caesar and Jasper Uijlings, 2015-2016.
 **Dependencies:**
 - **MatConvNet**: beta18 (http://github.com/vlfeat/matconvnet).
 - **MatConvNet-FCN**: (http://github.com/vlfeat/matconvnet-fcn)
+
+**References:**
+1. http://arxiv.org/abs/1504.08083
+2. TBD
+3. http://arxiv.org/abs/1411.4038
+4. http://arxiv.org/abs/1412.7144
