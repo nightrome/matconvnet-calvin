@@ -20,7 +20,7 @@ classdef E2S2NN < CalvinNN
                 regionToPixelOpts = rmfield(regionToPixelOpts, 'use');
                 regionToPixelOpts = struct2Varargin(regionToPixelOpts);
                 regionToPixelBlock = dagnn.RegionToPixel(regionToPixelOpts{:});
-                obj.net.insertLayer('fc8', 'softmaxloss', 'regiontopixel8', regionToPixelBlock, 'regionToPixelAux', {'label', 'instanceWeights'});
+                insertLayer(obj.net, 'fc8', 'softmaxloss', 'regiontopixel8', regionToPixelBlock, 'regionToPixelAux', {'label', 'instanceWeights'});
             end;
             
             % Add batch normalization before ReLUs if specified (conv only,
@@ -59,7 +59,7 @@ classdef E2S2NN < CalvinNN
                     for i = 1 : numel(layerParamValues), %#ok<FXSET>
                         layerParamNames{i} = sprintf('%s_%d', layerName, i);
                     end;
-                    obj.net.insertLayer(leftLayerName, reluLayerName, layerName, layerBlock, {}, {}, layerParamNames);
+                    insertLayer(obj.net, leftLayerName, reluLayerName, layerName, layerBlock, {}, {}, layerParamNames);
                     
                     for i = 1 : numel(layerParamValues), %#ok<FXSET>
                         paramIdx = obj.net.getParamIndex(layerParamNames{i});
@@ -88,7 +88,7 @@ classdef E2S2NN < CalvinNN
                     labelPresenceOpts = rmfield(labelPresenceOpts, 'use');
                     labelPresenceOpts = struct2Varargin(labelPresenceOpts);
                     labelPresenceBlock = dagnn.LabelPresence(labelPresenceOpts{:});
-                    obj.net.insertLayer('regiontopixel8', 'softmaxloss', 'labelpresence', labelPresenceBlock, {}, {'labelImage'}, {});
+                    insertLayer(obj.net, 'regiontopixel8', 'softmaxloss', 'labelpresence', labelPresenceBlock, {}, {'labelImage'}, {});
                     labelPresenceIdx = obj.net.getLayerIndex('labelpresence');
                     obj.net.layers(labelPresenceIdx).inputs{2} = 'labelImage';
                     obj.net.layers(labelPresenceIdx).inputs(3)  = []; % Remove instanceWeights

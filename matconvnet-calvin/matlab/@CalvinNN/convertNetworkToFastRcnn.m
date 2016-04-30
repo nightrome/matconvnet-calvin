@@ -35,7 +35,7 @@ firstFCIdx = obj.net.layers(lastConvPoolIdx).outputIndexes;
 assert(length(firstFCIdx) == 1);
 roiPoolSize = obj.net.layers(firstFCIdx).block.size(1:2);
 roiPoolBlock = dagnn.RoiPooling('poolSize', roiPoolSize);
-obj.net.replaceLayer(lastConvPoolName, roiPoolName, roiPoolBlock, {'oriImSize', 'boxes'}, {'roiPoolMask'});
+replaceLayer(obj.net, lastConvPoolName, roiPoolName, roiPoolBlock, {'oriImSize', 'boxes'}, {'roiPoolMask'});
 
 %%% Add bounding box regression layer
 if obj.nnOpts.bboxRegress
@@ -84,7 +84,7 @@ if isfield(obj.nnOpts.misc, 'roiPool')
         % Compute activations for foreground and entire box separately
         % (by default off)
         roiPoolFreeformBlock = dagnn.RoiPoolingFreeform('combineFgBox', roiPool.freeform.combineFgBox);
-        obj.net.insertLayer(roiPoolName, firstFCName, 'roipoolfreeform5', roiPoolFreeformBlock, 'blobMasks');
+        insertLayer(obj.net, roiPoolName, firstFCName, 'roipoolfreeform5', roiPoolFreeformBlock, 'blobMasks');
         
         % Share fully connected layer weights for foreground and entire box
         if isfield(roiPool.freeform, 'shareWeights') && ~roiPool.freeform.shareWeights

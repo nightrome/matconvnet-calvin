@@ -9,14 +9,14 @@ function convertNetwork(obj)
 % Add dropout layers after relu6 and relu7
 dropout6Layer = dagnn.DropOut();
 dropout7Layer = dagnn.DropOut();
-obj.net.insertLayer('relu6', 'fc7', 'dropout6', dropout6Layer);
-obj.net.insertLayer('relu7', 'fc8', 'dropout7', dropout7Layer);
+insertLayer(obj.net, 'relu6', 'fc7', 'dropout6', dropout6Layer);
+insertLayer(obj.net, 'relu7', 'fc8', 'dropout7', dropout7Layer);
 
 % Rename variable prob to x%d+ style to make insertLayer work
 % Required for beta18 matconvnet default networks
 predVarIdx = obj.net.getVarIndex('prediction');
 if ~isnan(predVarIdx)
-    freeVarName = obj.net.getFreeVariable();
+    freeVarName = getFreeVariable(obj.net);
     obj.net.renameVar('prediction', freeVarName);
 end
 
@@ -24,12 +24,12 @@ end
 switch obj.nnOpts.lossFnObjective
     case 'softmaxlog'
         softmaxlossBlock = dagnn.LossWeighted('loss', 'softmaxlog');
-        obj.net.replaceLayer('prob', 'softmaxloss', softmaxlossBlock, 'label');
+        replaceLayer(obj.net, 'prob', 'softmaxloss', softmaxlossBlock, 'label');
         objectiveName = obj.net.layers(obj.net.getLayerIndex('softmaxloss')).outputs;
         obj.net.renameVar(objectiveName, 'objective');
     case 'hinge'
         hingeLossBlock = dagnn.Loss('loss', 'hinge');
-        obj.net.replaceLayer('prob', 'hingeloss', hingeLossBlock, 'label');
+        replaceLayer(obj.net, 'prob', 'hingeloss', hingeLossBlock, 'label');
         objectiveName = obj.net.layers(obj.net.getLayerIndex('hingeloss')).outputs;
         obj.net.renameVar(objectiveName, 'objective');
     otherwise

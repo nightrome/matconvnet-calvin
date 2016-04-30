@@ -19,7 +19,7 @@ rightInputs = rightLayer.inputs;
 assert(leftLayerIdx ~= rightLayerIdx);
 
 % Introduce new free variables for new layer outputs
-rightInputs = obj.replaceVariables(rightInputs);
+rightInputs = replaceVariables(obj, rightInputs);
 
 % Change the input of the right layer (to avoid cycles)
 obj.layers(rightLayerIdx).inputs = rightInputs;
