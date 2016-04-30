@@ -66,29 +66,14 @@ classdef LossWeighted < dagnn.Loss
         end
         
         function forwardAdvanced(obj, layer)
-            %FORWARDADVANCED  Advanced driver for forward computation
-            %  FORWARDADVANCED(OBJ, LAYER) is the advanced interface to compute
-            %  the forward step of the layer.
-            %
-            %  The advanced interface can be changed in order to extend DagNN
-            %  non-trivially, or to optimise certain blocks.
-            %
-            % Jasper: Overrides standard forward pass to avoid giving up when any of
+            % Modification: Overrides standard forward pass to avoid giving up when any of
             % the inputs is empty.
             
             in = layer.inputIndexes;
             out = layer.outputIndexes;
             par = layer.paramIndexes;
             net = obj.net;
-            
             inputs = {net.vars(in).value};
-            
-            % give up if any of the inputs is empty (this allows to run
-            % subnetworks by specifying only some of the variables as input --
-            % however it is somewhat dangerous as inputs could be legitimaly
-            % empty)
-            % Jasper: Indeed. Removed this option to enable not using instanceWeights
-            %              if any(cellfun(@isempty, inputs)), return; end
             
             % clear inputs if not needed anymore
             for v = in
@@ -100,11 +85,11 @@ classdef LossWeighted < dagnn.Loss
                 end
             end
             
-            %[net.vars(out).value] = deal([]);
-            
             % call the simplified interface
             outputs = obj.forward(inputs, {net.params(par).value});
-            [net.vars(out).value] = deal(outputs{:});
+            for oi = 1:numel(out)
+                net.vars(out(oi)).value = outputs{oi};
+            end
         end
     end
 end

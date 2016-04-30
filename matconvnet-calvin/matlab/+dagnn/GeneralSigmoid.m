@@ -4,12 +4,14 @@ classdef GeneralSigmoid < dagnn.ElementWise
     % Implements a general sigmoid layer (i.e. sigmoid of a 1d linear function):
     % S(x) = 1 / (1 + exp(- (ax + b) ))
     %
+    % Note: This class is currently not used anywhere.
+    %
     % For the derivatives check:
     % http://www.wolframalpha.com/input/?i=d%2Fdx+sigmoid%28ax%2Bb%29
     % http://www.wolframalpha.com/input/?i=d%2Fda+sigmoid%28ax%2Bb%29
     % http://www.wolframalpha.com/input/?i=d%2Fdb+sigmoid%28ax%2Bb%29
     %
-    % Copyright by Holger Caesar, 2015
+    % Copyright by Holger Caesar, 2016
     
     properties
         numClasses = 0;
