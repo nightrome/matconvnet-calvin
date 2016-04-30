@@ -24,11 +24,15 @@ Copyrights by Holger Caesar and Jasper Uijlings, 2015-2016.
 - Install Matlab
 - Clone the repository "git clone --recursive https://github.com/nightrome/matconvnet-calvin.git"
 - Setup MatConvNet
-  - Run "cd matconvnet/matlab; vl_compilenn('EnableGpu', true);"
-  - Run "cd matconvnet/matlab; vl_setupnn();"
+  - cd matconvnet/matlab;
+  - vl_compilenn('EnableGpu', true);
+  - vl_setupnn();
+  - cd ../..;
 - Setup MatConvNet-Calvin
-  - Run "cd matconvnet-calvin/matlab-calvin; vl_compilenn_calvin();"
-  - Run "cd matconvnet-calvin/matlab-calvin; vl_setupnn_calvin();"
+  - cd matconvnet-calvin/matlab;
+  - vl_compilenn_calvin();
+  - vl_setupnn_calvin();
+  - cd ../..;
 - For missing files please contact the authors
 
 **Dependencies:**
