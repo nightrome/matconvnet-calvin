@@ -21,13 +21,16 @@ Copyrights by Holger Caesar and Jasper Uijlings, 2015-2016.
   (based on matconvnet-fcn and a modified loss using the SegmentationLabelPresence layer)
 
 **Installation:**
-- Clone the repository "git clone https://github.com/nightrome/matconvnet-calvin.git"
 - Install Matlab
-- Install MatConvNet
-- Run matlab/vl_compilenn_calvin()
-- Run matlab/vl_setupnn_calvin()
+- Clone the repository "git clone --recursive https://github.com/nightrome/matconvnet-calvin.git"
+- Setup MatConvNet
+  - Run "cd matconvnet/matlab; vl_compilenn('EnableGpu', true);"
+  - Run "cd matconvnet/matlab; vl_setupnn();"
+- Setup MatConvNet-Calvin
+  - Run "cd matconvnet-calvin/matlab-calvin; vl_compilenn_calvin();"
+  - Run "cd matconvnet-calvin/matlab-calvin; vl_setupnn_calvin();"
 - For missing files please contact the authors
 
 **Dependencies:**
-- **MatConvNet**: hard-copy of beta18 (http://github.com/vlfeat/matconvnet).
-- **MatConvNet-FCN**: repository linked in examples/fcn/matconvnet-fcn (http://github.com/vlfeat/matconvnet-fcn)
+- **MatConvNet**: beta18 (http://github.com/vlfeat/matconvnet).
+- **MatConvNet-FCN**: (http://github.com/vlfeat/matconvnet-fcn)
