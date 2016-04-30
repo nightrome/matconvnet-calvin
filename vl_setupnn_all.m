@@ -9,14 +9,14 @@ function vl_setupnn_all()
 root = fileparts(mfilename('fullpath'));
 matconvnetPath = fullfile(root, 'matconvnet', 'matlab');
 matconvnetFcnPath = fullfile(root, 'matconvnet-fcn');
-matconvnetCalvinPath = fullfile(root, 'matconvnet-calvin', 'matlab');
+matconvnetCalvinPath = fullfile(root, 'matconvnet-calvin');
 
 % Add matconvnet
 addpath(matconvnetPath);
 vl_setupnn();
 
 % Add matconvnet-fcn
-addpath(genpath(matconvnetFcnPath));
+addpath(matconvnetFcnPath);
 
 % Add matconvnet-calvin
 addpath(genpath(matconvnetCalvinPath));
