@@ -17,7 +17,7 @@ Copyrights by Holger Caesar and Jasper Uijlings, 2015-2016.
   (based on matconvnet-fcn, extended for arbitrary classes)
 - **Fully Convolutional Multi-Class Multipe Instance Learning** by Pathak et al.
   \[4\]
-  (based on matconvnet-fcn and a modified loss using the SegmentationLabelPresence layer)
+  (based on matconvnet-fcn and the SegmentationLossImage layer)
 
 **Installation:**
 - Install Matlab
@@ -25,13 +25,13 @@ Copyrights by Holger Caesar and Jasper Uijlings, 2015-2016.
 - Setup MatConvNet
   - cd matconvnet/matlab;
   - vl_compilenn('EnableGpu', true);
-  - vl_setupnn();
   - cd ../..;
 - Setup MatConvNet-Calvin
   - cd matconvnet-calvin/matlab;
   - vl_compilenn_calvin();
-  - vl_setupnn_calvin();
   - cd ../..;
+- Add files to Matlab path
+  - vl_setupnn_all();
 - For missing files please contact the authors
 
 **Dependencies:**
