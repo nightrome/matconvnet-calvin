@@ -18,6 +18,7 @@ Copyrights by Holger Caesar and Jasper Uijlings, 2015-2016.
 - **Fully Convolutional Multi-Class Multipe Instance Learning** by Pathak et al.
   \[4\]
   (based on matconvnet-fcn and the SegmentationLossImage layer)
+- **What's the point: Semantic segmentation with point supervision** by Bearman et al. \[5\] (only implemented the image-level supervision)
 
 **Installation:**
 - Install Matlab
@@ -43,3 +44,4 @@ Copyrights by Holger Caesar and Jasper Uijlings, 2015-2016.
 - \[2\] TBD
 - \[3\] http://arxiv.org/abs/1411.4038
 - \[4\] http://arxiv.org/abs/1412.7144
+- \[5\] http://arxiv.org/abs/1506.02106
