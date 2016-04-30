@@ -81,7 +81,6 @@ classdef SegmentationLossPixel < dagnn.Loss
                 'instanceWeights', obj.instanceWeights);
             derInputs{2} = [];
             derInputs{3} = [];
-            derInputs{4} = [];
             derParams = {};
         end
         
