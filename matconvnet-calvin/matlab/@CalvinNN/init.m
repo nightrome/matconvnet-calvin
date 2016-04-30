@@ -32,7 +32,7 @@ defnnOpts.misc.roiPool.freeform.use = false;
 defnnOpts.bboxRegress = true;
 
 % Merge input settings with default settings
-nnOpts = vl_argparse(defnnOpts, varargin, 'nonrecursive');
+nnOpts = vl_argparse_old(defnnOpts, varargin, 'nonrecursive');
 
 % Check settings
 assert(~nnOpts.prefetch, 'Error: Prefetch is not supported in Matconvnet-Calvin!');
