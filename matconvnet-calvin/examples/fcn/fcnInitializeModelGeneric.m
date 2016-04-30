@@ -1,5 +1,9 @@
 function net = fcnInitializeModelGeneric(labelCount, varargin)
 %FCNINITIALIZEMODEL Initialize the FCN-32 model from VGG-VD-16
+%
+% Modifications:
+%  - Works for any number of labels
+%  - Various weight initialization options
 
 opts.sourceModelUrl = 'http://www.vlfeat.org/matconvnet/models/imagenet-vgg-verydeep-16.mat';
 opts.sourceModelPath = 'data/models/imagenet-vgg-verydeep-16.mat';
@@ -48,6 +52,13 @@ for i = 1:numel(net.layers)-1
     bias = net.getParamIndex(net.layers(i).params{2});
     net.params(bias).learningRate = 2 * net.params(filt).learningRate;
   end
+end
+
+% Make sure fc8 bias is a row vector (different Matconvnet nets have
+% different formats)
+fc8bIdx = net.getParamIndex('fc8b');
+if size(net.params(fc8bIdx).value, 1) ~= 1
+    net.params(fc8bIdx).value = net.params(fc8bIdx).value';
 end
 
 % Modify the last fully-connected layer to have labelCount output classes
@@ -113,11 +124,16 @@ if opts.initIlsvrc
     end
 else
     % Initialize the new filters to zero
-    for i = net.getParamIndex(net.layers(end-1).params);
-        sz = size(net.params(i).value);
-        sz(end) = labelCount;
-        net.params(i).value = zeros(sz, 'single');
-    end
+    % (solved) Problem: Newer models have bias 1000 x 1, not 1 x 1000
+    i = net.layers(end-1).paramIndexes(1);
+    sz = size(net.params(i).value);
+    sz(end) = labelCount;
+    net.params(i).value = zeros(sz, 'single');
+    
+    i = net.layers(end-1).paramIndexes(2);
+    sz = size(net.params(i).value);
+    sz(end) = labelCount;
+    net.params(i).value = zeros(sz, 'single');
 end
 net.layers(end-1).block.size = size(...
   net.params(net.getParamIndex(net.layers(end-1).params{1})).value);
