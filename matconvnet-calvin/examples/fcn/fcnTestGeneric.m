@@ -130,9 +130,11 @@ switch opts.modelFamily
     case 'matconvnet'
         net = load(opts.modelPath);
         
-        % Compatibility mode for former settings
-        addDagNN = find(~strStartsWith({net.net.layers.type}, 'dagnn.'));
-        for i = 1 : numel(addDagNN), net.net.layers(addDagNN(i)).type = ['dagnn.', net.net.layers(addDagNN(i)).type]; end;
+        %%% Compatibility mode for old layer names
+        relIdx = find(strcmp({net.net.layers.type}, 'SegmentationAccuracyFlexible'));
+        if ~isnan(relIdx)
+            net.net.layers(relIdx).type = 'dagnn.SegmentationAccuracyFlexible';
+        end
         
         net = dagnn.DagNN.loadobj(net.net);
         net.mode = 'test';
@@ -261,9 +263,13 @@ for i = 1:numel(target)
         confusionMapping = confusionMapping + accumarray([anno(ok), pred(ok)], 1, size(confusionMapping));
     end
     
+    % Print message
+    if mod(i - 1, 30) == 0 
+        fprintf('Processing image %d of %d...\n', i, targetCount);
+    end
+    
     % Plots
     if mod(i - 1, plotFreq) == 0 || i == targetCount      
-        fprintf('Processing image %d of %d...\n', i, targetCount)
         
         % Print segmentation
         if showPlot,
