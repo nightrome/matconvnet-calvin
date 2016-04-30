@@ -54,10 +54,6 @@ classdef SegmentationLossImage < dagnn.Loss
                 scoresMap = gather(scoresMap);
             end
             
-            %%%% DEBUG: set score of of bg to sth. very small
-%             assert(size(scoresMap, 4) == 1);
-%             scoresMap(:, :, 1, 1) = min(scoresMap(:, :, 2:end, 1), [], 3);
-            
             % Softmax pixel-level scores
             if true
                 % Compute loss
@@ -249,10 +245,6 @@ classdef SegmentationLossImage < dagnn.Loss
             %%% Softmax to non-softmax
             dzdMap = obj.scoresMapSoftmax .* bsxfun(@minus, dzdMapSoftmax, sum(dzdMapSoftmax .* obj.scoresMapSoftmax, 3));
             
-            %%% DEBUG: Fix all bg gradients to 0
-%             dzdMap(:, :, 1, :) = 0;
-%             dzdMap(:) = 0;
-            
             % Move outputs to GPU if necessary
             gpuMode = isa(inputs{1}, 'gpuArray');
             if gpuMode
@@ -263,7 +255,6 @@ classdef SegmentationLossImage < dagnn.Loss
             derInputs{1} = dzdMap;
             derInputs{2} = [];
             derInputs{3} = [];
-            derInputs{4} = [];
             derParams = {};
         end
         
