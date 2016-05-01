@@ -50,7 +50,8 @@ for t=1:obj.nnOpts.batchSize:numel(allBatchInds),
         end
         
         if strcmp(obj.imdb.datasetMode, 'train')
-            net.accumulateParamDers = (s ~= 1);
+            % Modification: Makes sure der's are reset even if s == 1 was empty
+            net.accumulateParamDers = batchNumElements ~= 0;
             net.eval(inputs, obj.nnOpts.derOutputs);
         else
             net.eval(inputs);
