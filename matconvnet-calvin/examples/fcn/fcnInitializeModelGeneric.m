@@ -1,9 +1,12 @@
-function net = fcnInitializeModelGeneric(labelCount, varargin)
+function net = fcnInitializeModelGeneric(imdb, varargin)
 %FCNINITIALIZEMODEL Initialize the FCN-32 model from VGG-VD-16
 %
 % Modifications:
 %  - Works for any number of labels
 %  - Various weight initialization options
+%
+% Copyright by Matconvnet
+% Modified by Holger Caesar, 2016
 
 opts.sourceModelUrl = 'http://www.vlfeat.org/matconvnet/models/imagenet-vgg-verydeep-16.mat';
 opts.sourceModelPath = 'data/models/imagenet-vgg-verydeep-16.mat';
@@ -65,7 +68,6 @@ end
 % Modify the last fully-connected layer to have labelCount output classes
 if opts.initIlsvrc
     if opts.initLinComb
-        
         % Load linear combination weights
         assert(~isempty(opts.initLinCombPath));
         load(opts.initLinCombPath, 'linearCombination');
@@ -74,7 +76,7 @@ if opts.initIlsvrc
         i = net.layers(end-1).paramIndexes(1);
         temp = net.params(i).value;
         sz = size(net.params(i).value);
-        sz(end) = labelCount;
+        sz(end) = imdb.labelCount;
         net.params(i).value = zeros(sz, 'single');
         newTemp = reshape(temp, [size(temp, 3), size(temp, 4)]);
         newTemp = newTemp * linearCombination';
@@ -88,52 +90,50 @@ if opts.initIlsvrc
         i = net.layers(end-1).paramIndexes(2);
         temp = net.params(i).value;
         sz = size(net.params(i).value);
-        sz(end) = labelCount;
+        sz(end) = imdb.labelCount;
         net.params(i).value = zeros(sz, 'single');
         newTemp = temp;
         newTemp = newTemp * linearCombination';
-        if opts.initAutoBias
+        if opts.initAutoBias && imdb.dataset.annotation.labelOneIsBg
             % Set bias s.t. roughly half of the pixels will be bg
             % (median max score)
-            % TODO: adapt this for other datasets
-            newTemp(1) = 4.0266;
+            newTemp(1) = imdb.dataset.getAutoBgBias();
         end
         net.params(i).value = newTemp;
     else
         % Overwrite weights from known closest class in ILSVRC
-        clsClassInds = vocFindClosestIlsvrcClsClass();
-        vocInds = 1:21;
+        clsClassInds = imdb.dataset.findClosestIlsvrcClsClass();
+        targetClassInds = 1:imdb.labelCount;
         sel = ~isnan(clsClassInds);
         clsClassInds = clsClassInds(sel);
-        vocInds = vocInds(sel);
+        targetClassInds = targetClassInds(sel);
         
         % Weights
         i = net.layers(end-1).paramIndexes(1);
         temp = net.params(i).value;
         sz = size(net.params(i).value);
-        sz(end) = labelCount;
+        sz(end) = imdb.labelCount;
         net.params(i).value = zeros(sz, 'single');
-        net.params(i).value(:, :, :, vocInds) = temp(:, :, :, clsClassInds);
+        net.params(i).value(:, :, :, targetClassInds) = temp(:, :, :, clsClassInds);
         
         % Biases
         i = net.layers(end-1).paramIndexes(2);
         temp = net.params(i).value;
         sz = size(net.params(i).value);
-        sz(end) = labelCount;
+        sz(end) = imdb.labelCount;
         net.params(i).value = zeros(sz, 'single');
-        net.params(i).value(:, vocInds) = temp(:, clsClassInds);
+        net.params(i).value(:, targetClassInds) = temp(:, clsClassInds);
     end
 else
     % Initialize the new filters to zero
-    % (solved) Problem: Newer models have bias 1000 x 1, not 1 x 1000
     i = net.layers(end-1).paramIndexes(1);
     sz = size(net.params(i).value);
-    sz(end) = labelCount;
+    sz(end) = imdb.labelCount;
     net.params(i).value = zeros(sz, 'single');
     
     i = net.layers(end-1).paramIndexes(2);
     sz = size(net.params(i).value);
-    sz(end) = labelCount;
+    sz(end) = imdb.labelCount;
     net.params(i).value = zeros(sz, 'single');
 end
 net.layers(end-1).block.size = size(...
@@ -155,13 +155,13 @@ net.setLayerOutputs('fc8', {'x38'});
 % Upsampling and prediction layer
 % -------------------------------------------------------------------------
 
-filters = single(bilinear_u(64, labelCount, labelCount));
+filters = single(bilinear_u(64, imdb.labelCount, imdb.labelCount));
 net.addLayer('deconv32', ...
   dagnn.ConvTranspose(...
   'size', size(filters), ...
   'upsample', 32, ...
   'crop', [16 16 16 16], ...
-  'numGroups', labelCount, ...
+  'numGroups', imdb.labelCount, ...
   'hasBias', false), ...
   'x38', 'prediction', 'deconvf');
 

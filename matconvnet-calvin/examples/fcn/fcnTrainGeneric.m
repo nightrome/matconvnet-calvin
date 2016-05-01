@@ -60,9 +60,7 @@ global glBaseFolder glFeaturesFolder;
 dataRootDir = fullfile(glBaseFolder, 'CodeForeign', 'CNN', 'matconvnet-fcn', 'data');
 expName = [modelType, prependNotEmpty(expNameAppend, '-')];
 opts.expDir = fullfile(glFeaturesFolder, 'CNN-Models', 'FCN', dataset.name, expName);
-% opts.sourceModelPath = fullfile(glFeaturesFolder, 'CNN-Models', 'matconvnet', '17beta', 'imagenet-vgg-verydeep-16.mat');
 opts.sourceModelPath = fullfile(glFeaturesFolder, 'CNN-Models', 'matconvnet', '17beta', 'imagenet-matconvnet-vgg-verydeep-16.mat');
-% opts.sourceModelPath = fullfile(dataRootDir, 'models', 'imagenet-vgg-verydeep-16.mat');
 logFilePath = fullfile(opts.expDir, 'log.txt');
 initLinCombPath = fullfile(glFeaturesFolder, 'CNN-Models', 'FCN', dataset.name, 'fcn16s-notrain-ilsvrc-auto-lincomb-trn', 'linearCombination-trn.mat');
 modelPathFunc = @(epoch) fullfile(opts.expDir, sprintf('net-epoch-%d.mat', epoch));
@@ -208,7 +206,7 @@ elseif existingEpoch > 0
     net = {};
 elseif isnan(existingEpoch)
     % Get initial model from VGG-VD-16
-    net = fcnInitializeModelGeneric(imdb.labelCount, 'sourceModelPath', opts.sourceModelPath, 'initIlsvrc', initIlsvrc, 'initLinComb', initLinComb, 'initLinCombPath', initLinCombPath, 'initAutoBias', initAutoBias, 'enableCudnn', enableCudnn);
+    net = fcnInitializeModelGeneric(imdb, 'sourceModelPath', opts.sourceModelPath, 'initIlsvrc', initIlsvrc, 'initLinComb', initLinComb, 'initLinCombPath', initLinCombPath, 'initAutoBias', initAutoBias, 'enableCudnn', enableCudnn);
     if any(strcmp(opts.modelType, {'fcn16s', 'fcn8s'}))
         % upgrade model to FCN16s
         net = fcnInitializeModel16sGeneric(imdb.labelCount, net);
@@ -451,14 +449,14 @@ for i = 1 : imageCount
             else
                 curLabelsImage = imdb.dataset.getImLabelInds(imageName);
                 
-                if isa(imdb.dataset, 'VOC2011Dataset')
-                    % Add background label
-                    curLabelsImage = unique([0; curLabelsImage(:)]);
-                end
-                
                 % Translate labels s.t. 255 is mapped to 0
                 if opts.translateLabels
                     curLabelsImage = mod(curLabelsImage + 1, 256);
+                end
+                
+                if imdb.dataset.annotation.labelOneIsBg
+                    % Add background label
+                    curLabelsImage = unique([0; curLabelsImage(:)]);
                 end
             end;
             

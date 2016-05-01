@@ -136,6 +136,11 @@ switch opts.modelFamily
             net.net.layers(relIdx).type = 'dagnn.SegmentationAccuracyFlexible';
         end
         
+        relIdx = find(strcmp({net.net.layers.type}, 'dagnn.SegmentationLossWeighted'));
+        if ~isnan(relIdx)
+            net.net.layers(relIdx).type = 'dagnn.SegmentationLossPixel';
+        end
+        
         net = dagnn.DagNN.loadobj(net.net);
         net.mode = 'test';
         for name = {'objective', 'accuracy'}
@@ -289,7 +294,7 @@ for i = 1:numel(target)
             else
                 colorMappingRepl = labelColors(numel(labelNamesReplace));
             end;
-            if isa(dataset, 'VOC2011Dataset'),
+            if dataset.annotation.labelOneIsBg
                 skipLabelInds = 1;
             else
                 skipLabelInds = [];
@@ -310,22 +315,30 @@ for i = 1:numel(target)
             tile.addImage(predIm);
             
             % Highlight differences between GT and prediction
-            % (assumes bg is 1 and void is 0)
             % TODO: adapt to other datasets without bg
             errorMap = ones(size(anno));
-            tooMuch = anno ~= pred & anno == 1 & pred >= 2;
-            tooFew  = anno ~= pred & anno >= 2 & pred == 1;
-            rightClass = anno == pred & anno >= 2 & pred >= 2;
-            wrongClass = anno ~= pred & anno >= 2 & pred >= 2;
-            errorMap(tooMuch) = 2;
-            errorMap(tooFew) = 3;
-            errorMap(rightClass) = 4;
-            errorMap(wrongClass) = 5;
+            if imdb.dataset.annotation.labelOneIsBg
+                % Datasets where bg is 1 and void is 0 (i.e. VOC)
+                tooMuch = anno ~= pred & anno == 1 & pred >= 2;
+                tooFew  = anno ~= pred & anno >= 2 & pred == 1;
+                rightClass = anno == pred & anno >= 2 & pred >= 2;
+                wrongClass = anno ~= pred & anno >= 2 & pred >= 2;
+                errorMap(tooMuch) = 2;
+                errorMap(tooFew) = 3;
+                errorMap(rightClass) = 4;
+                errorMap(wrongClass) = 5;
+            else
+                % For datasets without bg
+                rightClass = anno == pred & anno >= 1;
+                wrongClass = anno ~= pred & anno >= 1;
+                errorMap(rightClass) = 4;
+                errorMap(wrongClass) = 5;
+            end
             colorMapping = [0, 0, 0; ...    % background
-                            1, 0, 0; ...    % too much
-                            1, 1, 0; ...    % too few
-                            0, 1, 0; ...    % rightClass
-                            0, 0, 1];       % wrongClass
+                1, 0, 0; ...    % too much
+                1, 1, 0; ...    % too few
+                0, 1, 0; ...    % rightClass
+                0, 0, 1];       % wrongClass
             errorIm = ind2rgb(double(errorMap), colorMapping);
             tile.addImage(errorIm);
             
