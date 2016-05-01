@@ -19,6 +19,7 @@ classdef SegmentationLossImage < dagnn.Loss
     
     properties
         useAbsent = true;
+        useScoreDiffs = false;
         presentWeight = 1 / 2;
         absentWeight = 1 / 2
     end
@@ -47,13 +48,7 @@ classdef SegmentationLossImage < dagnn.Loss
             assert(~any(cellfun(@(x) isempty(x), labelsImageCell)));
             assert((obj.absentWeight == 0 & ~obj.useAbsent) | (obj.absentWeight ~= 0 & obj.useAbsent == 1));
             
-            %%%% Pixel to image mapping
-            % Move to CPU
-            gpuMode = isa(scoresMap, 'gpuArray');
-            if gpuMode
-                scoresMap = gather(scoresMap);
-            end
-            
+            %%%% Pixel to image mapping            
             % Softmax pixel-level scores
             if true
                 % Compute loss
@@ -77,8 +72,11 @@ classdef SegmentationLossImage < dagnn.Loss
                     for labelIdx = 1 : labelCount
                         sampleIdx = offset + labelIdx;
                         
-%                         s = obj.scoresMapSoftmax(:, :, labelIdx, imageIdx);
-                        s = obj.scoresMapSoftmax(:, :, labelIdx, imageIdx) - max(obj.scoresMapSoftmax(:, :, setdiff(1:labelCount, labelIdx), imageIdx), [], 3);
+                        if obj.useScoreDiffs
+                            s = obj.scoresMapSoftmax(:, :, labelIdx, imageIdx) - max(obj.scoresMapSoftmax(:, :, setdiff(1:labelCount, labelIdx), imageIdx), [], 3);
+                        else
+                            s = obj.scoresMapSoftmax(:, :, labelIdx, imageIdx);
+                        end
                         [~, ind] = max(s(:)); % always take first pix with max score
                         x = 1 + floor((ind-1) / size(obj.scoresMapSoftmax, 1));
                         y = ind - (x-1) * size(obj.scoresMapSoftmax, 1);
@@ -244,12 +242,6 @@ classdef SegmentationLossImage < dagnn.Loss
             
             %%% Softmax to non-softmax
             dzdMap = obj.scoresMapSoftmax .* bsxfun(@minus, dzdMapSoftmax, sum(dzdMapSoftmax .* obj.scoresMapSoftmax, 3));
-            
-            % Move outputs to GPU if necessary
-            gpuMode = isa(inputs{1}, 'gpuArray');
-            if gpuMode
-                dzdMap = gpuArray(dzdMap);
-            end
             
             %%%% Assign outputs
             derInputs{1} = dzdMap;
