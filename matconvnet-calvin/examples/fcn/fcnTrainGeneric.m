@@ -24,6 +24,7 @@ addParameter(p, 'semiSupervisedOnlyFS', false); % use only the x% fully supervis
 addParameter(p, 'initIlsvrc', false);
 addParameter(p, 'initLinComb', false);
 addParameter(p, 'initAutoBias', false);
+addParameter(p, 'enableCudnn', true);
 parse(p, varargin{:});
 
 dataset = p.Results.dataset;
@@ -43,6 +44,7 @@ semiSupervisedOnlyFS = p.Results.semiSupervisedOnlyFS;
 initIlsvrc = p.Results.initIlsvrc;
 initLinComb = p.Results.initLinComb;
 initAutoBias = p.Results.initAutoBias;
+enableCudnn = p.Results.enableCudnn;
 callArgs = p.Results; %#ok<NASGU>
 
 % Check settings for consistency
@@ -206,7 +208,7 @@ elseif existingEpoch > 0
     net = {};
 elseif isnan(existingEpoch)
     % Get initial model from VGG-VD-16
-    net = fcnInitializeModelGeneric(imdb.labelCount, 'sourceModelPath', opts.sourceModelPath, 'initIlsvrc', initIlsvrc, 'initLinComb', initLinComb, 'initLinCombPath', initLinCombPath, 'initAutoBias', initAutoBias);
+    net = fcnInitializeModelGeneric(imdb.labelCount, 'sourceModelPath', opts.sourceModelPath, 'initIlsvrc', initIlsvrc, 'initLinComb', initLinComb, 'initLinCombPath', initLinCombPath, 'initAutoBias', initAutoBias, 'enableCudnn', enableCudnn);
     if any(strcmp(opts.modelType, {'fcn16s', 'fcn8s'}))
         % upgrade model to FCN16s
         net = fcnInitializeModel16sGeneric(imdb.labelCount, net);
