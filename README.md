@@ -33,7 +33,7 @@ Copyrights by Holger Caesar and Jasper Uijlings, 2015-2016.
   - cd ../..;
 - Add files to Matlab path
   - vl_setupnn_all();
-- For missing files please contact the authors
+- For missing files please contact Holger Caesar.
 
 **Dependencies:**
 - **MatConvNet**: beta19 (http://github.com/vlfeat/matconvnet).
