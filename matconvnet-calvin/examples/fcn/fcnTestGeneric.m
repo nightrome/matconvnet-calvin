@@ -13,17 +13,14 @@ addParameter(p, 'expNameAppend', 'test');
 addParameter(p, 'epoch', 50);
 addParameter(p, 'modelFamily', 'matconvnet');
 addParameter(p, 'plotFreq', 30);
+addParameter(p, 'printFreq', 30);
 addParameter(p, 'showPlot', false);
 addParameter(p, 'maxImSize', 700);
 addParameter(p, 'doOutputMaps', false); % Optional: output predicted labels to file
 addParameter(p, 'doCache', true);
 addParameter(p, 'testOnTrn', false);
 addParameter(p, 'expSubFolder', '');
-
-% Options for finding the best possible label mapping from ILSVRC to target dataset
-addParameter(p, 'doComputePerf', true);
-addParameter(p, 'labelNamesReplace', {}); % Use these if the outputs of the network don't correspond to the current dataset
-addParameter(p, 'findMapping', false);
+addParameter(p, 'findMapping', false); % Find the best possible label mapping from ILSVRC to target dataset
 parse(p, varargin{:});
 
 dataset = p.Results.dataset;
@@ -34,14 +31,13 @@ expNameAppend = p.Results.expNameAppend;
 epoch = p.Results.epoch;
 modelFamily = p.Results.modelFamily;
 plotFreq = p.Results.plotFreq;
+printFreq = p.Results.printFreq;
 maxImSize = p.Results.maxImSize;
 showPlot = p.Results.showPlot;
 doOutputMaps = p.Results.doOutputMaps;
 doCache = p.Results.doCache;
 testOnTrn = p.Results.testOnTrn;
 expSubFolder = p.Results.expSubFolder;
-doComputePerf = p.Results.doComputePerf;
-labelNamesReplace = p.Results.labelNamesReplace;
 findMapping = p.Results.findMapping;
 callArgs = p.Results; %#ok<NASGU>
 
@@ -85,42 +81,22 @@ end
 % Setup data
 % -------------------------------------------------------------------------
 
-if strStartsWith(dataset.name, 'VOC')
-    % Get PASCAL VOC 11/12 segmentation dataset plus Berkeley's additional
-    % segmentations
-    opts.imdbPath = fullfile(opts.expDir, 'imdb.mat');
-    if exist(opts.imdbPath, 'file')
-        imdb = load(opts.imdbPath);
-        
-        % Overwrite imdb dataset to avoid problems with changed paths
-        assert(isequal(dataset.name, imdb.dataset.name));
-        imdb.dataset = dataset;
-    end
-    % Get validation subset
-    trn = find(imdb.images.set == 1 & imdb.images.segmentation);
-    val = find(imdb.images.set == 2 & imdb.images.segmentation);
-    
-    bopts.imageNameToLabelMap = @(imageName, imdb) imread(sprintf(imdb.paths.classSegmentation, imageName));
-    bopts.translateLabels = true;
+% Load imdb from file
+opts.imdbPath = fullfile(opts.expDir, 'imdb.mat');
+if exist(opts.imdbPath, 'file')
+    imdb = load(opts.imdbPath);
+    assert(isequal(dataset.name, imdb.dataset.name));
 else
-    % Other datasets
-    % Required fields: imdb.images.name, imdb.paths.image,
-    % imdb.paths.classSegmentation, imdb.dataset, imdb.labelCount
-    imdb.dataset = dataset;
-    [imdb.classes.name, imdb.labelCount] = dataset.getLabelNames();
-    imdb.paths.image = fullfile(dataset.getImagePath(), sprintf('%%s%s', dataset.imageExt));
-    
-    if testOnTrn
-        imdb.images.name = dataset.getImageListTrn();
-        trn = 1:numel(imdb.images.name);
-    else
-        imdb.images.name = dataset.getImageListTst();
-        val = 1:numel(imdb.images.name);
-    end
-    
-    bopts.imageNameToLabelMap = @(imageName, imdb) imdb.dataset.getImLabelMap(imageName);
-    bopts.translateLabels = false;
+    error('Error: Cannot find imdb: %s', opts.imdbPath);
 end
+
+% Set batch options
+bopts.imageNameToLabelMap = imdb.imageNameToLabelMap;
+bopts.translateLabels = imdb.translateLabels;
+
+% Get train and val sets
+trn = find(imdb.images.set == 1 & imdb.images.segmentation);
+val = find(imdb.images.set == 2 & imdb.images.segmentation);
 
 % -------------------------------------------------------------------------
 % Setup model
@@ -179,12 +155,32 @@ net.mode = 'test';
 % -------------------------------------------------------------------------
 % Test
 % -------------------------------------------------------------------------
-if doComputePerf
+
+% Prepare stuff for visualization
+labelNames = dataset.getLabelNames();
+colorMapping = labelColors(imdb.labelCount);
+colorMappingError = [0, 0, 0; ...    % background
+    1, 0, 0; ...    % too much
+    1, 1, 0; ...    % too few
+    0, 1, 0; ...    % rightClass
+    0, 0, 1];       % wrongClass
+
+if findMapping
+    % Special mode where we use a net from a different dataset
+    labelNamesPred = getIlsvrcClsClassDescriptions()';
+    labelNamesPred = lower(labelNamesPred);
+    labelNamesPred = cellfun(@(x) x(1:min(10, numel(x))), labelNamesPred, 'UniformOutput', false);
+    colorMappingPred = labelColors(numel(labelNamesPred));
+    assert(imdb.labelCount == imdb.dataset.labelCount); %imdb.labelCount should correspond to the target dataset
+    confusion = zeros(imdb.labelCount, numel(labelNamesPred));
+else
+    % Normal test mode
+    labelNamesPred = labelNames;
+    colorMappingPred = colorMapping;
     confusion = zeros(imdb.labelCount);
 end
-if findMapping
-    confusionMapping = zeros(imdb.labelCount, numel(labelNamesReplace));
-end
+
+% Set target dataset
 if testOnTrn
     target = trn;
 else
@@ -192,7 +188,8 @@ else
 end
 targetCount = numel(target);
 
-for i = 1:numel(target)
+evalTimer = tic;
+for i = 1 : numel(target)
     imId = target(i);
     imageName = imdb.images.name{imId};
     
@@ -232,18 +229,11 @@ for i = 1:numel(target)
         im_ = gpuArray(im_);
     end
     
+    % Forward image through net and get predictions
     net.eval({inputVar, im_});
-    scores_ = gather(net.vars(predVar).value);
+    scores_ = net.vars(predVar).value;
     [~, pred_] = max(scores_, [], 3);
-    
-    % DEBUG:
-    if true,
-        % Translate label indices if SiftFlow was trained with 34 classes
-        if imdb.labelCount + 1 == net.layers(net.getLayerIndex('fc8')).block.size(4),
-            [~, pred_NoBg] = max(scores_(:, :, 2:end),[],3);
-            pred_ = pred_NoBg;
-        end;
-    end;
+    pred_ = gather(pred_);
     
     if imageNeedsToBeMultiple
         pred = imresize(pred_, size(anno), 'method', 'nearest');
@@ -254,26 +244,20 @@ for i = 1:numel(target)
     % If a folder was specified, output the predicted label maps
     if doOutputMaps
         outputMap = pred; %#ok<NASGU>
-        scoresDownsized = scores_; %#ok<NASGU>
+        if imdb.labelCount > 200
+            scoresDownsized = []; %#ok<NASGU>
+        else
+            scoresDownsized = scores_; %#ok<NASGU>
+        end
         outputPath = fullfile(mapOutputFolder, [imageName, '.mat']);
         save(outputPath, 'outputMap', 'scoresDownsized');
     end;
     
     % Accumulate errors
     ok = anno > 0;
-    if doComputePerf
-        confusion = confusion + accumarray([anno(ok), pred(ok)], 1, [imdb.labelCount imdb.labelCount]);
-    end
-    if findMapping
-        confusionMapping = confusionMapping + accumarray([anno(ok), pred(ok)], 1, size(confusionMapping));
-    end
+    confusion = confusion + accumarray([anno(ok), pred(ok)], 1, size(confusion));
     
-    % Print message
-    if mod(i - 1, 30) == 0 
-        fprintf('Processing image %d of %d...\n', i, targetCount);
-    end
-    
-    % Plots
+    % Plot example images
     if mod(i - 1, plotFreq) == 0 || i == targetCount      
         
         % Print segmentation
@@ -286,14 +270,6 @@ for i = 1:numel(target)
         
         % Create tiled image with image+gt+pred
         if true
-            labelNames = dataset.getLabelNames();
-            colorMapping = labelColors(imdb.labelCount);
-            if isempty(labelNamesReplace)
-                labelNamesReplace = labelNames;
-                colorMappingRepl = colorMapping;
-            else
-                colorMappingRepl = labelColors(numel(labelNamesReplace));
-            end;
             if dataset.annotation.labelOneIsBg
                 skipLabelInds = 1;
             else
@@ -310,50 +286,61 @@ for i = 1:numel(target)
             tile.addImage(annoIm);
             
             % Add prediction image
-            predIm = ind2rgb(pred, colorMappingRepl);
-            predIm = imageInsertBlobLabels(predIm, pred, labelNamesReplace, 'skipLabelInds', skipLabelInds);
+            predIm = ind2rgb(pred, colorMappingPred);
+            predIm = imageInsertBlobLabels(predIm, pred, labelNamesPred, 'skipLabelInds', skipLabelInds);
             tile.addImage(predIm);
             
             % Highlight differences between GT and prediction
-            % TODO: adapt to other datasets without bg
-            errorMap = ones(size(anno));
-            if imdb.dataset.annotation.labelOneIsBg
-                % Datasets where bg is 1 and void is 0 (i.e. VOC)
-                tooMuch = anno ~= pred & anno == 1 & pred >= 2;
-                tooFew  = anno ~= pred & anno >= 2 & pred == 1;
-                rightClass = anno == pred & anno >= 2 & pred >= 2;
-                wrongClass = anno ~= pred & anno >= 2 & pred >= 2;
-                errorMap(tooMuch) = 2;
-                errorMap(tooFew) = 3;
-                errorMap(rightClass) = 4;
-                errorMap(wrongClass) = 5;
-            else
-                % For datasets without bg
-                rightClass = anno == pred & anno >= 1;
-                wrongClass = anno ~= pred & anno >= 1;
-                errorMap(rightClass) = 4;
-                errorMap(wrongClass) = 5;
+            if ~findMapping
+                errorMap = ones(size(anno));
+                if imdb.dataset.annotation.labelOneIsBg
+                    % Datasets where bg is 1 and void is 0 (i.e. VOC)
+                    tooMuch = anno ~= pred & anno == 1 & pred >= 2;
+                    tooFew  = anno ~= pred & anno >= 2 & pred == 1;
+                    rightClass = anno == pred & anno >= 2 & pred >= 2;
+                    wrongClass = anno ~= pred & anno >= 2 & pred >= 2;
+                    errorMap(tooMuch) = 2;
+                    errorMap(tooFew) = 3;
+                    errorMap(rightClass) = 4;
+                    errorMap(wrongClass) = 5;
+                else
+                    % For datasets without bg
+                    rightClass = anno == pred & anno >= 1;
+                    wrongClass = anno ~= pred & anno >= 1;
+                    errorMap(rightClass) = 4;
+                    errorMap(wrongClass) = 5;
+                end
+                errorIm = ind2rgb(double(errorMap), colorMappingError);
+                tile.addImage(errorIm);
             end
-            colorMapping = [0, 0, 0; ...    % background
-                1, 0, 0; ...    % too much
-                1, 1, 0; ...    % too few
-                0, 1, 0; ...    % rightClass
-                0, 0, 1];       % wrongClass
-            errorIm = ind2rgb(double(errorMap), colorMapping);
-            tile.addImage(errorIm);
             
             % Save segmentation
-            image = tile.getTiling('totalX', 4, 'delimiterPixels', 1, 'backgroundBlack', false);
-            imPath = fullfile(opts.labelingDir, [imageName '.png']);
+            image = tile.getTiling('totalX', numel(tile.images), 'delimiterPixels', 1, 'backgroundBlack', false);
+            imPath = fullfile(opts.labelingDir, [imageName, '.png']);
             imwrite(image, imPath);
         end
     end
+    
+    % Print message
+    if mod(i - 1, printFreq) == 0 || i == targetCount
+        evalTime = toc(evalTimer);
+        fprintf('Processing image %d of %d (%.2f Hz)...\n', i, targetCount, i/evalTime);
+    end
 end
 
-% Final statistics, remove classes missing in test
-% Note: Printing statistics earlier does not make sense if we remove missing
-% classes
-if doComputePerf
+
+if findMapping
+    if testOnTrn
+        subset = 'trn';
+    else
+        subset = 'tst';
+    end
+    mappingPath = fullfile(opts.expDir, sprintf('mapping-%s.mat', subset));
+    save(mappingPath, 'confusion');
+else
+    % Final statistics, remove classes missing in test
+    % Note: Printing statistics earlier does not make sense if we remove missing
+    % classes
     [info.iu, info.miu, info.pacc, info.macc] = getAccuracies(confusion);
     fprintf('Results without missing classes:\n');
     fprintf('IU %4.1f ', 100 * info.iu);
@@ -364,15 +351,6 @@ if doComputePerf
     if doCache
         save(resPath, '-struct', 'info');
     end
-end
-if findMapping
-    if testOnTrn
-        subset = 'trn';
-    else
-        subset = 'tst';
-    end
-    mappingPath = fullfile(opts.expDir, sprintf('mapping-%s.mat', subset));
-    save(mappingPath, 'confusionMapping');
 end
 
 % -------------------------------------------------------------------------
