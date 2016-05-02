@@ -15,15 +15,15 @@ addParameter(p, 'expNameAppend', 'test');
 addParameter(p, 'weaklySupervised', false);
 addParameter(p, 'numEpochs', 50);
 addParameter(p, 'useInvFreqWeights', false);
-addParameter(p, 'wsUseAbsent', false);
-addParameter(p, 'wsUseScoreDiffs', false);
-addParameter(p, 'wsEqualWeight', false);
+addParameter(p, 'wsUseAbsent', false);      % helpful
+addParameter(p, 'wsUseScoreDiffs', false);  % not helpful
+addParameter(p, 'wsEqualWeight', false);    % not helpful
 addParameter(p, 'semiSupervised', false);
-addParameter(p, 'semiSupervisedRate', 0.1); % ratio of images with full supervision
+addParameter(p, 'semiSupervisedRate', 0.1);     % ratio of images with full supervision
 addParameter(p, 'semiSupervisedOnlyFS', false); % use only the x% fully supervised images
-addParameter(p, 'initIlsvrc', false);
-addParameter(p, 'initLinComb', false);
-addParameter(p, 'initAutoBias', false);
+addParameter(p, 'initIlsvrc', false);       % helpful
+addParameter(p, 'initLinComb', false);      % helpful
+addParameter(p, 'initAutoBias', false);     % helpful
 addParameter(p, 'enableCudnn', true);
 parse(p, varargin{:});
 
@@ -96,10 +96,9 @@ opts.imdbPath = fullfile(opts.expDir, 'imdb.mat');
 if exist(opts.imdbPath, 'file')
     imdb = load(opts.imdbPath);
 else
-    % Dataset-specific imdb creation
+    %%% VOC specific
     if strStartsWith(dataset.name, 'VOC'),
-        % Get PASCAL VOC 12 segmentation dataset plus Berkeley's additional
-        % segmentations
+        % Get PASCAL VOC segmentation dataset plus Berkeley's additional segmentations
         opts.vocAdditionalSegmentations = true;
         opts.vocEdition = '11';
         opts.dataDir = fullfile(dataRootDir, dataset.name);
@@ -111,40 +110,65 @@ else
         if opts.vocAdditionalSegmentations
             imdb = vocSetupAdditionalSegmentations(imdb, 'dataDir', opts.dataDir);
         end
-        labelCount = 21;
-    else
-        % Imdb must have the following fields:
-        % imdb.images.name, imdb.classes.name, imdb.labelCount, imdb.dataset
         
+        stats = getDatasetStatistics(imdb);
+        imdb.rgbMean = stats.rgbMean;
+        imdb.translateLabels = true;
+        imdb.imageNameToLabelMap = @(imageName, imdb) imread(sprintf(imdb.paths.classSegmentation, imageName));
+    else
+        %%% Other datasets
         % Get labels and image path
-        [imdb.classes.name, labelCount] = dataset.getLabelNames();
+        imdb.classes.name = dataset.getLabelNames();
         imdb.paths.image = fullfile(dataset.getImagePath(), sprintf('%%s%s', dataset.imageExt));
+        
+        % Get trn + tst/val images
+        imageListTrn = dataset.getImageListTrn();
+        imageListTst = dataset.getImageListTst();
+        
+        % Remove images without labels
+        missingImageIndices = dataset.getMissingImageIndices('train');
+        imageListTrn(missingImageIndices) = [];
+        imageCountTrn = numel(imageListTrn);
+        imageCountTst = numel(imageListTst);
+        
+        imdb.images.name = [imageListTrn; imageListTst];
+        imdb.images.segmentation = true(imageCountTrn+imageCountTst, 1);
+        imdb.images.set = nan(imageCountTrn+imageCountTst, 1);
+        imdb.images.set(1:imageCountTrn) = 1;
+        imdb.images.set(imageCountTrn+1:end) = 2;
+        
+        imdb.rgbMean = dataset.getMeanColor();
+        imdb.translateLabels = false;
+        imdb.imageNameToLabelMap = @(imageName, imdb) imdb.dataset.getImLabelMap(imageName);
     end;
     
     % Dataset-independent imdb fields
     imdb.dataset = dataset;
-    imdb.labelCount = labelCount;
+    imdb.labelCount = dataset.labelCount;
     imdb.weaklySupervised = weaklySupervised;
     imdb.semiSupervised = semiSupervised;
     imdb.semiSupervisedRate = semiSupervisedRate;
     imdb.useInvFreqWeights = useInvFreqWeights;
     
     % Specify level of supervision for each image
-    imdb.images.isFullySupervised = true(1, numel(imdb.images.name));
-    if semiSupervised
-        perm = randperm(numel(imdb.images.name));
-        imdb.images.isFullySupervised = perm / numel(imdb.images.name) <= semiSupervisedRate;
+    imdb.images.isFullySupervised = true(numel(imdb.images.name), 1);
+    if imdb.semiSupervised
+        perm = randperm(numel(imdb.images.name))';
+        imdb.images.isFullySupervised = (perm / numel(imdb.images.name)) <= semiSupervisedRate;
         
         if semiSupervisedOnlyFS
             % Keep x% of train and all val
             sel = imdb.images.isFullySupervised(:) | imdb.images.set(:) == 2;
-            imdb.images.id = imdb.images.id(sel);
             imdb.images.name = imdb.images.name(sel);
             imdb.images.set = imdb.images.set(sel);
-            imdb.images.classification = imdb.images.classification(sel);
             imdb.images.segmentation = imdb.images.segmentation(sel);
-            imdb.images.size = imdb.images.size(:, sel);
             imdb.images.isFullySupervised = imdb.images.isFullySupervised(sel);
+            
+            if strStartsWith(dataset.name, 'VOC')
+                imdb.images.id = imdb.images.id(sel);
+                imdb.images.classification = imdb.images.classification(sel);
+                imdb.images.size = imdb.images.size(:, sel);
+            end
         end
     end
     
@@ -152,47 +176,10 @@ else
     save(opts.imdbPath, '-struct', 'imdb');
 end;
 
-if strStartsWith(dataset.name, 'VOC'),
-    % Get training and test/validation subsets
-    % We always validate and test on val
-    train = find(imdb.images.set == 1 & imdb.images.segmentation);
-    val = find(imdb.images.set == 2 & imdb.images.segmentation);
-    
-    % Get mean image
-    % Get dataset statistics
-    opts.imdbStatsPath = fullfile(opts.expDir, 'imdbStats.mat');
-    if exist(opts.imdbStatsPath, 'file')
-        stats = load(opts.imdbStatsPath);
-    else
-        stats = getDatasetStatistics(imdb);
-        save(opts.imdbStatsPath, '-struct', 'stats');
-    end
-    
-    % Batch options
-    rgbMean = stats.rgbMean;
-    translateLabels = true;
-else
-    % Get trn+val images
-    imageList = dataset.getImageListTrn();
-    
-    % Remove images without labels
-    if true
-        missingImageIndices = dataset.getMissingImageIndices('train');
-        imageList(missingImageIndices) = [];
-        imageCount = numel(imageList);
-    end
-    
-    % Get training and test/validation subsets
-    perm = randperm(imageCount)';
-    split = round(0.9 * imageCount);
-    train = perm(1:split);
-    val = perm(split+1:end);
-    
-    imdb.images.name = imageList;
-    rgbMean = imdb.dataset.getMeanColor();
-    translateLabels = false;
-end;
-
+% Get training and test/validation subsets
+% We always validate and test on val
+train = find(imdb.images.set == 1 & imdb.images.segmentation);
+val   = find(imdb.images.set == 2 & imdb.images.segmentation);
 
 % -------------------------------------------------------------------------
 % Setup model
@@ -215,10 +202,10 @@ elseif isnan(existingEpoch)
         % upgrade model fto FCN8s
         net = fcnInitializeModel8sGeneric(imdb.labelCount, net);
     end
-    net.meta.normalization.rgbMean = rgbMean;
+    net.meta.normalization.rgbMean = imdb.rgbMean;
     net.meta.classes = imdb.classes.name;
     
-    if weaklySupervised
+    if imdb.weaklySupervised
         wsPresentWeight = 1 / (1 + wsUseAbsent);
         
         if wsEqualWeight
@@ -228,8 +215,8 @@ elseif isnan(existingEpoch)
         end
     end
     
-    if ~semiSupervised
-        if weaklySupervised
+    if ~imdb.semiSupervised
+        if imdb.weaklySupervised
             % Replace loss by weakly supervised instance-weighted loss
             objIdx = net.getLayerIndex('objective');
             assert(strcmp(net.layers(objIdx).block.loss, 'softmaxlog'));
@@ -283,7 +270,7 @@ end
 
 % Extract inverse class frequencies from dataset
 if useInvFreqWeights,
-    if weaklySupervised,
+    if imdb.weaklySupervised,
         classWeights = imdb.dataset.getLabelImFreqs('train');
     else
         classWeights = imdb.dataset.getLabelPixelFreqs('train');
@@ -307,12 +294,10 @@ end;
 bopts.labelStride = 1;
 bopts.labelOffset = 1;
 bopts.classWeights = classWeights;
-bopts.rgbMean = rgbMean;
+bopts.rgbMean = imdb.rgbMean;
 bopts.useGpu = numel(opts.train.gpus) > 0;
-if ~strStartsWith(imdb.dataset.name, 'VOC'),
-    bopts.imageNameToLabelMap = @(imageName, imdb) imdb.dataset.getImLabelMap(imageName);
-end;
-bopts.translateLabels = translateLabels;
+bopts.imageNameToLabelMap = imdb.imageNameToLabelMap;
+bopts.translateLabels = imdb.translateLabels;
 
 % Save important settings
 settingsPath = fullfile(opts.expDir, 'settings.mat');
