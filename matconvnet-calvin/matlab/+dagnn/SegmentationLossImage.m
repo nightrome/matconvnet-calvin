@@ -48,7 +48,7 @@ classdef SegmentationLossImage < dagnn.Loss
             assert(~any(cellfun(@(x) isempty(x), labelsImageCell)));
             assert((obj.absentWeight == 0 & ~obj.useAbsent) | (obj.absentWeight ~= 0 & obj.useAbsent == 1));
             
-            %%%% Pixel to image mapping            
+            %%%% Pixel to image mapping
             % Softmax pixel-level scores
             if true
                 % Compute loss
@@ -84,6 +84,24 @@ classdef SegmentationLossImage < dagnn.Loss
                         obj.mask(sampleIdx, 1) = y + (x - 1) * size(obj.scoresMapSoftmax, 1);
                     end
                 end
+                
+                %                     % Vectorized version: No speedup :(
+                %                     assert(~useScoreDiffs);
+                %                     for imageIdx = 1 : imageCount
+                %                         s = scoresMapSoftmax(:, :, :, imageIdx);
+                %                         [yVals, ys] = max(s, [], 1);
+                %                         [~, xs] = max(yVals, [], 2);
+                %                         xs = xs(:);
+                %                         inds = sub2ind(size(ys), ones(size(xs)), xs, (1:numel(xs))');
+                %                         ys = ys(inds);
+                %                         sampleStart = 1 + (imageIdx-1) * labelCount;
+                %                         sampleEnd = imageIdx * labelCount;
+                %                         mask(sampleStart:sampleEnd, 1) = sub2ind([size(scoresMapSoftmax, 1), size(scoresMapSoftmax, 2)], ys, xs);
+                %
+                %                         for sampleIdx = sampleStart : sampleEnd
+                %                             scoresImageSoftmax(1, 1, :, sampleIdx) = scoresMapSoftmax(ys(sampleIdx), xs(sampleIdx), :, imageIdx);
+                %                         end
+                %                     end
             end
             
             %%% Loss function from vl_nnloss
@@ -144,9 +162,9 @@ classdef SegmentationLossImage < dagnn.Loss
                 
                 % Apply weights
                 loss = sum(t .* obj.instanceWeights);
-%                 presentLoss = sum(t( obj.isPresent) .* obj.instanceWeights( obj.isPresent));
-%                 absentLoss  = sum(t(~obj.isPresent) .* obj.instanceWeights(~obj.isPresent));
-%                 assert(abs(imageCount - sum(obj.instanceWeights(:))) < 1e-4);
+                %                 presentLoss = sum(t( obj.isPresent) .* obj.instanceWeights( obj.isPresent));
+                %                 absentLoss  = sum(t(~obj.isPresent) .* obj.instanceWeights(~obj.isPresent));
+                %                 assert(abs(imageCount - sum(obj.instanceWeights(:))) < 1e-4);
             end;
             
             % Debug: how many labels are really present?
