@@ -9,6 +9,7 @@ function fcnTrainGeneric(varargin)
 p = inputParser;
 addParameter(p, 'dataset', SiftFlowDataset());
 addParameter(p, 'modelType', 'fcn16s');
+addParameter(p, 'modelFile', '19beta/imagenet-matconvnet-vgg-verydeep-16.mat');
 addParameter(p, 'gpus', 2);
 addParameter(p, 'randSeed', 42);
 addParameter(p, 'expNameAppend', 'test');
@@ -18,6 +19,7 @@ addParameter(p, 'useInvFreqWeights', false);
 addParameter(p, 'wsUseAbsent', false);      % helpful
 addParameter(p, 'wsUseScoreDiffs', false);  % not helpful
 addParameter(p, 'wsEqualWeight', false);    % not helpful
+% addParameter(p, 'wsLowResLoss', false); %TODO
 addParameter(p, 'semiSupervised', false);
 addParameter(p, 'semiSupervisedRate', 0.1);     % ratio of images with full supervision
 addParameter(p, 'semiSupervisedOnlyFS', false); % use only the x% fully supervised images
@@ -29,6 +31,7 @@ parse(p, varargin{:});
 
 dataset = p.Results.dataset;
 modelType = p.Results.modelType;
+modelFile = p.Results.modelFile;
 gpus = p.Results.gpus;
 randSeed = p.Results.randSeed;
 expNameAppend = p.Results.expNameAppend;
@@ -38,6 +41,7 @@ useInvFreqWeights = p.Results.useInvFreqWeights;
 wsUseAbsent = p.Results.wsUseAbsent;
 wsUseScoreDiffs = p.Results.wsUseScoreDiffs;
 wsEqualWeight = p.Results.wsEqualWeight;
+% wsLowResLoss = p.Results.wsLowResLoss;
 semiSupervised = p.Results.semiSupervised;
 semiSupervisedRate = p.Results.semiSupervisedRate;
 semiSupervisedOnlyFS = p.Results.semiSupervisedOnlyFS;
@@ -60,7 +64,7 @@ global glBaseFolder glFeaturesFolder;
 dataRootDir = fullfile(glBaseFolder, 'CodeForeign', 'CNN', 'matconvnet-fcn', 'data');
 expName = [modelType, prependNotEmpty(expNameAppend, '-')];
 opts.expDir = fullfile(glFeaturesFolder, 'CNN-Models', 'FCN', dataset.name, expName);
-opts.sourceModelPath = fullfile(glFeaturesFolder, 'CNN-Models', 'matconvnet', '17beta', 'imagenet-matconvnet-vgg-verydeep-16.mat');
+opts.sourceModelPath = fullfile(glFeaturesFolder, 'CNN-Models', 'matconvnet', modelFile);
 logFilePath = fullfile(opts.expDir, 'log.txt');
 initLinCombPath = fullfile(glFeaturesFolder, 'CNN-Models', 'FCN', dataset.name, 'fcn16s-notrain-ilsvrc-auto-lincomb-trn', 'linearCombination-trn.mat');
 modelPathFunc = @(epoch) fullfile(opts.expDir, sprintf('net-epoch-%d.mat', epoch));
@@ -213,51 +217,42 @@ elseif isnan(existingEpoch)
         else
             wsAbsentWeight = 1 - wsPresentWeight;
         end
+    else
+        wsPresentWeight = [];
+        wsAbsentWeight = [];
     end
     
+    % Replace unweighted loss layer
+    layerFS = dagnn.SegmentationLossPixel();
+    layerWS = dagnn.SegmentationLossImage('useAbsent', wsUseAbsent, 'useScoreDiffs', wsUseScoreDiffs, 'presentWeight', wsPresentWeight, 'absentWeight', wsAbsentWeight);
+    objIdx = net.getLayerIndex('objective');
+    assert(strcmp(net.layers(objIdx).block.loss, 'softmaxlog'));
     if ~imdb.semiSupervised
         if imdb.weaklySupervised
             % Replace loss by weakly supervised instance-weighted loss
-            objIdx = net.getLayerIndex('objective');
-            assert(strcmp(net.layers(objIdx).block.loss, 'softmaxlog'));
-            objInputs = [net.layers(objIdx).inputs(1), {'labelsImage', 'classWeights'}];
-            objOutputs = net.layers(objIdx).outputs;
+            layerWSInputs = [net.layers(objIdx).inputs(1), {'labelsImage', 'classWeights'}];
+            layerWSOutputs = net.layers(objIdx).outputs;
             net.removeLayer('objective');
-            net.addLayer('objective', dagnn.SegmentationLossImage('useAbsent', wsUseAbsent, 'useScoreDiffs', wsUseScoreDiffs, 'presentWeight', wsPresentWeight, 'absentWeight', wsAbsentWeight), objInputs, objOutputs, {});
-            
-            % Remove accuracy layer if no pixel-level labels exist
-            if ~imdb.dataset.annotation.hasPixelLabels,
-                net.removeLayer('accuracy');
-            end;
+            net.addLayer('objective', layerWS, layerWSInputs, layerWSOutputs, {});
         else
             % Replace loss by pixel-weighted loss
-            objIdx = net.getLayerIndex('objective');
-            assert(strcmp(net.layers(objIdx).block.loss, 'softmaxlog'));
-            objInputs = [net.layers(objIdx).inputs, {'classWeights'}];
-            objOutputs = net.layers(objIdx).outputs;
+            layerFSInputs = [net.layers(objIdx).inputs, {'classWeights'}];
+            layerFSOutputs = net.layers(objIdx).outputs;
             net.removeLayer('objective');
-            net.addLayer('objective', dagnn.SegmentationLossPixel(), objInputs, objOutputs, {});
+            net.addLayer('objective', layerFS, layerFSInputs, layerFSOutputs, {});
         end;
     else
         % Add a layer that automatically decides whether to use FS or WS
-        objIdx = net.getLayerIndex('objective');
-        assert(strcmp(net.layers(objIdx).block.loss, 'softmaxlog'));
-        layerFS = dagnn.SegmentationLossPixel();
-        layerWS = dagnn.SegmentationLossImage('useAbsent', wsUseAbsent, 'useScoreDiffs', wsUseScoreDiffs, 'presentWeight', wsPresentWeight, 'absentWeight', wsAbsentWeight);
-        objBlock = dagnn.SegmentationLossSemiSupervised('layerFS', layerFS, 'layerWS', layerWS);
-        objInputs = [net.layers(objIdx).inputs, {'labelsImage', 'classWeights', 'isWeaklySupervised'}];
-        objOutputs = net.layers(objIdx).outputs;
+        layerSS = dagnn.SegmentationLossSemiSupervised('layerFS', layerFS, 'layerWS', layerWS);
+        layerSSInputs = [net.layers(objIdx).inputs, {'labelsImage', 'classWeights', 'isWeaklySupervised'}];
+        layerSSOutputs = net.layers(objIdx).outputs;
         net.removeLayer('objective');
-        net.addLayer('objective', objBlock, objInputs, objOutputs, {});
-        
-        % Remove accuracy layer if no pixel-level labels exist
-        if ~imdb.dataset.annotation.hasPixelLabels
-            net.removeLayer('accuracy');
-        end
+        net.addLayer('objective', layerSS, layerSSInputs, layerSSOutputs, {});
     end
     
-    % Replace accuracy layer with 21 classes by flexible accuracy layer
+    % Accuracy layer
     if imdb.dataset.annotation.hasPixelLabels
+        % Replace accuracy layer with 21 classes by flexible accuracy layer
         accIdx = net.getLayerIndex('accuracy');
         accLayer = net.layers(accIdx);
         accInputs = accLayer.inputs;
@@ -265,6 +260,9 @@ elseif isnan(existingEpoch)
         accBlock = dagnn.SegmentationAccuracyFlexible('labelCount', imdb.labelCount);
         net.removeLayer('accuracy');
         net.addLayer('accuracy', accBlock, accInputs, accOutputs, {});
+    else
+        % Remove accuracy layer if no pixel-level labels exist
+        net.removeLayer('accuracy');
     end
 end
 
@@ -370,7 +368,7 @@ lx = opts.labelOffset : opts.labelStride : opts.imageSize(2);
 ly = opts.labelOffset : opts.labelStride : opts.imageSize(1);
 labels = zeros(numel(ly), numel(lx), 1, imageCount*opts.numAugments, 'double'); % must be double for to avoid numerical precision errors in vl_nnloss, when using many classes
 if imdb.weaklySupervised,
-    labelsImage = cell(size(labels, 4), 1);
+    labelsImageCell = cell(imageCount*opts.numAugments, 1);
 end;
 
 si = 1;
@@ -449,7 +447,7 @@ for i = 1 : imageCount
             curLabelsImage(curLabelsImage == 0) = [];
             
             % Store image-level labels
-            labelsImage{si} = single(curLabelsImage(:));
+            labelsImageCell{si} = single(curLabelsImage(:));
         end;
         
         si = si + 1;
@@ -467,7 +465,8 @@ if imdb.dataset.annotation.hasPixelLabels
     y = [y, {'label', labels}];
 end
 if imdb.weaklySupervised
-    y = [y, {'labelsImage', labelsImage}];
+    assert(~any(cellfun(@(x) isempty(x), labelsImageCell)));
+    y = [y, {'labelsImage', labelsImageCell}];
 end
 
 % Instance/pixel weights, can be left empty

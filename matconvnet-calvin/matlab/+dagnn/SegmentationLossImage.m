@@ -61,47 +61,7 @@ classdef SegmentationLossImage < dagnn.Loss
             end
             
             if true
-                % Count total number of samples and init scores
-                scoresImageSoftmax = nan(1, 1, labelCount, sampleCount, 'like', obj.scoresMapSoftmax);
-                obj.mask = nan(sampleCount, 1, 'like', obj.scoresMapSoftmax); % contains the coordinates of the pixel with highest score per class
-                
-                % Process each image/crop separately % very slow (!!)
-                for imageIdx = 1 : imageCount
-                    
-                    offset = (imageIdx-1) * labelCount;
-                    for labelIdx = 1 : labelCount
-                        sampleIdx = offset + labelIdx;
-                        
-                        if obj.useScoreDiffs
-                            s = obj.scoresMapSoftmax(:, :, labelIdx, imageIdx) - max(obj.scoresMapSoftmax(:, :, setdiff(1:labelCount, labelIdx), imageIdx), [], 3);
-                        else
-                            s = obj.scoresMapSoftmax(:, :, labelIdx, imageIdx);
-                        end
-                        [~, ind] = max(s(:)); % always take first pix with max score
-                        x = 1 + floor((ind-1) / size(obj.scoresMapSoftmax, 1));
-                        y = ind - (x-1) * size(obj.scoresMapSoftmax, 1);
-                        scoresImageSoftmax(1, 1, :, sampleIdx) = obj.scoresMapSoftmax(y, x, :, imageIdx);
-                        obj.mask(sampleIdx, 1) = y + (x - 1) * size(obj.scoresMapSoftmax, 1);
-                    end
-                end
-                
-                %                     % Vectorized version: No speedup :(
-                %                     assert(~useScoreDiffs);
-                %                     for imageIdx = 1 : imageCount
-                %                         s = scoresMapSoftmax(:, :, :, imageIdx);
-                %                         [yVals, ys] = max(s, [], 1);
-                %                         [~, xs] = max(yVals, [], 2);
-                %                         xs = xs(:);
-                %                         inds = sub2ind(size(ys), ones(size(xs)), xs, (1:numel(xs))');
-                %                         ys = ys(inds);
-                %                         sampleStart = 1 + (imageIdx-1) * labelCount;
-                %                         sampleEnd = imageIdx * labelCount;
-                %                         mask(sampleStart:sampleEnd, 1) = sub2ind([size(scoresMapSoftmax, 1), size(scoresMapSoftmax, 2)], ys, xs);
-                %
-                %                         for sampleIdx = sampleStart : sampleEnd
-                %                             scoresImageSoftmax(1, 1, :, sampleIdx) = scoresMapSoftmax(ys(sampleIdx), xs(sampleIdx), :, imageIdx);
-                %                         end
-                %                     end
+                scoresImageSoftmax = segmentationLossImage_extractMaxScores(obj, labelCount, sampleCount, imageCount);
             end
             
             %%% Loss function from vl_nnloss
