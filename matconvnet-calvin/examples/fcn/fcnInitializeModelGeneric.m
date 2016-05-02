@@ -10,6 +10,7 @@ function net = fcnInitializeModelGeneric(imdb, varargin)
 
 opts.sourceModelUrl = 'http://www.vlfeat.org/matconvnet/models/imagenet-vgg-verydeep-16.mat';
 opts.sourceModelPath = 'data/models/imagenet-vgg-verydeep-16.mat';
+opts.adaptClassifier = true; % Changes number of classes to imdb.labelCount
 opts.initIlsvrc = false;
 opts.initLinComb = false;
 opts.initLinCombPath = '';
@@ -17,13 +18,18 @@ opts.initAutoBias = false;
 opts.enableCudnn = false;
 opts = vl_argparse(opts, varargin);
 
+% Check inputs
+if opts.initAutoBias
+    assert(imdb.dataset.annotation.labelOneIsBg);
+end
+
 % -------------------------------------------------------------------------
 %                    Load & download the source model if needed (VGG VD 16)
 % -------------------------------------------------------------------------
 if ~exist(opts.sourceModelPath, 'file')
-  fprintf('%s: downloading %s\n', opts.sourceModelUrl);
-  mkdir(fileparts(opts.sourceModelPath));
-  urlwrite('http://www.vlfeat.org/matconvnet/models/imagenet-vgg-verydeep-16.mat', opts.sourceModelPath);
+    fprintf('%s: downloading %s\n', opts.sourceModelUrl);
+    mkdir(fileparts(opts.sourceModelPath));
+    urlwrite('http://www.vlfeat.org/matconvnet/models/imagenet-vgg-verydeep-16.mat', opts.sourceModelPath);
 end
 net = load(opts.sourceModelPath);
 
@@ -40,104 +46,95 @@ net.layers = [net.layers(1:33) drop1 net.layers(34:35) drop2 net.layers(36:end)]
 net = dagnn.DagNN.fromSimpleNN(net, 'canonicalNames', true);
 
 % Add more padding to the input layer
-%net.layers(1).block.pad = 100;
 net.layers( 5).block.pad = [0 1 0 1];
 net.layers(10).block.pad = [0 1 0 1];
 net.layers(17).block.pad = [0 1 0 1];
 net.layers(24).block.pad = [0 1 0 1];
 net.layers(31).block.pad = [0 1 0 1];
 net.layers(32).block.pad = [3 3 3 3];
-% ^-- we could do [2 3 2 3] but that would not use CuDNN
 
 % Modify the bias learning rate for all layers
 for i = 1:numel(net.layers)-1
-  if (isa(net.layers(i).block, 'dagnn.Conv') && net.layers(i).block.hasBias)
-    filt = net.getParamIndex(net.layers(i).params{1});
-    bias = net.getParamIndex(net.layers(i).params{2});
-    net.params(bias).learningRate = 2 * net.params(filt).learningRate;
-  end
+    if (isa(net.layers(i).block, 'dagnn.Conv') && net.layers(i).block.hasBias)
+        filt = net.getParamIndex(net.layers(i).params{1});
+        bias = net.getParamIndex(net.layers(i).params{2});
+        net.params(bias).learningRate = 2 * net.params(filt).learningRate;
+    end
 end
 
 % Make sure fc8 bias is a row vector (different Matconvnet nets have
 % different formats)
+fc8Idx = net.getLayerIndex('fc8');
+fc8fIdx = net.getParamIndex('fc8f');
 fc8bIdx = net.getParamIndex('fc8b');
+assert(~isnan(fc8Idx));
 if size(net.params(fc8bIdx).value, 1) ~= 1
     net.params(fc8bIdx).value = net.params(fc8bIdx).value';
 end
 
 % Modify the last fully-connected layer to have labelCount output classes
-if opts.initIlsvrc
-    if opts.initLinComb
-        % Load linear combination weights
-        assert(~isempty(opts.initLinCombPath));
-        load(opts.initLinCombPath, 'linearCombination');
-        
-        % Weights
-        i = net.layers(end-1).paramIndexes(1);
-        temp = net.params(i).value;
-        sz = size(net.params(i).value);
-        sz(end) = imdb.labelCount;
-        net.params(i).value = zeros(sz, 'single');
-        newTemp = reshape(temp, [size(temp, 3), size(temp, 4)]);
-        newTemp = newTemp * linearCombination';
-        newTemp = reshape(newTemp, [1, 1, size(newTemp)]);
-        if opts.initAutoBias
-            newTemp(:, :, :, 1) = 0;
-        end
-        net.params(i).value = newTemp;
-        
-        % Biases
-        i = net.layers(end-1).paramIndexes(2);
-        temp = net.params(i).value;
-        sz = size(net.params(i).value);
-        sz(end) = imdb.labelCount;
-        net.params(i).value = zeros(sz, 'single');
-        newTemp = temp;
-        newTemp = newTemp * linearCombination';
-        if opts.initAutoBias && imdb.dataset.annotation.labelOneIsBg
-            % Set bias s.t. roughly half of the pixels will be bg
-            % (median max score)
-            newTemp(1) = imdb.dataset.getAutoBgBias();
-        end
-        net.params(i).value = newTemp;
-    else
-        % Overwrite weights from known closest class in ILSVRC
-        clsClassInds = imdb.dataset.findClosestIlsvrcClsClass();
-        targetClassInds = 1:imdb.labelCount;
-        sel = ~isnan(clsClassInds);
-        clsClassInds = clsClassInds(sel);
-        targetClassInds = targetClassInds(sel);
-        
-        % Weights
-        i = net.layers(end-1).paramIndexes(1);
-        temp = net.params(i).value;
-        sz = size(net.params(i).value);
-        sz(end) = imdb.labelCount;
-        net.params(i).value = zeros(sz, 'single');
-        net.params(i).value(:, :, :, targetClassInds) = temp(:, :, :, clsClassInds);
-        
-        % Biases
-        i = net.layers(end-1).paramIndexes(2);
-        temp = net.params(i).value;
-        sz = size(net.params(i).value);
-        sz(end) = imdb.labelCount;
-        net.params(i).value = zeros(sz, 'single');
-        net.params(i).value(:, targetClassInds) = temp(:, clsClassInds);
-    end
-else
-    % Initialize the new filters to zero
-    i = net.layers(end-1).paramIndexes(1);
-    sz = size(net.params(i).value);
-    sz(end) = imdb.labelCount;
-    net.params(i).value = zeros(sz, 'single');
+if opts.adaptClassifier
+    fc8fSize = size(net.params(fc8fIdx).value);
+    fc8bSize = size(net.params(fc8bIdx).value);
+    fc8fSize(end) = imdb.labelCount;
+    fc8bSize(end) = imdb.labelCount;
     
-    i = net.layers(end-1).paramIndexes(2);
-    sz = size(net.params(i).value);
-    sz(end) = imdb.labelCount;
-    net.params(i).value = zeros(sz, 'single');
+    if opts.initIlsvrc
+        if opts.initLinComb
+            % Load linear combination weights
+            assert(~isempty(opts.initLinCombPath));
+            load(opts.initLinCombPath, 'linearCombination');
+            
+            % Weights
+            oldWeights = net.params(fc8fIdx).value;
+            newWeights = reshape(oldWeights, [size(oldWeights, 3), size(oldWeights, 4)]);
+            newWeights = newWeights * linearCombination';
+            newWeights = reshape(newWeights, [1, 1, size(newWeights)]);
+            if opts.initAutoBias
+                newWeights(:, :, :, 1) = 0;
+            end
+            
+            % Biases
+            oldBias = net.params(fc8bIdx).value;
+            net.params(fc8bIdx).value = zeros(fc8bSize, 'single');
+            newBias = oldBias;
+            newBias = newBias * linearCombination';
+            if opts.initAutoBias
+                % Set bias s.t. roughly half of the pixels will be bg
+                % (median max score)
+                newBias(1) = imdb.dataset.getAutoBgBias();
+            end
+        else
+            % Overwrite weights from known closest class in ILSVRC
+            clsClassInds = imdb.dataset.findClosestIlsvrcClsClass();
+            targetClassInds = 1:imdb.labelCount;
+            sel = ~isnan(clsClassInds);
+            clsClassInds = clsClassInds(sel);
+            targetClassInds = targetClassInds(sel);
+            
+            % Weights
+            oldWeights = net.params(fc8fIdx).value;
+            newWeights = zeros(fc8fSize, 'single');
+            newWeights(:, :, :, targetClassInds) = oldWeights(:, :, :, clsClassInds);
+            
+            % Biases
+            oldBias = net.params(fc8bIdx).value;
+            newBias = zeros(fc8bSize, 'single');
+            newBias(:, targetClassInds) = oldBias(:, clsClassInds);
+        end
+    else
+        % Initialize the new filters to zero
+        newWeights = zeros(fc8fSize, 'single');
+        newBias = zeros(fc8bSize, 'single');
+    end
+    
+    % Update weights and bias
+    net.params(fc8fIdx).value = newWeights;
+    net.params(fc8bIdx).value = newBias;
+    
+    % Adapt block to new parameter size
+    net.layers(fc8Idx).block.size = fc8fSize;
 end
-net.layers(end-1).block.size = size(...
-  net.params(net.getParamIndex(net.layers(end-1).params{1})).value);
 
 % Enable Cudnn for conv layers
 if opts.enableCudnn
@@ -157,13 +154,13 @@ net.setLayerOutputs('fc8', {'x38'});
 
 filters = single(bilinear_u(64, imdb.labelCount, imdb.labelCount));
 net.addLayer('deconv32', ...
-  dagnn.ConvTranspose(...
-  'size', size(filters), ...
-  'upsample', 32, ...
-  'crop', [16 16 16 16], ...
-  'numGroups', imdb.labelCount, ...
-  'hasBias', false), ...
-  'x38', 'prediction', 'deconvf');
+    dagnn.ConvTranspose(...
+    'size', size(filters), ...
+    'upsample', 32, ...
+    'crop', [16 16 16 16], ...
+    'numGroups', imdb.labelCount, ...
+    'hasBias', false), ...
+    'x38', 'prediction', 'deconvf');
 
 f = net.getParamIndex('deconvf');
 net.params(f).value = filters;
@@ -180,21 +177,21 @@ net.vars(net.getVarIndex('prediction')).precious = 1;
 
 % Add loss layer
 net.addLayer('objective', ...
-  SegmentationLoss('loss', 'softmaxlog'), ...
-  {'prediction', 'label'}, 'objective');
+    SegmentationLoss('loss', 'softmaxlog'), ...
+    {'prediction', 'label'}, 'objective');
 
 % Add accuracy layer
 net.addLayer('accuracy', ...
-  SegmentationAccuracy(), ...
-  {'prediction', 'label'}, 'accuracy');
+    SegmentationAccuracy(), ...
+    {'prediction', 'label'}, 'accuracy');
 
 if 0
-  figure(100); clf;
-  n = numel(net.vars);
-  for i=1:n
-    vl_tightsubplot(n,i);
-    showRF(net, 'input', net.vars(i).name);
-    title(sprintf('%s', net.vars(i).name));
-    drawnow;
-  end
+    figure(100); clf;
+    n = numel(net.vars);
+    for i=1:n
+        vl_tightsubplot(n,i);
+        showRF(net, 'input', net.vars(i).name);
+        title(sprintf('%s', net.vars(i).name));
+        drawnow;
+    end
 end
