@@ -342,7 +342,8 @@ else
     % Note: Printing statistics earlier does not make sense if we remove missing
     % classes
     [info.iu, info.miu, info.pacc, info.macc] = getAccuracies(confusion);
-    fprintf('Results without missing classes:\n');
+    info.confusion = confusion;
+    fprintf('Result with all classes:\n');
     fprintf('IU %4.1f ', 100 * info.iu);
     fprintf('\n meanIU: %5.2f pixelAcc: %5.2f, meanAcc: %5.2f\n', ...
         100*info.miu, 100*info.pacc, 100*info.macc);
