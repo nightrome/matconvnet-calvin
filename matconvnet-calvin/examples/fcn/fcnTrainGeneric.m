@@ -130,8 +130,14 @@ else
         imageListTst = dataset.getImageListTst();
         
         % Remove images without labels
-        missingImageIndices = dataset.getMissingImageIndices('train');
-        imageListTrn(missingImageIndices) = [];
+        missingImageIndicesTrn = dataset.getMissingImageIndices('train');
+        imageListTrn(missingImageIndicesTrn) = [];
+        % TODO: is it a good idea to remove test images?
+        % (only doing it on non-competitive EdiStuff
+        if isa(dataset, 'EdiStuffDataset') || isa(dataset, 'EdiStuffSubsetDataset')
+            missingImageIndicesTst = dataset.getMissingImageIndices('test');
+            imageListTst(missingImageIndicesTst) = [];
+        end
         imageCountTrn = numel(imageListTrn);
         imageCountTst = numel(imageListTst);
         
