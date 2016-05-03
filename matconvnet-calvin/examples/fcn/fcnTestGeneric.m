@@ -12,7 +12,7 @@ addParameter(p, 'randSeed', 42);
 addParameter(p, 'expNameAppend', 'test');
 addParameter(p, 'epoch', 50);
 addParameter(p, 'modelFamily', 'matconvnet');
-addParameter(p, 'plotFreq', 30);
+addParameter(p, 'plotFreq', 15);
 addParameter(p, 'printFreq', 30);
 addParameter(p, 'showPlot', false);
 addParameter(p, 'maxImSize', 700);
