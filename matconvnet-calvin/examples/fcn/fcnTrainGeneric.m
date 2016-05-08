@@ -9,7 +9,7 @@ function fcnTrainGeneric(varargin)
 p = inputParser;
 addParameter(p, 'dataset', SiftFlowDataset());
 addParameter(p, 'modelType', 'fcn16s');
-addParameter(p, 'modelFile', '19beta/imagenet-matconvnet-vgg-verydeep-16.mat');
+addParameter(p, 'modelFile', '19beta/imagenet-vgg-verydeep-16.mat');
 addParameter(p, 'gpus', 2);
 addParameter(p, 'randSeed', 42);
 addParameter(p, 'expNameAppend', 'test');
@@ -19,14 +19,11 @@ addParameter(p, 'useInvFreqWeights', false);
 addParameter(p, 'wsUseAbsent', false);      % helpful
 addParameter(p, 'wsUseScoreDiffs', false);  % not helpful
 addParameter(p, 'wsEqualWeight', false);    % not helpful
-% addParameter(p, 'wsLowResLoss', false); %TODO
 addParameter(p, 'semiSupervised', false);
 addParameter(p, 'semiSupervisedRate', 0.1);     % ratio of images with full supervision
 addParameter(p, 'semiSupervisedOnlyFS', false); % use only the x% fully supervised images
-addParameter(p, 'initIlsvrc', false);       % helpful
-addParameter(p, 'initLinComb', false);      % helpful
-addParameter(p, 'initAutoBias', false);     % helpful
-addParameter(p, 'enableCudnn', true);
+addParameter(p, 'init', 'zeros'); % zeros, best-auto, best-manual, lincomb (all +-autobias)
+addParameter(p, 'enableCudnn', false);
 parse(p, varargin{:});
 
 dataset = p.Results.dataset;
@@ -41,13 +38,10 @@ useInvFreqWeights = p.Results.useInvFreqWeights;
 wsUseAbsent = p.Results.wsUseAbsent;
 wsUseScoreDiffs = p.Results.wsUseScoreDiffs;
 wsEqualWeight = p.Results.wsEqualWeight;
-% wsLowResLoss = p.Results.wsLowResLoss;
 semiSupervised = p.Results.semiSupervised;
 semiSupervisedRate = p.Results.semiSupervisedRate;
 semiSupervisedOnlyFS = p.Results.semiSupervisedOnlyFS;
-initIlsvrc = p.Results.initIlsvrc;
-initLinComb = p.Results.initLinComb;
-initAutoBias = p.Results.initAutoBias;
+init = p.Results.init;
 enableCudnn = p.Results.enableCudnn;
 callArgs = p.Results; %#ok<NASGU>
 
@@ -160,11 +154,20 @@ else
     imdb.semiSupervisedRate = semiSupervisedRate;
     imdb.useInvFreqWeights = useInvFreqWeights;
     
-    % Specify level of supervision for each image
-    imdb.images.isFullySupervised = true(numel(imdb.images.name), 1);
-    if imdb.semiSupervised
-        perm = randperm(numel(imdb.images.name))';
-        imdb.images.isFullySupervised = (perm / numel(imdb.images.name)) <= semiSupervisedRate;
+    % Specify level of supervision for each train image
+    if ~imdb.weaklySupervised
+        % FS
+        imdb.images.isFullySupervised = true(numel(imdb.images.name), 1);
+    elseif ~imdb.semiSupervised
+        % WS
+        imdb.images.isFullySupervised = false(numel(imdb.images.name), 1);
+    else
+        % SS: Set x% of train and all val to true
+        imdb.images.isFullySupervised = true(numel(imdb.images.name), 1);
+        trainSel = find(imdb.images.set == 1);
+        trainSel = trainSel(randperm(numel(trainSel)));
+        trainSel = trainSel((trainSel / numel(trainSel)) >= semiSupervisedRate);
+        imdb.images.isFullySupervised(trainSel) = false;
         
         if semiSupervisedOnlyFS
             % Keep x% of train and all val
@@ -182,6 +185,17 @@ else
         end
     end
     
+    % Make sure val images are always fully supervised
+    imdb.images.isFullySupervised(imdb.images.set == 2) = true;
+    
+    % Print overview of the fully and weakly supervised number of training
+    % images
+    fsCount = sum( imdb.images.isFullySupervised(:) & imdb.images.set(:) == 1);
+    wsCount = sum(~imdb.images.isFullySupervised(:) & imdb.images.set(:) == 1);
+    fsRatio = fsCount / (fsCount+wsCount);
+    wsRatio = 1 - fsRatio;
+    fprintf('Images in train: %d FS (%.1f%%), %d WS (%.1f%%)...\n', fsCount, fsRatio * 100, wsCount, wsRatio * 100);
+    
     % Save imdb
     save(opts.imdbPath, '-struct', 'imdb');
 end;
@@ -196,6 +210,7 @@ val   = find(imdb.images.set == 2 & imdb.images.segmentation);
 % -------------------------------------------------------------------------
 
 if existingEpoch == 0
+    % Load an existing model
     netStruct = load(modelPathFunc(existingEpoch), 'net');
     net = dagnn.DagNN.loadobj(netStruct.net);
     clearvars netStruct;
@@ -203,7 +218,7 @@ elseif existingEpoch > 0
     net = {};
 elseif isnan(existingEpoch)
     % Get initial model from VGG-VD-16
-    net = fcnInitializeModelGeneric(imdb, 'sourceModelPath', opts.sourceModelPath, 'initIlsvrc', initIlsvrc, 'initLinComb', initLinComb, 'initLinCombPath', initLinCombPath, 'initAutoBias', initAutoBias, 'enableCudnn', enableCudnn);
+    net = fcnInitializeModelGeneric(imdb, 'sourceModelPath', opts.sourceModelPath, 'init', init, 'initLinCombPath', initLinCombPath, 'enableCudnn', enableCudnn);
     if any(strcmp(opts.modelType, {'fcn16s', 'fcn8s'}))
         % upgrade model to FCN16s
         net = fcnInitializeModel16sGeneric(imdb.labelCount, net);
@@ -233,28 +248,13 @@ elseif isnan(existingEpoch)
     layerWS = dagnn.SegmentationLossImage('useAbsent', wsUseAbsent, 'useScoreDiffs', wsUseScoreDiffs, 'presentWeight', wsPresentWeight, 'absentWeight', wsAbsentWeight);
     objIdx = net.getLayerIndex('objective');
     assert(strcmp(net.layers(objIdx).block.loss, 'softmaxlog'));
-    if ~imdb.semiSupervised
-        if imdb.weaklySupervised
-            % Replace loss by weakly supervised instance-weighted loss
-            layerWSInputs = [net.layers(objIdx).inputs(1), {'labelsImage', 'classWeights'}];
-            layerWSOutputs = net.layers(objIdx).outputs;
-            net.removeLayer('objective');
-            net.addLayer('objective', layerWS, layerWSInputs, layerWSOutputs, {});
-        else
-            % Replace loss by pixel-weighted loss
-            layerFSInputs = [net.layers(objIdx).inputs, {'classWeights'}];
-            layerFSOutputs = net.layers(objIdx).outputs;
-            net.removeLayer('objective');
-            net.addLayer('objective', layerFS, layerFSInputs, layerFSOutputs, {});
-        end;
-    else
-        % Add a layer that automatically decides whether to use FS or WS
-        layerSS = dagnn.SegmentationLossSemiSupervised('layerFS', layerFS, 'layerWS', layerWS);
-        layerSSInputs = [net.layers(objIdx).inputs, {'labelsImage', 'classWeights', 'isWeaklySupervised'}];
-        layerSSOutputs = net.layers(objIdx).outputs;
-        net.removeLayer('objective');
-        net.addLayer('objective', layerSS, layerSSInputs, layerSSOutputs, {});
-    end
+    
+    % Add a layer that automatically decides whether to use FS or WS
+    layerSS = dagnn.SegmentationLossSemiSupervised('layerFS', layerFS, 'layerWS', layerWS);
+    layerSSInputs = [net.layers(objIdx).inputs, {'labelsImage', 'classWeights', 'isWeaklySupervised'}];
+    layerSSOutputs = net.layers(objIdx).outputs;
+    net.removeLayer('objective');
+    net.addLayer('objective', layerSS, layerSSInputs, layerSSOutputs, {});
     
     % Accuracy layer
     if imdb.dataset.annotation.hasPixelLabels
@@ -399,6 +399,8 @@ for i = 1 : imageCount
             anno = mod(anno + 1, 256);
         end;
         % 0 = ignore, 1:labelCount = classes
+    else
+        anno = [];
     end;
     
     % crop & flip
@@ -422,7 +424,7 @@ for i = 1 : imageCount
         end
         
         % Fully supervised: Get pixel level labels
-        if imdb.dataset.annotation.hasPixelLabels,
+        if ~isempty(anno)
             tlabels = zeros(sz(1), sz(2), 'double');
             tlabels(oky,okx) = anno(sy(oky), sx(okx));
             tlabels = single(tlabels(ly,lx));
@@ -431,7 +433,7 @@ for i = 1 : imageCount
         
         % Weakly supervised: extract image-level labels
         if imdb.weaklySupervised,
-            if imdb.dataset.annotation.hasPixelLabels,
+            if ~isempty(anno),
                 % Get image labels from pixel labels
                 % These are already translated (if necessary)
                 curLabelsImage = unique(anno);
@@ -480,9 +482,13 @@ y = [y, {'classWeights', opts.classWeights}];
 
 % Decide which level of supervision to pick
 if imdb.semiSupervised
+    % SS
     isWeaklySupervised = ~imdb.images.isFullySupervised(images);
-    if isWeaklySupervised
-        assert(imdb.dataset.annotation.hasPixelLabels);
-    end
-    y = [y, {'isWeaklySupervised', isWeaklySupervised}];
+else
+    % FS or WS
+    isWeaklySupervised = imdb.weaklySupervised;
 end
+if ~isWeaklySupervised
+    assert(imdb.dataset.annotation.hasPixelLabels);
+end
+y = [y, {'isWeaklySupervised', isWeaklySupervised}];

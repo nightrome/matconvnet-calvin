@@ -3,8 +3,7 @@ classdef SegmentationLossSemiSupervised < dagnn.Loss
     %
     % Similar to dagnn.SegmentationLoss, but also sets pixel weights.
     %
-    % Inputs: scoresMap, labels, labelsImage, classWeights,
-    %         isWeaklySupervised
+    % Inputs: prediction, labels, labelsImage, classWeights, isWeaklySupervised
     % Outputs: loss
     %
     % Note: 
@@ -28,6 +27,7 @@ classdef SegmentationLossSemiSupervised < dagnn.Loss
             labelsImage = inputs{3};
             classWeights = inputs{4};
             isWeaklySupervised = inputs{5};
+            assert(~isempty(isWeaklySupervised));
             
             if isWeaklySupervised
                 outputs = obj.layerWS.forward({scoresMap, labelsImage, classWeights}, {});

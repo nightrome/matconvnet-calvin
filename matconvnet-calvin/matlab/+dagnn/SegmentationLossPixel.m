@@ -43,9 +43,14 @@ classdef SegmentationLossPixel < dagnn.Loss
                 % Make sure mass of the image does not change
                 curMasses = sum(sum(pixelWeights, 1), 2);
                 divisor = curMasses ./ mass;
-                nonZero = mass ~= 0;
-                pixelWeights(:, :, :, nonZero) = bsxfun(@rdivide, pixelWeights(:, :, :, nonZero), divisor(nonZero));
-                assert(all(abs(sum(sum(pixelWeights, 1), 2) - mass) < 1e-6));
+                valid = mass ~= 0 && curMasses ~= 0;
+                if any(valid)
+                    pixelWeights(:, :, :, valid) = bsxfun(@rdivide, pixelWeights(:, :, :, valid), divisor(valid));
+                end
+                
+                % Checks
+                pixelWeightsSum = sum(sum(pixelWeights, 1), 2);
+                assert(all(abs(pixelWeightsSum - mass) < 1e-6) | pixelWeightsSum == 0);
             end;
             
             % Combine mass invMass and pixelWeights in instanceWeights

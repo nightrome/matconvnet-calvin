@@ -11,17 +11,10 @@ function net = fcnInitializeModelGeneric(imdb, varargin)
 opts.sourceModelUrl = 'http://www.vlfeat.org/matconvnet/models/imagenet-vgg-verydeep-16.mat';
 opts.sourceModelPath = 'data/models/imagenet-vgg-verydeep-16.mat';
 opts.adaptClassifier = true; % Changes number of classes to imdb.labelCount
-opts.initIlsvrc = false;
-opts.initLinComb = false;
+opts.init = 'zeros';
 opts.initLinCombPath = '';
-opts.initAutoBias = false;
 opts.enableCudnn = false;
 opts = vl_argparse(opts, varargin);
-
-% Check inputs
-if opts.initAutoBias
-    assert(imdb.dataset.annotation.labelOneIsBg);
-end
 
 % -------------------------------------------------------------------------
 %                    Load & download the source model if needed (VGG VD 16)
@@ -79,53 +72,59 @@ if opts.adaptClassifier
     fc8fSize(end) = imdb.labelCount;
     fc8bSize(end) = imdb.labelCount;
     
-    if opts.initIlsvrc
-        if opts.initLinComb
-            % Load linear combination weights
-            assert(~isempty(opts.initLinCombPath));
-            load(opts.initLinCombPath, 'linearCombination');
-            
-            % Weights
-            oldWeights = net.params(fc8fIdx).value;
-            newWeights = reshape(oldWeights, [size(oldWeights, 3), size(oldWeights, 4)]);
-            newWeights = newWeights * linearCombination';
-            newWeights = reshape(newWeights, [1, 1, size(newWeights)]);
-            if opts.initAutoBias
-                newWeights(:, :, :, 1) = 0;
-            end
-            
-            % Biases
-            oldBias = net.params(fc8bIdx).value;
-            net.params(fc8bIdx).value = zeros(fc8bSize, 'single');
-            newBias = oldBias;
-            newBias = newBias * linearCombination';
-            if opts.initAutoBias
-                % Set bias s.t. roughly half of the pixels will be bg
-                % (median max score)
-                newBias(1) = imdb.dataset.getAutoBgBias();
-            end
+    if strStartsWith(opts.init, 'lincomb')
+        % Load linear combination weights
+        assert(~isempty(opts.initLinCombPath));
+        load(opts.initLinCombPath, 'linearCombination');
+        
+        % Weights
+        oldWeights = net.params(fc8fIdx).value;
+        newWeights = reshape(oldWeights, [size(oldWeights, 3), size(oldWeights, 4)]);
+        newWeights = newWeights * linearCombination';
+        newWeights = reshape(newWeights, [1, 1, size(newWeights)]);
+        
+        % Biases
+        oldBias = net.params(fc8bIdx).value;
+        net.params(fc8bIdx).value = zeros(fc8bSize, 'single');
+        newBias = oldBias;
+        newBias = newBias * linearCombination';
+    elseif strStartsWith(opts.init, 'best')
+        % Overwrite weights from known closest class in ILSVRC
+        if strStartsWith(opts.init, 'best-auto')
+            clsClassInds = imdb.dataset.findClosestIlsvrcClsClass(false);
+        elseif strStartsWith(opts.init, 'best-manual')
+            clsClassInds = imdb.dataset.findClosestIlsvrcClsClass(true);
         else
-            % Overwrite weights from known closest class in ILSVRC
-            clsClassInds = imdb.dataset.findClosestIlsvrcClsClass();
-            targetClassInds = 1:imdb.labelCount;
-            sel = ~isnan(clsClassInds);
-            clsClassInds = clsClassInds(sel);
-            targetClassInds = targetClassInds(sel);
-            
-            % Weights
-            oldWeights = net.params(fc8fIdx).value;
-            newWeights = zeros(fc8fSize, 'single');
-            newWeights(:, :, :, targetClassInds) = oldWeights(:, :, :, clsClassInds);
-            
-            % Biases
-            oldBias = net.params(fc8bIdx).value;
-            newBias = zeros(fc8bSize, 'single');
-            newBias(:, targetClassInds) = oldBias(:, clsClassInds);
+            error('Error: Unknown initialization!');
         end
-    else
+        targetClassInds = 1:imdb.labelCount;
+        sel = ~isnan(clsClassInds);
+        clsClassInds = clsClassInds(sel);
+        targetClassInds = targetClassInds(sel);
+        
+        % Weights
+        oldWeights = net.params(fc8fIdx).value;
+        newWeights = zeros(fc8fSize, 'single');
+        newWeights(:, :, :, targetClassInds) = oldWeights(:, :, :, clsClassInds);
+        
+        % Biases
+        oldBias = net.params(fc8bIdx).value;
+        newBias = zeros(fc8bSize, 'single');
+        newBias(:, targetClassInds) = oldBias(:, clsClassInds);
+    elseif strStartsWith(opts.init, 'zeros')
         % Initialize the new filters to zero
         newWeights = zeros(fc8fSize, 'single');
         newBias = zeros(fc8bSize, 'single');
+    else
+        error('Error: Unknown initialization!');
+    end
+    
+    % Set bias s.t. roughly half of the pixels will be bg
+    % (median max score)
+    if strEndsWith(opts.init, 'autobias')
+        assert(imdb.dataset.annotation.labelOneIsBg);
+        newWeights(:, :, :, 1) = 0;
+        newBias(1) = imdb.dataset.getAutoBgBias();
     end
     
     % Update weights and bias
@@ -186,7 +185,7 @@ net.addLayer('accuracy', ...
     {'prediction', 'label'}, 'accuracy');
 
 if 0
-    figure(100); clf;
+    figure(100); clf; %#ok<UNRCH>
     n = numel(net.vars);
     for i=1:n
         vl_tightsubplot(n,i);
