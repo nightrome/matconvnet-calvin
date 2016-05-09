@@ -295,8 +295,6 @@ end;
 % -------------------------------------------------------------------------
 
 % Setup data fetching options
-bopts.labelStride = 1;
-bopts.labelOffset = 1;
 bopts.classWeights = classWeights;
 bopts.rgbMean = imdb.rgbMean;
 bopts.useGpu = numel(opts.train.gpus) > 0;
@@ -329,7 +327,7 @@ save(statsPath, 'stats');
 % -------------------------------------------------------------------------
 function fn = getBatchWrapper(opts)
 % -------------------------------------------------------------------------
-fn = @(imdb,batch) getBatch(imdb,batch,opts,'prefetch',nargout==0);
+fn = @(imdb,batch) getBatch(imdb, batch, opts, 'prefetch', nargout==0);
 
 function y = getBatch(imdb, images, varargin)
 % GET_BATCH  Load, preprocess, and pack images for CNN evaluation
@@ -340,7 +338,7 @@ opts.transformation = 'none';
 opts.rgbMean = [];
 opts.rgbVariance = zeros(0,3,'single');
 opts.labelStride = 1;
-opts.labelOffset = 0;
+opts.labelOffset = 1;
 opts.classWeights = [];
 opts.interpolation = 'bilinear';
 opts.prefetch = false;
@@ -356,6 +354,7 @@ if opts.prefetch
 end
 
 imageCount = numel(images);
+augmentCount = imageCount * opts.numAugments;
 assert(imageCount == 1);
 
 if ~isempty(opts.rgbVariance) && isempty(opts.rgbMean)
@@ -366,21 +365,19 @@ if ~isempty(opts.rgbMean)
 end
 
 % space for images
-ims = zeros(opts.imageSize(1), opts.imageSize(2), 3, ...
-    imageCount*opts.numAugments, 'single');
+ims = zeros(opts.imageSize(1), opts.imageSize(2), 3, augmentCount, 'single');
 
 % space for labels
 lx = opts.labelOffset : opts.labelStride : opts.imageSize(2);
 ly = opts.labelOffset : opts.labelStride : opts.imageSize(1);
-labels = zeros(numel(ly), numel(lx), 1, imageCount*opts.numAugments, 'double'); % must be double for to avoid numerical precision errors in vl_nnloss, when using many classes
+labels = zeros(numel(ly), numel(lx), 1, augmentCount, 'double'); % must be double for to avoid numerical precision errors in vl_nnloss, when using many classes
 if imdb.weaklySupervised,
-    labelsImageCell = cell(imageCount*opts.numAugments, 1);
+    labelsImageCell = cell(augmentCount, 1);
 end;
 
 si = 1;
 
 for i = 1 : imageCount
-    
     % acquire image
     imageName = imdb.images.name{images(i)};
     rgb = double(imdb.dataset.getImage(imageName)) * 255;
