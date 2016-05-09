@@ -1,5 +1,5 @@
-function[scoresImageSoftmax, mask] = segmentationLossImage_extractMaxScores(obj, labelCount, sampleCount, imageCount)
-% [scoresImageSoftmax, mask] = segmentationLossImage_extractMaxScores(obj, labelCount, sampleCount, imageCount)
+function[scoresImageSoftmax, mask] = segmentationLossImage_extractMaxScores(obj, labelCount, sampleCount, imageCount, masksThingsCell)
+% [scoresImageSoftmax, mask] = segmentationLossImage_extractMaxScores(obj, labelCount, sampleCount, imageCount, [masksThingsCell])
 %
 % TODO: Mex this file
 
@@ -11,17 +11,42 @@ mask = nan(sampleCount, 1, 'like', obj.scoresMapSoftmax); % contains the coordin
 for imageIdx = 1 : imageCount
     offset = (imageIdx-1) * labelCount;
     
+    if ~isempty(masksThingsCell{imageIdx})
+        maskThings = masksThingsCell{imageIdx};
+        if isa(obj.scoresMapSoftmax, 'gpuArray')
+            maskThings = gpuArray(maskThings);
+        end
+    end
+    
     for labelIdx = 1 : labelCount
         sampleIdx = offset + labelIdx;
         
         if obj.useScoreDiffs
+            % Use pixel with highest score compared to all other labels
             s = obj.scoresMapSoftmax(:, :, labelIdx, imageIdx) - max(obj.scoresMapSoftmax(:, :, setdiff(1:labelCount, labelIdx), imageIdx), [], 3);
         else
+            % Use pixel with overall highest score
             s = obj.scoresMapSoftmax(:, :, labelIdx, imageIdx);
         end
+        
+        % Remove things such that the highest score lies on stuff
+        if ~isempty(masksThingsCell{imageIdx})
+            s = bsxfun(@times, s, ~maskThings);
+            
+            % DEBUG
+%             if labelIdx == 50
+%                 figure(1);
+%                 minS = min(s(s(:) > 0));
+%                 sDraw = s;
+%                 sDraw(sDraw(:) == 0) = minS;
+%                 imagesc(sDraw);
+%                 drawnow;
+%             end
+        end
+        
         [~, ind] = max(s(:)); % always take first pix with max score
+        mask(sampleIdx, 1) = ind;
         [y, x] = ind2sub(size(s), ind);
         scoresImageSoftmax(1, 1, :, sampleIdx) = obj.scoresMapSoftmax(y, x, :, imageIdx);
-        mask(sampleIdx, 1) = ind;
     end
 end

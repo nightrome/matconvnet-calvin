@@ -24,6 +24,7 @@ addParameter(p, 'semiSupervisedRate', 0.1);     % ratio of images with full supe
 addParameter(p, 'semiSupervisedOnlyFS', false); % use only the x% fully supervised images
 addParameter(p, 'init', 'zeros'); % zeros, best-auto, best-manual, lincomb (all +-autobias)
 addParameter(p, 'enableCudnn', false);
+addParameter(p, 'maskThings', false);
 parse(p, varargin{:});
 
 dataset = p.Results.dataset;
@@ -43,6 +44,7 @@ semiSupervisedRate = p.Results.semiSupervisedRate;
 semiSupervisedOnlyFS = p.Results.semiSupervisedOnlyFS;
 init = p.Results.init;
 enableCudnn = p.Results.enableCudnn;
+maskThings = p.Results.maskThings;
 callArgs = p.Results; %#ok<NASGU>
 
 % Check settings for consistency
@@ -149,16 +151,12 @@ else
     % Dataset-independent imdb fields
     imdb.dataset = dataset;
     imdb.labelCount = dataset.labelCount;
-    imdb.weaklySupervised = weaklySupervised;
-    imdb.semiSupervised = semiSupervised;
-    imdb.semiSupervisedRate = semiSupervisedRate;
-    imdb.useInvFreqWeights = useInvFreqWeights;
     
     % Specify level of supervision for each train image
-    if ~imdb.weaklySupervised
+    if ~weaklySupervised
         % FS
         imdb.images.isFullySupervised = true(numel(imdb.images.name), 1);
-    elseif ~imdb.semiSupervised
+    elseif ~semiSupervised
         % WS
         imdb.images.isFullySupervised = false(numel(imdb.images.name), 1);
     else
@@ -230,7 +228,7 @@ elseif isnan(existingEpoch)
     net.meta.normalization.rgbMean = imdb.rgbMean;
     net.meta.classes = imdb.classes.name;
     
-    if imdb.weaklySupervised
+    if weaklySupervised
         wsPresentWeight = 1 / (1 + wsUseAbsent);
         
         if wsEqualWeight
@@ -251,7 +249,7 @@ elseif isnan(existingEpoch)
     
     % Add a layer that automatically decides whether to use FS or WS
     layerSS = dagnn.SegmentationLossSemiSupervised('layerFS', layerFS, 'layerWS', layerWS);
-    layerSSInputs = [net.layers(objIdx).inputs, {'labelsImage', 'classWeights', 'isWeaklySupervised'}];
+    layerSSInputs = [net.layers(objIdx).inputs, {'labelsImage', 'classWeights', 'isWeaklySupervised', 'masksThingsCell'}];
     layerSSOutputs = net.layers(objIdx).outputs;
     net.removeLayer('objective');
     net.addLayer('objective', layerSS, layerSSInputs, layerSSOutputs, {});
@@ -274,7 +272,7 @@ end
 
 % Extract inverse class frequencies from dataset
 if useInvFreqWeights,
-    if imdb.weaklySupervised,
+    if weaklySupervised,
         classWeights = imdb.dataset.getLabelImFreqs('train');
     else
         classWeights = imdb.dataset.getLabelPixelFreqs('train');
@@ -300,6 +298,11 @@ bopts.rgbMean = imdb.rgbMean;
 bopts.useGpu = numel(opts.train.gpus) > 0;
 bopts.imageNameToLabelMap = imdb.imageNameToLabelMap;
 bopts.translateLabels = imdb.translateLabels;
+bopts.maskThings = maskThings;
+bopts.weaklySupervised = weaklySupervised;
+bopts.semiSupervised = semiSupervised;
+bopts.semiSupervisedRate = semiSupervisedRate;
+bopts.useInvFreqWeights = useInvFreqWeights;
 
 % Save important settings
 settingsPath = fullfile(opts.expDir, 'settings.mat');
@@ -332,65 +335,72 @@ fn = @(imdb,batch) getBatch(imdb, batch, opts, 'prefetch', nargout==0);
 function y = getBatch(imdb, images, varargin)
 % GET_BATCH  Load, preprocess, and pack images for CNN evaluation
 
-opts.imageSize = [512, 512] - 128;
-opts.numAugments = 1;
-opts.transformation = 'none';
-opts.rgbMean = [];
-opts.rgbVariance = zeros(0,3,'single');
-opts.labelStride = 1;
-opts.labelOffset = 1;
-opts.classWeights = [];
-opts.interpolation = 'bilinear';
-opts.prefetch = false;
-opts.useGpu = false;
-opts.imageNameToLabelMap = @(imageName, imdb) imread(sprintf(imdb.paths.classSegmentation, imageName));
-opts.translateLabels = true;
-opts = vl_argparse(opts, varargin);
+bopts.imageSize = [512, 512] - 128;
+bopts.transformation = 'none';
+bopts.rgbMean = [];
+bopts.rgbVariance = zeros(0,3,'single');
+bopts.labelStride = 1;
+bopts.labelOffset = 1;
+bopts.classWeights = [];
+bopts.interpolation = 'bilinear';
+bopts.prefetch = false;
+bopts.useGpu = false;
+bopts.imageNameToLabelMap = @(imageName, imdb) imread(sprintf(imdb.paths.classSegmentation, imageName));
+bopts.translateLabels = true;
+bopts.maskThings = false;
+bopts.weaklySupervised = false;
+bopts.semiSupervised = false;
+bopts.semiSupervisedRate = 0.1;
+bopts.useInvFreqWeights = false;
+bopts = vl_argparse(bopts, varargin);
 
-if opts.prefetch
+if bopts.prefetch
     % to be implemented
     y = {};
     return;
 end
 
 imageCount = numel(images);
-augmentCount = imageCount * opts.numAugments;
 assert(imageCount == 1);
 
-if ~isempty(opts.rgbVariance) && isempty(opts.rgbMean)
-    opts.rgbMean = single([128;128;128]);
+if ~isempty(bopts.rgbVariance) && isempty(bopts.rgbMean)
+    bopts.rgbMean = single([128; 128; 128]);
 end
-if ~isempty(opts.rgbMean)
-    opts.rgbMean = reshape(opts.rgbMean, [1 1 3]);
+if ~isempty(bopts.rgbMean)
+    bopts.rgbMean = reshape(bopts.rgbMean, [1 1 3]);
 end
 
-% space for images
-ims = zeros(opts.imageSize(1), opts.imageSize(2), 3, augmentCount, 'single');
-
-% space for labels
-lx = opts.labelOffset : opts.labelStride : opts.imageSize(2);
-ly = opts.labelOffset : opts.labelStride : opts.imageSize(1);
-labels = zeros(numel(ly), numel(lx), 1, augmentCount, 'double'); % must be double for to avoid numerical precision errors in vl_nnloss, when using many classes
-if imdb.weaklySupervised,
-    labelsImageCell = cell(augmentCount, 1);
-end;
+% Initializations
+ims = zeros(bopts.imageSize(1), bopts.imageSize(2), 3, imageCount, 'single');
+lx = bopts.labelOffset : bopts.labelStride : bopts.imageSize(2);
+ly = bopts.labelOffset : bopts.labelStride : bopts.imageSize(1);
+labels = zeros(numel(ly), numel(lx), 1, imageCount, 'double'); % must be double for to avoid numerical precision errors in vl_nnloss, when using many classes
+if bopts.weaklySupervised
+    labelsImageCell = cell(imageCount, 1);
+end
+if bopts.maskThings
+    assert(isa(imdb.dataset, 'EdiStuffDataset'));
+    datasetIN = ImageNetDataset();
+end
+masksThingsCell = cell(imageCount, 1); % by default this is empty
 
 si = 1;
 
 for i = 1 : imageCount
-    % acquire image
-    imageName = imdb.images.name{images(i)};
+    % Get image
+    imageIdx = images(i);
+    imageName = imdb.images.name{imageIdx};
     rgb = double(imdb.dataset.getImage(imageName)) * 255;
     if size(rgb,3) == 1
         rgb = cat(3, rgb, rgb, rgb);
     end
     
-    % acquire pixel-level GT
+    % Get pixel-level GT
     if imdb.dataset.annotation.hasPixelLabels,
-        anno = uint16(opts.imageNameToLabelMap(imageName, imdb));
+        anno = uint16(bopts.imageNameToLabelMap(imageName, imdb));
         
         % Translate labels s.t. 255 is mapped to 0
-        if opts.translateLabels,
+        if bopts.translateLabels,
             % Before: 255 = ignore, 0 = bkg, 1:labelCount = classes
             % After : 0 = ignore, 1 = bkg, 2:labelCount+1 = classes
             anno = mod(anno + 1, 256);
@@ -403,64 +413,76 @@ for i = 1 : imageCount
     % crop & flip
     h = size(rgb,1);
     w = size(rgb,2);
-    for ai = 1:opts.numAugments
-        sz = opts.imageSize(1:2);
-        scale = max(h/sz(1), w/sz(2));
-        scale = scale .* (1 + (rand(1)-.5)/5);
-        
-        sy = round(scale * ((1:sz(1)) - sz(1)/2) + h/2);
-        sx = round(scale * ((1:sz(2)) - sz(2)/2) + w/2);
-        if rand > 0.5, sx = fliplr(sx); end
-        
-        okx = find(1 <= sx & sx <= w);
-        oky = find(1 <= sy & sy <= h);
-        if ~isempty(opts.rgbMean)
-            ims(oky, okx, :, si) = bsxfun(@minus, rgb(sy(oky), sx(okx), :), opts.rgbMean);
+    sz = bopts.imageSize(1:2);
+    scale = max(h/sz(1), w/sz(2));
+    scale = scale .* (1 + (rand(1)-.5)/5);
+    
+    sy = round(scale * ((1:sz(1)) - sz(1)/2) + h/2);
+    sx = round(scale * ((1:sz(2)) - sz(2)/2) + w/2);
+    if rand > 0.5, sx = fliplr(sx); end
+    
+    okx = find(1 <= sx & sx <= w);
+    oky = find(1 <= sy & sy <= h);
+    if ~isempty(bopts.rgbMean)
+        ims(oky, okx, :, si) = bsxfun(@minus, rgb(sy(oky), sx(okx), :), bopts.rgbMean);
+    else
+        ims(oky, okx, :, si) = rgb(sy(oky), sx(okx),:);
+    end
+    
+    % Fully supervised: Get pixel level labels
+    if ~isempty(anno)
+        tlabels = zeros(sz(1), sz(2), 'double');
+        tlabels(oky,okx) = anno(sy(oky), sx(okx));
+        tlabels = single(tlabels(ly,lx));
+        labels(:, :, 1, si) = tlabels; % 0: ignore
+    end;
+    
+    % Weakly supervised: extract image-level labels
+    if bopts.weaklySupervised
+        if ~isempty(anno)
+            % Get image labels from pixel labels
+            % These are already translated (if necessary)
+            curLabelsImage = unique(anno);
         else
-            ims(oky, okx, :, si) = rgb(sy(oky), sx(okx),:);
+            curLabelsImage = imdb.dataset.getImLabelInds(imageName);
+            
+            % Translate labels s.t. 255 is mapped to 0
+            if bopts.translateLabels
+                curLabelsImage = mod(curLabelsImage + 1, 256);
+            end
+            
+            if imdb.dataset.annotation.labelOneIsBg
+                % Add background label
+                curLabelsImage = unique([0; curLabelsImage(:)]);
+            end
         end
         
-        % Fully supervised: Get pixel level labels
-        if ~isempty(anno)
-            tlabels = zeros(sz(1), sz(2), 'double');
-            tlabels(oky,okx) = anno(sy(oky), sx(okx));
-            tlabels = single(tlabels(ly,lx));
-            labels(:, :, 1, si) = tlabels; % 0: ignore
-        end;
+        % Remove invalid pixels
+        curLabelsImage(curLabelsImage == 0) = [];
         
-        % Weakly supervised: extract image-level labels
-        if imdb.weaklySupervised,
-            if ~isempty(anno),
-                % Get image labels from pixel labels
-                % These are already translated (if necessary)
-                curLabelsImage = unique(anno);
-            else
-                curLabelsImage = imdb.dataset.getImLabelInds(imageName);
-                
-                % Translate labels s.t. 255 is mapped to 0
-                if opts.translateLabels
-                    curLabelsImage = mod(curLabelsImage + 1, 256);
-                end
-                
-                if imdb.dataset.annotation.labelOneIsBg
-                    % Add background label
-                    curLabelsImage = unique([0; curLabelsImage(:)]);
-                end
-            end;
-            
-            % Remove invalid pixels
-            curLabelsImage(curLabelsImage == 0) = [];
-            
-            % Store image-level labels
-            labelsImageCell{si} = single(curLabelsImage(:));
-        end;
-        
-        si = si + 1;
+        % Store image-level labels
+        labelsImageCell{si} = single(curLabelsImage(:));
     end
+    
+    % Optional: Mask out thing pixels
+    if bopts.maskThings
+        % Get mask
+        longName = datasetIN.shortNameToLongName(imageName);
+        mask = datasetIN.getImLabelBoxesMask(longName);
+        
+        % Resize it if necessary
+        if size(mask, 1) ~= size(ims, 1) || ...
+                size(mask, 2) ~= size(ims, 2)
+            mask = imresize(mask, [size(ims, 1), size(ims, 2)]);
+        end
+        masksThingsCell{i} = mask;
+    end
+    
+    si = si + 1;
 end
 
 % Move image to GPU
-if opts.useGpu
+if bopts.useGpu
     ims = gpuArray(ims);
 end
 
@@ -469,23 +491,24 @@ y = {'input', ims};
 if imdb.dataset.annotation.hasPixelLabels
     y = [y, {'label', labels}];
 end
-if imdb.weaklySupervised
+if bopts.weaklySupervised
     assert(~any(cellfun(@(x) isempty(x), labelsImageCell)));
     y = [y, {'labelsImage', labelsImageCell}];
 end
 
 % Instance/pixel weights, can be left empty
-y = [y, {'classWeights', opts.classWeights}];
+y = [y, {'classWeights', bopts.classWeights}];
 
 % Decide which level of supervision to pick
-if imdb.semiSupervised
+if bopts.semiSupervised
     % SS
     isWeaklySupervised = ~imdb.images.isFullySupervised(images);
 else
     % FS or WS
-    isWeaklySupervised = imdb.weaklySupervised;
+    isWeaklySupervised = bopts.weaklySupervised;
 end
 if ~isWeaklySupervised
     assert(imdb.dataset.annotation.hasPixelLabels);
 end
 y = [y, {'isWeaklySupervised', isWeaklySupervised}];
+y = [y, {'masksThingsCell', masksThingsCell}];

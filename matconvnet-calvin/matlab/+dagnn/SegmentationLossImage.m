@@ -9,7 +9,7 @@ classdef SegmentationLossImage < dagnn.Loss
     % -> loss <-
     % dzdImageSoftmax <- dzdMapSoftmax <- dzdMap
     %
-    % Inputs: scoresMap, labelsImage, classWeights
+    % Inputs: scoresMap, labelsImage, [classWeights], [masksThingsCell]
     % Outputs: loss
     %
     % Note: All weights can be empty, which means they are ignored.
@@ -36,10 +36,11 @@ classdef SegmentationLossImage < dagnn.Loss
         function outputs = forward(obj, inputs, params) %#ok<INUSD>
             
             %%%% Get inputs
-            assert(numel(inputs) == 3);
+            assert(numel(inputs) == 4);
             scoresMap = inputs{1};
             labelsImageCell = inputs{2};
             classWeights = inputs{3};
+            masksThingsCell = inputs{4};
             labelCount = size(scoresMap, 3);
             imageCount = size(scoresMap, 4);
             sampleCount = labelCount * imageCount;
@@ -61,7 +62,7 @@ classdef SegmentationLossImage < dagnn.Loss
             end
             
             % Get the scores of the pixel with the highest score per GT label
-            [scoresImageSoftmax, obj.mask] = segmentationLossImage_extractMaxScores(obj, labelCount, sampleCount, imageCount);
+            [scoresImageSoftmax, obj.mask] = segmentationLossImage_extractMaxScores(obj, labelCount, sampleCount, imageCount, masksThingsCell);
             
             %%% Loss function from vl_nnloss
             if true,
@@ -221,9 +222,11 @@ classdef SegmentationLossImage < dagnn.Loss
             dzdMap = obj.scoresMapSoftmax .* bsxfun(@minus, dzdMapSoftmax, sum(dzdMapSoftmax .* obj.scoresMapSoftmax, 3));
             
             %%%% Assign outputs
+            derInputs = cell(1, 4);
             derInputs{1} = dzdMap;
             derInputs{2} = [];
             derInputs{3} = [];
+            derInputs{4} = [];
             derParams = {};
         end
         

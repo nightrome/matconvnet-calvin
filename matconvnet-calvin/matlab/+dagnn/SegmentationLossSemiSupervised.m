@@ -3,14 +3,13 @@ classdef SegmentationLossSemiSupervised < dagnn.Loss
     %
     % Similar to dagnn.SegmentationLoss, but also sets pixel weights.
     %
-    % Inputs: prediction, labels, labelsImage, classWeights, isWeaklySupervised
+    % Inputs: prediction, labels, labelsImage, [classWeights],
+    % isWeaklySupervised, [masksThingsCell]
     % Outputs: loss
     %
     % Note: 
     %    - classWeights can be empty, which means they are ignored.
     %    - labels or labelsImage can be empty.
-    % 	 - If you use this for weakly supervised, the loss output will be
-    %      wrong (divided by instances, not images)
     %
     % Copyright by Holger Caesar, 2016
     
@@ -21,16 +20,17 @@ classdef SegmentationLossSemiSupervised < dagnn.Loss
     
     methods
         function outputs = forward(obj, inputs, params) %#ok<INUSD>
-            assert(numel(inputs) == 5);
+            assert(numel(inputs) == 6);
             scoresMap = inputs{1};
             labels = inputs{2};
             labelsImage = inputs{3};
             classWeights = inputs{4};
             isWeaklySupervised = inputs{5};
+            masksThingsCell = inputs{6};
             assert(~isempty(isWeaklySupervised));
             
             if isWeaklySupervised
-                outputs = obj.layerWS.forward({scoresMap, labelsImage, classWeights}, {});
+                outputs = obj.layerWS.forward({scoresMap, labelsImage, classWeights, masksThingsCell}, {});
             else
                 outputs = obj.layerFS.forward({scoresMap, labels, classWeights}, {});
             end
@@ -56,6 +56,7 @@ classdef SegmentationLossSemiSupervised < dagnn.Loss
                 derInputs = obj.layerFS.backward({scoresMap, labels, classWeights}, {}, derOutputs);
             end
             derInputs{5} = [];
+            derInputs{6} = [];
             derParams = {};
         end
         
