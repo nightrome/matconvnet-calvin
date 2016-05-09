@@ -162,23 +162,28 @@ else
     else
         % SS: Set x% of train and all val to true
         imdb.images.isFullySupervised = true(numel(imdb.images.name), 1);
-        trainSel = find(imdb.images.set == 1);
-        trainSel = trainSel(randperm(numel(trainSel)));
-        trainSel = trainSel((trainSel / numel(trainSel)) >= semiSupervisedRate);
-        imdb.images.isFullySupervised(trainSel) = false;
+        if isa(imdb.dataset, 'EdiStuffDataset')
+            selWS = find(~ismember(imdb.images.name, imdb.dataset.datasetFS.getImageListTrn()));
+            assert(numel(selWS) == 18431);
+        else
+            selTrain = find(imdb.images.set == 1);
+            selTrain = selTrain(randperm(numel(selTrain)));
+            selWS = selTrain((selTrain / numel(selTrain)) >= semiSupervisedRate);
+        end
+        imdb.images.isFullySupervised(selWS) = false;
         
         if semiSupervisedOnlyFS
             % Keep x% of train and all val
-            sel = imdb.images.isFullySupervised(:) | imdb.images.set(:) == 2;
-            imdb.images.name = imdb.images.name(sel);
-            imdb.images.set = imdb.images.set(sel);
-            imdb.images.segmentation = imdb.images.segmentation(sel);
-            imdb.images.isFullySupervised = imdb.images.isFullySupervised(sel);
+            selFS = imdb.images.isFullySupervised(:) | imdb.images.set(:) == 2;
+            imdb.images.name = imdb.images.name(selFS);
+            imdb.images.set = imdb.images.set(selFS);
+            imdb.images.segmentation = imdb.images.segmentation(selFS);
+            imdb.images.isFullySupervised = imdb.images.isFullySupervised(selFS);
             
             if strStartsWith(dataset.name, 'VOC')
-                imdb.images.id = imdb.images.id(sel);
-                imdb.images.classification = imdb.images.classification(sel);
-                imdb.images.size = imdb.images.size(:, sel);
+                imdb.images.id = imdb.images.id(selFS);
+                imdb.images.classification = imdb.images.classification(selFS);
+                imdb.images.size = imdb.images.size(:, selFS);
             end
         end
     end
@@ -301,7 +306,6 @@ bopts.translateLabels = imdb.translateLabels;
 bopts.maskThings = maskThings;
 bopts.weaklySupervised = weaklySupervised;
 bopts.semiSupervised = semiSupervised;
-bopts.semiSupervisedRate = semiSupervisedRate;
 bopts.useInvFreqWeights = useInvFreqWeights;
 
 % Save important settings
@@ -350,7 +354,6 @@ bopts.translateLabels = true;
 bopts.maskThings = false;
 bopts.weaklySupervised = false;
 bopts.semiSupervised = false;
-bopts.semiSupervisedRate = 0.1;
 bopts.useInvFreqWeights = false;
 bopts = vl_argparse(bopts, varargin);
 
@@ -396,7 +399,7 @@ for i = 1 : imageCount
     end
     
     % Get pixel-level GT
-    if imdb.dataset.annotation.hasPixelLabels,
+    if imdb.dataset.annotation.hasPixelLabels || imdb.images.isFullySupervised(imageIdx),
         anno = uint16(bopts.imageNameToLabelMap(imageName, imdb));
         
         % Translate labels s.t. 255 is mapped to 0
@@ -488,7 +491,7 @@ end
 
 %%% Create outputs
 y = {'input', ims};
-if imdb.dataset.annotation.hasPixelLabels
+if imdb.dataset.annotation.hasPixelLabels || imdb.images.isFullySupervised(imageIdx)
     y = [y, {'label', labels}];
 end
 if bopts.weaklySupervised
@@ -506,9 +509,6 @@ if bopts.semiSupervised
 else
     % FS or WS
     isWeaklySupervised = bopts.weaklySupervised;
-end
-if ~isWeaklySupervised
-    assert(imdb.dataset.annotation.hasPixelLabels);
 end
 y = [y, {'isWeaklySupervised', isWeaklySupervised}];
 y = [y, {'masksThingsCell', masksThingsCell}];
