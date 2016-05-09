@@ -60,9 +60,8 @@ classdef SegmentationLossImage < dagnn.Loss
                 obj.scoresMapSoftmax = bsxfun(@rdivide, ex, sumEx);
             end
             
-            if true
-                scoresImageSoftmax = segmentationLossImage_extractMaxScores(obj, labelCount, sampleCount, imageCount);
-            end
+            % Get the scores of the pixel with the highest score per GT label
+            [scoresImageSoftmax, obj.mask] = segmentationLossImage_extractMaxScores(obj, labelCount, sampleCount, imageCount);
             
             %%% Loss function from vl_nnloss
             if true,
@@ -104,6 +103,7 @@ classdef SegmentationLossImage < dagnn.Loss
                 
                 % Compute loss
                 t = -log(X(ci));
+                assert(gather(all(t >= 0)));
                 
                 % Weight per class
                 obj.instanceWeights = ones(1, 1, 1, sampleCount);
