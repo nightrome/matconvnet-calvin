@@ -103,7 +103,6 @@ classdef SegmentationLossImage < dagnn.Loss
                 
                 % Compute loss
                 t = -log(X(ci));
-                assert(gather(all(t >= 0)));
                 
                 % Weight per class
                 obj.instanceWeights = ones(1, 1, 1, sampleCount);
