@@ -71,7 +71,7 @@ opts.train.batchSize = 20;
 opts.train.numSubBatches = opts.train.batchSize;
 opts.train.continue = existingEpoch > 0;
 opts.train.gpus = gpus;
-opts.train.prefetch = true;
+opts.train.prefetch = false;
 opts.train.expDir = opts.expDir;
 opts.train.numEpochs = numEpochs;
 opts.train.learningRate = 1e-4;
@@ -360,7 +360,15 @@ bopts.rgbMean = reshape(bopts.rgbMean, [1 1 3]);
 
 % Make sure that the subbatch size is one image
 imageCount = numel(imageInds);
-assert(imageCount == 1);
+if imageCount == 0
+    % Empty batch
+    y = {};
+    return;
+elseif imageCount == 1
+    % Default
+else
+    error('Error: GetBatch cannot process more than 1 image at a time!');
+end
 imageIdx = imageInds;
 
 % Initializations
