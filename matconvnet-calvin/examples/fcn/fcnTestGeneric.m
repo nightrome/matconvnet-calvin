@@ -286,8 +286,10 @@ for i = 1 : numel(target)
             tile.addImage(annoIm);
             
             % Add prediction image
-            predIm = ind2rgb(pred, colorMappingPred);
-            predIm = imageInsertBlobLabels(predIm, pred, labelNamesPred, 'skipLabelInds', skipLabelInds);
+            predNoBg = pred;
+            predNoBg(anno == 0) = 0;
+            predIm = ind2rgb(predNoBg, colorMappingPred);
+            predIm = imageInsertBlobLabels(predIm, predNoBg, labelNamesPred, 'skipLabelInds', skipLabelInds);
             tile.addImage(predIm);
             
             % Highlight differences between GT and prediction
