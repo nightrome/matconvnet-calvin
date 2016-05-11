@@ -42,7 +42,7 @@ state.epoch = 1;
 state.allBatchInds = obj.imdb.getAllBatchInds();
 
 % Process the epoch
-obj.stats.(datasetMode) = obj.process_epoch(obj.net, state);
+obj.stats.(datasetMode) = obj.processEpoch(obj.net, state);
 
 % The stats are the desired results
 results = obj.stats.(datasetMode);
