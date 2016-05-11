@@ -1,9 +1,9 @@
-function results = test(obj)
-% results = test(obj)
+function[stats] = test(obj)
+% [stats] = test(obj)
 %
 % Test function
 % - Does a single processing of an epoch for testing
-% - Uses the nnOpts.testFn function for the testing
+% - Uses the nnOpts.testFn function for the testing (inside process_epoch)
 % - Automatically changes softmaxloss to softmax, removes hinge loss. Other losses are not yet supported
 %
 % Copyright by Jasper Uijlings, 2015
@@ -45,4 +45,4 @@ state.allBatchInds = obj.imdb.getAllBatchInds();
 obj.stats.(datasetMode) = obj.processEpoch(obj.net, state);
 
 % The stats are the desired results
-results = obj.stats.(datasetMode);
+stats = obj.stats.(datasetMode);

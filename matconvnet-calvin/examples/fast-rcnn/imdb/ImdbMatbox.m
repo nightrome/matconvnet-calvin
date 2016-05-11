@@ -141,10 +141,6 @@ classdef ImdbMatbox < ImdbCalvin
             negF = (1-obj.posFraction) / obj.posFraction;
         end
         
-        
-        
-        
-        
         % Get batch from keys
         % WARNING: Mostly deprecated function for fast-rcnn. But may be useful for
         % debug purposes.
@@ -288,4 +284,3 @@ classdef ImdbMatbox < ImdbCalvin
         end
     end
 end
-
