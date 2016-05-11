@@ -18,7 +18,7 @@ addParameter(p, 'showPlot', false);
 addParameter(p, 'maxImSize', 700);
 addParameter(p, 'doOutputMaps', false); % Optional: output predicted labels to file
 addParameter(p, 'doCache', true);
-addParameter(p, 'testOnTrn', false);
+addParameter(p, 'subset', 'tst'); % trn / tst
 addParameter(p, 'expSubFolder', '');
 addParameter(p, 'findMapping', false); % Find the best possible label mapping from ILSVRC to target dataset
 parse(p, varargin{:});
@@ -36,7 +36,7 @@ maxImSize = p.Results.maxImSize;
 showPlot = p.Results.showPlot;
 doOutputMaps = p.Results.doOutputMaps;
 doCache = p.Results.doCache;
-testOnTrn = p.Results.testOnTrn;
+subset = p.Results.subset;
 expSubFolder = p.Results.expSubFolder;
 findMapping = p.Results.findMapping;
 callArgs = p.Results; %#ok<NASGU>
@@ -46,8 +46,10 @@ global glFeaturesFolder;
 expName = [modelType, prependNotEmpty(expNameAppend, '-')];
 opts.expDir = fullfile(glFeaturesFolder, 'CNN-Models', 'FCN', dataset.name, expSubFolder, expName);
 opts.modelPath = fullfile(opts.expDir, sprintf('net-epoch-%d.mat', epoch));
-opts.labelingDir = fullfile(opts.expDir, sprintf('labelings-epoch-%d', epoch));
+opts.labelingDir = fullfile(opts.expDir, sprintf('labelings-%s-epoch-%d', subset, epoch));
 mapOutputFolder = fullfile(opts.expDir, sprintf('outputMaps-epoch-%d', epoch));
+mappingPath = fullfile(opts.expDir, sprintf('mapping-%s.mat', subset));
+resPath = fullfile(opts.expDir, sprintf('results-%s-epoch-%d.mat', subset, epoch));
 
 % experiment setup
 opts.gpus = gpus;
@@ -58,7 +60,6 @@ opts.modelType = modelType;
 rng(randSeed);
 
 % Early abort if we already know the result
-resPath = fullfile(opts.expDir, sprintf('results-epoch-%d.mat', epoch));
 if exist(resPath, 'file') && doCache
     info = load(resPath);
     return;
@@ -97,6 +98,16 @@ bopts.translateLabels = imdb.translateLabels;
 % Get train and val sets
 trn = find(imdb.images.set == 1 & imdb.images.segmentation);
 val = find(imdb.images.set == 2 & imdb.images.segmentation);
+
+% Set target dataset
+if strcmp(subset, 'trn')
+    target = trn;
+elseif strcmp(subset, 'tst')
+    target = val;
+else
+    error('Error: Unknown subset: %s', subset);
+end
+targetCount = numel(target);
 
 % -------------------------------------------------------------------------
 % Setup model
@@ -179,14 +190,6 @@ else
     colorMappingPred = colorMapping;
     confusion = zeros(imdb.labelCount);
 end
-
-% Set target dataset
-if testOnTrn
-    target = trn;
-else
-    target = val;
-end
-targetCount = numel(target);
 
 evalTimer = tic;
 for i = 1 : numel(target)
@@ -332,12 +335,7 @@ end
 
 
 if findMapping
-    if testOnTrn
-        subset = 'trn';
-    else
-        subset = 'tst';
-    end
-    mappingPath = fullfile(opts.expDir, sprintf('mapping-%s.mat', subset));
+    % Save mapping to disk
     save(mappingPath, 'confusion');
 else
     % Final statistics, remove classes missing in test
