@@ -13,7 +13,7 @@ insertLayer(obj.net, 'relu6', 'fc7', 'dropout6', dropout6Layer);
 insertLayer(obj.net, 'relu7', 'fc8', 'dropout7', dropout7Layer);
 
 % Rename variable prob to x%d+ style to make insertLayer work
-% Required for beta18 matconvnet default networks
+% (Required for beta18 or later matconvnet default networks)
 predVarIdx = obj.net.getVarIndex('prediction');
 if ~isnan(predVarIdx)
     freeVarName = getFreeVariable(obj.net);

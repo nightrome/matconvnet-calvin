@@ -30,7 +30,7 @@ start = tic;
 num = 0;
 targetTime = 3; % Counter to not pollute screen with printf statements
 waitTime = 10;  % How long to wait to update the fprintf statements.
-fprintf('Starting epoch: %d\n', state.epoch);
+fprintf('Starting %s epoch: %d\n', obj.imdb.datasetMode, state.epoch);
 
 for t=1:obj.nnOpts.batchSize:numel(allBatchInds),
     batchNumElements = 0;

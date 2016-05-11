@@ -13,7 +13,7 @@ classdef ImdbDetectionFullSupervision < ImdbMatbox
         
         function [batchData, numElements] = getBatch(obj, batchInds, net, ~)
             if length(batchInds) > 1
-                error('Only supports batches of 1');
+                error('Error: Only supports subbatches of 1!');
             end
             
             if nargin == 2
