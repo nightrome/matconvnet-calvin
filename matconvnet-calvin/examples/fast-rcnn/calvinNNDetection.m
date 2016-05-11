@@ -1,24 +1,23 @@
-%% function calvinNNDetection
+% function calvinNNDetection
 
 global MYDATADIR        % Directory of datasets
 global DATAopts         % Database specific paths
 global USEGPU           % Set in startup.m. Use GPU or not.
 
-%% Set training and test set
-trainName = 'trainval';
-testName = 'test';
+% Set training and test set
+trainName = 'train';
+testName = 'val';
 
-
-%% Setup VOC data (should be done using original VOC code). Below is minimal working example
-DATAopts.year = 2007;
-DATAopts.dataset = 'VOC2007';
+%%% Setup VOC data (should be done using original VOC code). Below is minimal working example
+DATAopts.year = 2010;
+DATAopts.dataset = sprintf('VOC%d', DATAopts.year);
 DATAopts.datadir = [MYDATADIR 'VOCdevkit/' DATAopts.dataset '/'];
 DATAopts.resultsPath = [DATAopts.datadir 'Results/'];
 DATAopts.imgsetpath = [DATAopts.datadir 'ImageSets/Main/%s.txt'];
 DATAopts.imgpath = [DATAopts.datadir 'JPEGImages/%s.jpg'];
 DATAopts.resdir = [MYDATADIR 'VOCdevkit/results/' DATAopts.dataset '/'];
 DATAopts.annopath = [DATAopts.datadir 'VOCdevkit/Annotations/%s.xml'];
-DATAopts.annocachepath = [MYDATADIR 'VOCdevkit/local/VOC2007/%s_anno.mat'];
+DATAopts.annocachepath = [MYDATADIR 'VOCdevkit/local/', DATAopts.dataset, '/%s_anno.mat'];
 DATAopts.classes={...
     'aeroplane'
     'bicycle'
@@ -42,37 +41,34 @@ DATAopts.classes={...
     'tvmonitor'};
 DATAopts.nclasses = length(DATAopts.classes);
 DATAopts.testset = testName;
-DATAopts.minoverlap=0.5;
+DATAopts.minoverlap = 0.5;
+DATAopts.gStructPath = [DATAopts.resultsPath, 'GStructs/'];
 
-DATAopts.gStructPath = [DATAopts.resultsPath 'GStructs/'];
 
-
-%% Options for CNN training
-nnOpts.testFn = @CalvinNN.testDetection;
+%%% Options for CNN training
+nnOpts.testFn = @testDetection;
 nnOpts.batchSize = 2;
 nnOpts.numSubBatches = nnOpts.batchSize; % In Fast-RCNN numSubBatches needs to be equal to batchSize
 nnOpts.weightDecay = 5e-4;
 nnOpts.momentum = 0.9;
 nnOpts.numEpochs = 16;
-nnOpts.learningRate = cat(1, repmat(0.001, 12, 1), repmat(0.0001, 4, 1));
+nnOpts.learningRate = cat(1, repmat(1e-3, 12, 1), repmat(1e-4, 4, 1));
 nnOpts.derOutputs = {'objective', 1, 'regressObjective', 1};
 overlapNms = 0.3;
 
 if USEGPU
-    nnOpts.gpus = SelectIdleGpu();
+    nnOpts.gpus = 1; %SelectIdleGpu();
 else
     nnOpts.gpus = [];
 end
 
 % output path
-nnOpts.expDir = [DATAopts.resultsPath ...
-    sprintf('FastRcnnMatconvnet/CalvinDetectionRun/')]
+nnOpts.expDir = [DATAopts.resultsPath, sprintf('FastRcnnMatconvnet/CalvinDetectionRun/')];
 
 % Start from pretrained network
-net = load([MYDATADIR 'MatconvnetModels/imagenet-vgg-f.mat']);
-% net = load([MYDATADIR 'MatconvnetModels/imagenet-vgg-verydeep-16.mat']);
+net = load([MYDATADIR 'MatconvnetModels/imagenet-vgg-verydeep-16.mat']);
 
-%% Setup the Imdb
+%%% Setup the Imdb
 % Get and test images
 trainIms = textread(sprintf(DATAopts.imgsetpath, trainName), '%s');
 testIms = textread(sprintf(DATAopts.imgsetpath, testName), '%s');
@@ -88,30 +84,31 @@ datasetIdx{2} = (length(trainIms)+1:length(trainIms)+501)'; % Use part of the te
 datasetIdx{3} = (length(trainIms)+1:length(allIms))';
 
 ImdbPascal = ImdbDetectionFullSupervision(DATAopts.imgpath(1:end-6), ...        % path
-                                          DATAopts.imgpath(end-3:end), ...      % image extension
-                                          DATAopts.gStructPath, ...             % gStruct path
-                                          allIms, ...                           % all images
-                                          datasetIdx, ...                       % division into train/val/test
-                                          net.normalization.averageImage);      % average image used to pretrain network
+    DATAopts.imgpath(end-3:end), ...      % image extension
+    DATAopts.gStructPath, ...             % gStruct path
+    allIms, ...                           % all images
+    datasetIdx, ...                       % division into train/val/test
+    net.meta.normalization.averageImage);      % average image used to pretrain network
 
 % Usually instance weighting gives better performance. But not Girshick style
-% ImdbPascal.SetInstanceWeighting(true); 
+% ImdbPascal.SetInstanceWeighting(true);
 
-%% Create calvinNN CNN class. By default, network is transformed into fast-rcnn with bbox regression
+%%% Create calvinNN CNN class. By default, network is transformed into fast-rcnn with bbox regression
 calvinn = CalvinNN(net, ImdbPascal, nnOpts);
 
 %%%%%%%%%%%%%
-%% Train
+%%% Train
 %%%%%%%%%%%%%
 calvinn.train();
 
 %%%%%%%%%%%%%
-%% Test
+%%% Test
 %%%%%%%%%%%%%
 stats = calvinn.test();
 
-
-%% Do evaluation
+%%%%%%%%%%%%%
+%%% Eval
+%%%%%%%%%%%%%
 clear recall prec ap upperBound
 
 % get image sizes
@@ -121,7 +118,7 @@ for i=length(testIms):-1:1
 end
 
 for cI = 1:20
-    %%
+    %
     currBoxes = cell(length(testIms), 1);
     currScores = cell(length(testIms), 1);
     for i=1:length(testIms)
@@ -132,7 +129,7 @@ for cI = 1:20
     [currBoxes, fileIdx] = Cell2Matrix(gather(currBoxes));
     [currScores, fileIdx2] = Cell2Matrix(gather(currScores));
     
-%     isequal(fileIdx, fileIdx2) % Should be equal
+    assert(isequal(fileIdx, fileIdx2)); % Should be equal
     
     currFilenames = testIms(fileIdx);
     
@@ -141,12 +138,12 @@ for cI = 1:20
     currBoxes = currBoxes(sI,:);
     currFilenames = currFilenames(sI);
     
-%     ShowImageRects(currBoxes(1:32, [2 1 4 3]), 4, 4, currFilenames(1:32), currScores(1:32));
+    %     ShowImageRects(currBoxes(1:32, [2 1 4 3]), 4, 4, currFilenames(1:32), currScores(1:32));
     
-    %%
+    %
     [recall{cI}, prec{cI}, ap(cI,1), upperBound{cI}] = ...
         DetectionToPascalVOCFiles(testName, cI, currBoxes, currFilenames, currScores, ...
-                                       'FastRcnnMatconvnet', 1, overlapNms);
+        'FastRcnnMatconvnet', 1, overlapNms);
     ap(cI)
 end
 
@@ -160,9 +157,9 @@ for i=length(testIms):-1:1
 end
 
 if isfield(stats.results(1), 'boxesRegressed')
-
+    
     for cI = 1:20
-        %%
+        %
         currBoxes = cell(length(testIms), 1);
         currScores = cell(length(testIms), 1);
         for i=1:length(testIms)
@@ -172,40 +169,41 @@ if isfield(stats.results(1), 'boxesRegressed')
             currBoxes{i}(:,2) = max(currBoxes{i}(:,2), 1);
             currBoxes{i}(:,3) = min(currBoxes{i}(:,3), imSizes(i,2));
             currBoxes{i}(:,4) = min(currBoxes{i}(:,4), imSizes(i,1));
-
+            
             currScores{i} = stats.results(i).scoresRegressed{cI+1};
         end
-
+        
         [currBoxes, fileIdx] = Cell2Matrix(gather(currBoxes));
         [currScores, fileIdx2] = Cell2Matrix(gather(currScores));
-
-    %     isequal(fileIdx, fileIdx2) % Should be equal
-
+        
+        %     isequal(fileIdx, fileIdx2) % Should be equal
+        
         currFilenames = testIms(fileIdx);
-
+        
         [~, sI] = sort(currScores, 'descend');
         currScores = currScores(sI);
         currBoxes = currBoxes(sI,:);
         currFilenames = currFilenames(sI);
-
-    %     ShowImageRects(currBoxes(1:32, [2 1 4 3]), 4, 4, currFilenames(1:32), currScores(1:32));
-
-        %%
+        
+        %     ShowImageRects(currBoxes(1:32, [2 1 4 3]), 4, 4, currFilenames(1:32), currScores(1:32));
+        
+        %
         [recall{cI}, prec{cI}, apRegressed(cI,1), upperBound{cI}] = ...
             DetectionToPascalVOCFiles(testName, cI, currBoxes, currFilenames, currScores, ...
-                                           'FastRcnnMatconvnet', 1, overlapNms);
+            'FastRcnnMatconvnet', 1, overlapNms);
         apRegressed(cI)
     end
-
+    
     apRegressed
     mean(apRegressed)
 else
     apRegressed = 0;
 end
 
-%%
+%
 save([nnOpts.expDir 'resultsEpochFinalTest.mat'], 'nnOpts', 'stats', 'ap', 'apRegressed');
 
 if USEGPU
+    % Exit to free GPU memory
     exit
 end

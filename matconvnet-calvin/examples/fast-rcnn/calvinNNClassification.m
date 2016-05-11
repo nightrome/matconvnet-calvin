@@ -53,7 +53,7 @@ DATAopts.gStructPath = [DATAopts.resultsPath 'GStructs/'];
 %% Options for CNN training
 nnOpts.fastRcnn = false;
 nnOpts.lossFnObjective = 'hinge';
-nnOpts.testFn = @CalvinNN.testClassification;
+nnOpts.testFn = @testClassification;
 nnOpts.batchSize = 128;
 nnOpts.numSubBatches = 1;
 nnOpts.weightDecay = 5e-4;
