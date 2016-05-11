@@ -9,6 +9,7 @@ classdef ImdbCalvin < handle
         numClasses
         datasetMode % train, val or test
         epoch
+        misc        % structure for arbitrary other info
 
         data        % data.train data.val data.test
     end
