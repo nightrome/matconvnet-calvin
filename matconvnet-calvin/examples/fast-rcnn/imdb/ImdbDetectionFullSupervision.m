@@ -4,6 +4,7 @@ classdef ImdbDetectionFullSupervision < ImdbMatbox
         boxesPerIm = 64;
         boxRegress = true;
         instanceWeighting = false;
+        maxImageSize = 600;
     end
     methods
         function obj = ImdbDetectionFullSupervision(imageDir, imExt, matboxDir, filenames, datasetIdx, meanIm)
@@ -20,8 +21,7 @@ classdef ImdbDetectionFullSupervision < ImdbMatbox
             else
                 gpuMode = strcmp(net.device, 'gpu');
             end
-                
-            
+
             % Load image. Make correct size. Subtract average im.
             [image, oriImSize] = obj.LoadImage(batchInds, gpuMode);
             
@@ -40,8 +40,7 @@ classdef ImdbDetectionFullSupervision < ImdbMatbox
             end
             
             if ismember(obj.datasetMode, {'train', 'val'})
-                [boxes, labels, keys, overlapScores, regressionFactors] = obj.SamplePosAndNegFromGstruct(gStruct, obj.boxesPerIm);
-%                 keys
+                [boxes, labels, ~, overlapScores, regressionFactors] = obj.SamplePosAndNegFromGstruct(gStruct, obj.boxesPerIm);
 
                 % Assign elements to cell array for use in training the network
                 numElements = obj.boxesPerIm;
@@ -96,22 +95,16 @@ classdef ImdbDetectionFullSupervision < ImdbMatbox
                 imageT = imageT - imresize(obj.meanIm, [oriImSize(1) oriImSize(2)]); % Subtract mean im
             end
             
-            resizeFactor = 1000 / max(oriImSize(1:2));
-%             resizeFactorMin = 600 / min(oriImSize(1:2));
-%             resizeFactor = min(resizeFactorMin, resizeFactorMax);
+            % Resize image to be at most x pixels in each dimension
+            % If you notice a "CUDA_ERROR_ILLEGAL_ADDRESS" error, use a
+            % smaller maximum image size.
+            resizeFactor = obj.maxImageSize / max(oriImSize(1:2));
             if gpuMode
                 image = gpuArray(imageT);
                 image = imresize(image, resizeFactor);
             else
                 image = imresize(imageT, resizeFactor, 'bilinear', 'antialiasing', false);
             end
-            
-%             % Subtract mean image
-%             meanIm = imresize(obj.meanIm, [size(image,1) size(image,2)], 'bilinear', 'antialiasing', false);
-%             if gpuMode
-%                 meanIm = gpuArray(meanIm);
-%             end
-%             image = image - meanIm;
         end
         
         
