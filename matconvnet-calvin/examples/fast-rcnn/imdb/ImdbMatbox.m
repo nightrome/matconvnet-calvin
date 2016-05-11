@@ -1,27 +1,27 @@
-% Imdb class for use with matconvnet, made in same style as the python imdb_calvin
-% class which is used in rcnn. You need to initialize the class with the following
-% arguments:
-%   imageDir:           directory with images
-%   imExt:              image extension {',jpg', '.png'}
-%   matBoxDir:          directory with matlab boxes, overlap, and class, girshick format
-%   filenames:          list of filenames without extension
-%   datasetIdx:         EITHER: cell array of size 1x3 with indices for train/val/test
-%                       OR:     percentages to use for train/val/test
-%   meanIm:             Average image (for CNN net)
-%
-% Filenames are created as 'imageDir + filenames[i] + imExt' and 'matBoxDir + filenames[i] + '.mat'
-%
-% Imdb class for easy use when you have .mat files with the following variables, per
-% Girshick style:
-%   boxes:      N x 4 single array
-%   class:      N x 1 uint16 array
-%   overlap:    N x C array with overlap scores for each box for class C
-%
-% Implements several useful functions to deal with the mat files
-%
-% Jasper Uijlings - 2015
-
 classdef ImdbMatbox < ImdbCalvin
+    % Imdb class for use with matconvnet, made in same style as the python imdb_calvin
+    % class which is used in rcnn. You need to initialize the class with the following
+    % arguments:
+    %   imageDir:           directory with images
+    %   imExt:              image extension {',jpg', '.png'}
+    %   matBoxDir:          directory with matlab boxes, overlap, and class, girshick format
+    %   filenames:          list of filenames without extension
+    %   datasetIdx:         EITHER: cell array of size 1x3 with indices for train/val/test
+    %                       OR:     percentages to use for train/val/test
+    %   meanIm:             Average image (for CNN net)
+    %
+    % Filenames are created as 'imageDir + filenames[i] + imExt' and 'matBoxDir + filenames[i] + '.mat'
+    %
+    % Imdb class for easy use when you have .mat files with the following variables, per
+    % Girshick style:
+    %   boxes:      N x 4 single array
+    %   class:      N x 1 uint16 array
+    %   overlap:    N x C array with overlap scores for each box for class C
+    %
+    % Implements several useful functions to deal with the mat files
+    %
+    % Jasper Uijlings - 2015
+    
     properties(SetAccess = protected, GetAccess = public)
         imageDir
         matBoxDir
@@ -32,10 +32,6 @@ classdef ImdbMatbox < ImdbCalvin
         minBoxSize = 20;
         
         flipLR = true;  % Flag if data will be flipped or not
-        
-%         labelMode  % Jasper: Maybe deprecated way of specifying labels as a matrix
-%         or vector (matrix allows multiple labels). Functions dealing with this are
-%         commented out as well at the end of this file.
     end
     
     methods
@@ -66,7 +62,7 @@ classdef ImdbMatbox < ImdbCalvin
                 obj.imagsVal = filenames(idxVal);
                 obj.imagesTest = filenames(idxTest);
             else
-                % We have cell arrays specifying the predifined split
+                % We have cell arrays specifying the predefined split
                 % Check if split is correct
                 allIdx = cat(1, datasetIdx{:});
                 if ~isequal(sort(allIdx), (1:length(filenames))')
@@ -166,12 +162,12 @@ classdef ImdbMatbox < ImdbCalvin
             
             for i = 1:length(currBatchIms)
                 % Load correct gStruct
-                currIm = currBatchIms(i);                
+                currIm = currBatchIms(i);
                 gStruct = obj.LoadGStruct(currIm);
                 
                 % Get boxes, overlap, and keys
                 currI = find(currBatchKeys(:,1) == currIm);
-                currKeys = currBatchKeys(currI,:);                
+                currKeys = currBatchKeys(currI,:);
                 currBoxes = gStruct.boxes(currKeys(:,2),:);
                 currOverlap = gStruct.overlap(currKeys(:,2),:);
                 
@@ -189,10 +185,6 @@ classdef ImdbMatbox < ImdbCalvin
             end
             
             labels = labVec + 1; % Negative class is one
-            
-            if strcmp(obj.labelMode, 'matrix')
-                labels = obj.LabelVecToLabelMat(labels);
-            end
         end
         
         % Get windows from an image
@@ -206,7 +198,7 @@ classdef ImdbMatbox < ImdbCalvin
             avgMeanIm = mean(obj.meanIm(:));
             im = single(im);
             cropIm = padarray(im, [obj.padding obj.padding], avgMeanIm);
-%             cropIm2 = imresize(obj.meanIm, [(nR + 2*obj.padding) (nC + 2*obj.padding)]);
+            %             cropIm2 = imresize(obj.meanIm, [(nR + 2*obj.padding) (nC + 2*obj.padding)]);
             cropIm(obj.padding+1:nR+obj.padding,obj.padding+1:nC+obj.padding,:) = im;
             
             % Get boxes in correct format. Do padding
@@ -214,73 +206,66 @@ classdef ImdbMatbox < ImdbCalvin
             boxes = bsxfun(@plus, boxes, [0 0 (2*obj.padding) (2*obj.padding)]);
             
             cropSize = [size(obj.meanIm, 1) size(obj.meanIm,2)];
-
-%             if obj.gpuMode
-%                 imageWindows = cropRectanglesMex(cropIm, boxes, cropSize);
-%             else
-                imageWindows = zeros([size(obj.meanIm) size(boxes,1)], 'single');
-                for i = 1:size(boxes,1)
-                    croppedIm = cropIm(boxes(i,1):boxes(i,3), ...
-                                                     boxes(i,2):boxes(i,4),:);
-                    imageWindows(:,:,:,i) = imresize(croppedIm, cropSize, ...
-                                                     'bilinear', 'antialiasing', false);
-                end                    
-%             end
+            
+            %             if obj.gpuMode
+            %                 imageWindows = cropRectanglesMex(cropIm, boxes, cropSize);
+            %             else
+            imageWindows = zeros([size(obj.meanIm) size(boxes,1)], 'single');
+            for i = 1:size(boxes,1)
+                croppedIm = cropIm(boxes(i,1):boxes(i,3), ...
+                    boxes(i,2):boxes(i,4),:);
+                imageWindows(:,:,:,i) = imresize(croppedIm, cropSize, ...
+                    'bilinear', 'antialiasing', false);
+            end
+            %             end
             imageWindows = bsxfun(@minus, imageWindows, obj.meanIm); % subtract the mean image
             
             % FlipLR if requested
             if obj.flipLR
                 imageWindows = fliplr(imageWindows);
-            end            
+            end
         end
         
-%         % Change the way labels are dealt with
-%         function SetLabelMode(obj, theLabelMode)
-%             if ~ismember(theLabelMode, {'vector', 'matrix'})
-%                 error('unknown label mode')
-%             end
-%             obj.labelMode = theLabelMode;
-%         end
-%         
-%         % Transform label matrix to label vector. Note: background is 1
-%         % If there are multiple positive labels, only last one is used
-%         function labelVec = LabelMatToLabelVec(obj, labelMatrix)
-%             [maxLM, labelVec] = max(labelMatrix, [], 2);
-%             labelVec = labelVec + 1; % Make space for background class
-%             labelVec(maxLM < 0) = 1; % Assign background class
-%         end
-%         
-%         % Transfor label vector to label matrix with values {-1, 0, 1}, where 0 is ignored
-%         % Possibly has extra indices to indicate unknown classes which are put to zero
-%         function labelMat = LabelVecToLabelMat(obj, labelVec, unknownClasses)
-%             labelMat = -ones(length(labelVec), obj.numClasses);
-%             labelVec = labelVec - 1; % Background class is put to zero
-%             for i=1:length(labelVec)
-%                 if labelVec(i) > 0
-%                     labelMat(i, labelVec(i)) = 1;
-%                 end
-%             end
-%             
-%             % Remove unknown classes if applicable
-%             if nargin == 3
-%                 unknownClasses = unknownClasses -1; % Correct for background
-%                 for i=1:length(unknownClasses)
-%                     % Make only negatives unknown.
-%                     labelMat(:, unknownClasses(i)) = max(labelMat(:, unknownClasses(i)), 0);
-%                 end
-%             end
-%         end
-
+        %
+        %         % Transform label matrix to label vector. Note: background is 1
+        %         % If there are multiple positive labels, only last one is used
+        %         function labelVec = LabelMatToLabelVec(obj, labelMatrix)
+        %             [maxLM, labelVec] = max(labelMatrix, [], 2);
+        %             labelVec = labelVec + 1; % Make space for background class
+        %             labelVec(maxLM < 0) = 1; % Assign background class
+        %         end
+        %
+        %         % Transfor label vector to label matrix with values {-1, 0, 1}, where 0 is ignored
+        %         % Possibly has extra indices to indicate unknown classes which are put to zero
+        %         function labelMat = LabelVecToLabelMat(obj, labelVec, unknownClasses)
+        %             labelMat = -ones(length(labelVec), obj.numClasses);
+        %             labelVec = labelVec - 1; % Background class is put to zero
+        %             for i=1:length(labelVec)
+        %                 if labelVec(i) > 0
+        %                     labelMat(i, labelVec(i)) = 1;
+        %                 end
+        %             end
+        %
+        %             % Remove unknown classes if applicable
+        %             if nargin == 3
+        %                 unknownClasses = unknownClasses -1; % Correct for background
+        %                 for i=1:length(unknownClasses)
+        %                     % Make only negatives unknown.
+        %                     labelMat(:, unknownClasses(i)) = max(labelMat(:, unknownClasses(i)), 0);
+        %                 end
+        %             end
+        %         end
+        
         function initEpoch(obj, epoch)
             initEpoch@ImdbCalvin(obj, epoch);
             
             % Flip image vertically at the start of each epoch
             obj.switchFlipLR();
         end
-
+        
         function switchFlipLR(obj)
             % Switch the flipLR switch
-            obj.flipLR = mod(obj.flipLR+1, 2);      
+            obj.flipLR = mod(obj.flipLR + 1, 2);
         end
     end
 end

@@ -19,7 +19,7 @@ classdef CalvinNN < handle
             % obj = CalvinNN(net, imdb, [nnOpts])
             
             % Default arguments
-            if ~exist('nnOpts', 'var') || isempty(nnOpts)
+            if ~exist('nnOpts', 'var')
                 nnOpts = struct();
             end
             

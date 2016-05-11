@@ -1,7 +1,7 @@
 function stats = processEpoch(obj, net, state)
 % stats = processEpoch(obj, net, state)
 %
-% Processes one training/validation epoch.
+% Processes one epoch (train, val or test).
 %
 % Copyright by Matconvnet
 % Modified by Holger Caesar, 2016
@@ -37,14 +37,19 @@ for t=1:obj.nnOpts.batchSize:numel(allBatchInds),
     
     for s=1:obj.nnOpts.numSubBatches,
         % get this image batch and prefetch the next
-        batchStart = t + (s-1);
-        batchEnd = min(t+obj.nnOpts.batchSize-1, numel(allBatchInds));
+        batchStart = t + s - 1;
+        batchEnd = min(t + obj.nnOpts.batchSize - 1, numel(allBatchInds));
         batchInds = allBatchInds(batchStart : obj.nnOpts.numSubBatches : batchEnd);
         num = num + numel(batchInds);
-        if numel(batchInds) == 0, continue; end
+        
+        % Skip subbatches with no images
+        if numel(batchInds) == 0,
+            continue;
+        end
         
         [inputs, numElements] = obj.imdb.getBatch(batchInds, net, obj.nnOpts);
-        % Skip empty subbatches
+        
+        % Skip subbatches with no labels etc
         if numElements == 0
             continue;
         end
@@ -89,8 +94,8 @@ for t=1:obj.nnOpts.batchSize:numel(allBatchInds),
         fprintf('%s: epoch %02d: %3d/%3d: %.1f Hz', ...
             obj.imdb.datasetMode, ...
             state.epoch, ...
-            fix(t/obj.nnOpts.batchSize)+1, ceil(numel(allBatchInds)/obj.nnOpts.batchSize), ...
-            stats.num/stats.time);
+            fix(t / obj.nnOpts.batchSize)+1, ceil(numel(allBatchInds) / obj.nnOpts.batchSize), ...
+            stats.num / stats.time);
         for field = setdiff(fieldnames(stats)', {'num', 'time', 'results'}) 
             field = char(field); %#ok<FXSET>
             fprintf(' %s:', field);
