@@ -1,13 +1,14 @@
-% Very lazy class to do classification. Validation is not properly done...
-% Now validation is set to 10% of the dataset
-%
-% Jasper: Experimental untested class!
 classdef ImdbClassification < ImdbCalvin
-    properties(SetAccess = protected, GetAccess = public)       
+    % ImdbClassification < ImdbCalvin
+    %
+    % Note: Validation is not properly done. Now validation is set to 10% of the dataset
+    
+    properties    
         imageDir
         imExt
         meanIm
         labs
+        targetImSize = [224, 224];
         
         flipLR = true;  % Flag if data will be flipped or not
     end
@@ -59,42 +60,41 @@ classdef ImdbClassification < ImdbCalvin
         end
         
         function [batchData, currBatchSize] = getBatch(obj, batchInds, net, ~)
-            if nargin == 2
-                gpuMode = false;
-            else
-                gpuMode = strcmp(net.device, 'gpu');
-            end
+            
             
             currBatchSize = length(batchInds);
             batchLabs = zeros(1, 1, obj.numClasses, currBatchSize);
+            
+            gpuMode = strcmp(net.device, 'gpu');
             if gpuMode
-                batch = zeros(size(obj.meanIm,1), size(obj.meanIm,2), size(obj.meanIm,3), currBatchSize, 'single', 'gpuArray');
+                batch = zeros(obj.targetImSize(1), obj.targetImSize(2), 3, currBatchSize, 'single', 'gpuArray');
             else
-                batch = zeros(size(obj.meanIm,1), size(obj.meanIm,2), size(obj.meanIm,3), currBatchSize, 'single');
+                batch = zeros(obj.targetImSize(1), obj.targetImSize(2), 3, currBatchSize, 'single');
             end
             
-            for idx=1:length(batchInds)
+            for idx = 1 : length(batchInds)
                 imI = batchInds(idx);
-                theIm = single(imread([obj.imageDir obj.data.(obj.datasetMode){imI} obj.imExt]));
-                if size(theIm,3) == 1
+                imagePath = [obj.imageDir, obj.data.(obj.datasetMode){imI}, obj.imExt];
+                theIm = single(imread(imagePath));
+                if size(theIm, 3) == 1
                     theIm = repmat(theIm, [1 1 3]);
                 end
-                batch(:,:,:,idx) = imresize(theIm, [size(obj.meanIm,1) size(obj.meanIm,2)], ...
-                                          'bilinear', 'antialiasing', false);
-                batchLabs(1,1,:,idx) = obj.labs.(obj.datasetMode)(imI,:);
+                batch(:, :, :, idx) = imresize(theIm, obj.targetImSize, 'bilinear', 'antialiasing', false);
+                batchLabs(1, 1, :, idx) = obj.labs.(obj.datasetMode)(imI, :);
             end
             
+            % Subtract mean image
             batch = bsxfun(@minus, batch, obj.meanIm);
+            
+            % Flip all images in batch if specified
             if obj.flipLR
                 batch = fliplr(batch);
             end
             
-            batchData{1} = 'input';
-            batchData{2} = batch;
-            
+            % Specify outputs
+            batchData = {'input', batch};
             if ~strcmp(obj.datasetMode, 'test');
-                batchData{3} = 'label';
-                batchData{4} = batchLabs;
+                batchData = [batchData, {'label', batchLabs}];
             end
         end
         

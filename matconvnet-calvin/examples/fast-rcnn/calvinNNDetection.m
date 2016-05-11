@@ -7,7 +7,7 @@ global MYDATADIR        % Directory of datasets
 % Dataset
 vocYear = 2010;
 trainName = 'train';
-testName = 'val';
+testName  = 'val';
 
 % Task
 nnOpts.testFn = @testDetection;
@@ -16,7 +16,7 @@ nnOpts.derOutputs = {'objective', 1, 'regressObjective', 1};
 
 % General
 nnOpts.batchSize = 2;
-nnOpts.numSubBatches = nnOpts.batchSize; % In Fast-RCNN numSubBatches needs to be equal to batchSize
+nnOpts.numSubBatches = nnOpts.batchSize; % 1 image per sub-batch
 nnOpts.weightDecay = 5e-4;
 nnOpts.momentum = 0.9;
 nnOpts.numEpochs = 16;
@@ -28,6 +28,10 @@ nnOpts.gpus = SelectIdleGpu();
 setupDataOpts(vocYear, testName);
 global DATAopts; % Database specific paths
 nnOpts.expDir = [DATAopts.resultsPath, sprintf('FastRcnnMatconvnet/CalvinDetectionRun/')];
+
+% DEBUG: TODO: remove
+nnOpts.numEpochs = 1;
+nnOpts.learningRate = 1e-3;
 
 % Start from pretrained network
 net = load(nnOpts.misc.netPath);

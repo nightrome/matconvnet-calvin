@@ -7,17 +7,24 @@ global MYDATADIR        % Directory of datasets
 % Dataset
 vocYear = 2010;
 trainName = 'train';
-testName = 'val';
+testName  = 'val';
 
 % Task
-nnOpts.fastRcnn = false;
 nnOpts.lossFnObjective = 'hinge';
 nnOpts.testFn = @testClassification;
 nnOpts.derOutputs = {'objective', 1};
+targetImSize = [224, 224];
+
+% Disable Fast R-CNN (default is on)
+nnOpts.fastRcnn = false;
+nnOpts.fastRcnnParams = false; % learning rates and weight decay
+nnOpts.misc.roiPool.use = false;
+nnOpts.misc.roiPool.freeform.use = false;
+nnOpts.bboxRegress = false;
 
 % General
-nnOpts.batchSize = 128;
-nnOpts.numSubBatches = 1;
+nnOpts.batchSize = 64;
+nnOpts.numSubBatches = 1;  % 64 images per sub-batch
 nnOpts.weightDecay = 5e-4;
 nnOpts.momentum = 0.9;
 nnOpts.numEpochs = 16;
@@ -30,16 +37,18 @@ setupDataOpts(vocYear, testName);
 global DATAopts; % Database specific paths
 nnOpts.expDir = [DATAopts.resultsPath, sprintf('FastRcnnMatconvnet/CalvinClassificationRun/')];
 
+% DEBUG: TODO: remove
+nnOpts.numEpochs = 1;
+nnOpts.learningRate = 1e-3;
+
 % Start from pretrained network
 net = load(nnOpts.misc.netPath);
 
 % Setup imdb
 imdb = setupImdbClassification(trainName, testName, net);
+imdb.targetImSize = targetImSize;
 
-% Create calvinNN CNN class. Note nnOpts above for classification
-calvinn = CalvinNN(net, imdb, nnOpts);
-
-% Create calvinNN CNN class. By default, network is transformed into fast-rcnn with bbox regression
+% Create calvinNN CNN class.
 calvinn = CalvinNN(net, imdb, nnOpts);
 
 % Train
@@ -50,10 +59,3 @@ stats = calvinn.test();
 
 % Eval
 evalClassification();
-
-
-
-
-if USEGPU
-    exit
-end
