@@ -1,5 +1,5 @@
-function state = accumulate_gradients(obj, state, net, batchSize)
-% state = accumulate_gradients(obj, state, net, batchSize)
+function state = accumulateGradients(obj, state, net, batchSize)
+% state = accumulateGradients(obj, state, net, batchSize)
 %
 % Perform a Stochastic Gradient Descent update step of the network weights
 % using momentum and weight decay.

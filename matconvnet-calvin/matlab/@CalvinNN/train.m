@@ -22,7 +22,7 @@ if start >= 1
     [obj.net, obj.stats] = CalvinNN.loadState(modelPath(start));
 end
 
-for epoch=start+1:obj.nnOpts.numEpochs
+for epoch = start + 1 : obj.nnOpts.numEpochs
     
     % Set epoch and it's learning rate
     state.epoch = epoch;
@@ -45,7 +45,7 @@ for epoch=start+1:obj.nnOpts.numEpochs
         end;
         state.allBatchInds = obj.imdb.getAllBatchInds();
         
-        obj.stats.(datasetMode)(epoch) = obj.process_epoch(obj.net, state);
+        obj.stats.(datasetMode)(epoch) = obj.processEpoch(obj.net, state);
     end
     
     % Save current snapshot

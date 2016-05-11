@@ -1,5 +1,5 @@
-function stats = process_epoch(obj, net, state)
-% stats = process_epoch(obj, net, state)
+function stats = processEpoch(obj, net, state)
+% stats = processEpoch(obj, net, state)
 %
 % Processes one training/validation epoch.
 %
@@ -77,7 +77,7 @@ for t=1:obj.nnOpts.batchSize:numel(allBatchInds),
     
     % Accumulate gradients
     if strcmp(obj.imdb.datasetMode, 'train')
-        state = obj.accumulate_gradients(state, net, batchNumElements);
+        state = obj.accumulateGradients(state, net, batchNumElements);
     end
     
     % Print learning statistics
