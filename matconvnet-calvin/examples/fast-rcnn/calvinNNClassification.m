@@ -12,7 +12,7 @@ testName  = 'val';
 % Task
 nnOpts.lossFnObjective = 'hinge';
 nnOpts.testFn = @testClassification;
-nnOpts.derOutputs = {'objective', 1};
+nnOpts.derOutputs = {'objective', single(1)};
 targetImSize = [224, 224];
 
 % Disable Fast R-CNN (default is on)
@@ -29,16 +29,16 @@ nnOpts.weightDecay = 5e-4;
 nnOpts.momentum = 0.9;
 nnOpts.numEpochs = 16;
 nnOpts.learningRate = [repmat(1e-3, 12, 1); repmat(1e-4, 4, 1)];
-nnOpts.misc.netPath = fullfile(MYDATADIR, 'MatconvnetModels', 'imagenet-vgg-verydeep-16.mat');
+nnOpts.misc.netPath = fullfile(MYDATADIR, '..', 'MatconvnetModels', 'imagenet-vgg-verydeep-16.mat');
 nnOpts.gpus = SelectIdleGpu();
 
 % Setup data opts
 setupDataOpts(vocYear, testName);
 global DATAopts; % Database specific paths
-nnOpts.expDir = [DATAopts.resultsPath, sprintf('FastRcnnMatconvnet/CalvinClassificationRun/')];
+nnOpts.expDir = [DATAopts.resdir, sprintf('FastRcnnMatconvnet/CalvinClassificationRun/')];
 
 % DEBUG: TODO: remove
-nnOpts.numEpochs = 1;
+nnOpts.numEpochs = 2;
 nnOpts.learningRate = 1e-3;
 
 % Start from pretrained network
@@ -58,4 +58,4 @@ calvinn.train();
 stats = calvinn.test();
 
 % Eval
-evalClassification();
+evalClassification(imdb, stats, nnOpts);

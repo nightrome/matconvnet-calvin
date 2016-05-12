@@ -27,7 +27,7 @@ nnOpts.gpus = SelectIdleGpu();
 % Setup data opts
 setupDataOpts(vocYear, testName);
 global DATAopts; % Database specific paths
-nnOpts.expDir = [DATAopts.resultsPath, sprintf('FastRcnnMatconvnet/CalvinDetectionRun/')];
+nnOpts.expDir = [DATAopts.resdir, sprintf('FastRcnnMatconvnet/CalvinDetectionRun/')];
 
 % DEBUG: TODO: remove
 nnOpts.numEpochs = 1;
@@ -49,4 +49,4 @@ calvinn.train();
 stats = calvinn.test();
 
 % Eval
-evalDetection(testName, testIms, testLabs, stats, nnOpts);
+evalDetection(testName, imdb, stats, nnOpts);
