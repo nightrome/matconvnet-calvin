@@ -7,7 +7,7 @@ function init(obj, varargin)
 % Copyright by Holger Caesar, 2016
 
 defnnOpts.expDir = fullfile('data', 'exp');
-defnnOpts.continue = false;
+defnnOpts.continue = true;
 defnnOpts.batchSize = 2;
 defnnOpts.numSubBatches = 2;
 defnnOpts.gpus = [];
