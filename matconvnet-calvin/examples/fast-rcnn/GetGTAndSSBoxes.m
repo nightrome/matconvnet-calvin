@@ -15,7 +15,8 @@ record = VOCreadxml(sprintf(DATAopts.annopath, imName));
 
 class_to_id = containers.Map(DATAopts.classes, 1:length(DATAopts.classes));
 
-[~, im] = ImageRead(imName);
+im = imread(sprintf(DATAopts.imgpath, imName));
+im = im2double(im);
 selectiveSearchBoxes = selective_search_boxes(im, true, 500);
 
 boxStruct = attach_proposals(record.annotation, selectiveSearchBoxes, class_to_id);
