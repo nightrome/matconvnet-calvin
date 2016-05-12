@@ -6,10 +6,9 @@ for i = 1 : length(stats.results)
     scores(i, :) = stats.results(i).scores;
 end
 testLabsAp = imdb.misc.testLabs;
-testLabsAp(testLabsAp == -1) = 0;
+testLabsAp(testLabsAp == 0) = -1;
 
 % Compute AP
-%TODO: there seems to be a bug here resulting in mAP = 1
 ap = zeros(size(testLabsAp, 2), 1);
 for cI = 1:size(testLabsAp, 2)    
     gt = testLabsAp(:, cI);
@@ -38,4 +37,5 @@ ap
 map
 
 % Save results to disk
-save([nnOpts.expDir, 'resultsEpochFinalTest.mat'], 'nnOpts', 'stats', 'ap', 'map');
+epoch = nnOpts.numEpochs; %#ok<NASGU>
+save([nnOpts.expDir, 'resultsEpochFinalTest.mat'], 'nnOpts', 'stats', 'ap', 'map', 'epoch');

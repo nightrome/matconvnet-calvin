@@ -1,7 +1,8 @@
 % function calvinNNClassification
 
 % User inputs
-global MYDATADIR        % Directory of datasets
+global MYDATADIR % Directory of datasets
+assert(~isempty(MYDATADIR));
 
 %%% Settings
 % Dataset
@@ -37,10 +38,6 @@ setupDataOpts(vocYear, testName);
 global DATAopts; % Database specific paths
 nnOpts.expDir = [DATAopts.resdir, sprintf('FastRcnnMatconvnet/CalvinClassificationRun/')];
 
-% DEBUG: TODO: remove
-nnOpts.numEpochs = 2;
-nnOpts.learningRate = 1e-3;
-
 % Start from pretrained network
 net = load(nnOpts.misc.netPath);
 
@@ -48,7 +45,7 @@ net = load(nnOpts.misc.netPath);
 imdb = setupImdbClassification(trainName, testName, net);
 imdb.targetImSize = targetImSize;
 
-% Create calvinNN CNN class.
+% Create calvinNN CNN class
 calvinn = CalvinNN(net, imdb, nnOpts);
 
 % Train
