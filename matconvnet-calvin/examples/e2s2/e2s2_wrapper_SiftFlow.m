@@ -12,7 +12,7 @@ run = 28;
 exp = 0;
 netName = 'VGG16';
 dataset = SiftFlowDataset();
-gpus = [];
+gpus = 1;
 roiPool.use = true;
 roiPool.freeform.use = true;
 roiPool.freeform.combineFgBox = true;
@@ -53,14 +53,10 @@ if strcmp(netName, 'AlexNet'),
     netFileName = 'imagenet-caffe-alex';
 elseif strcmp(netName, 'VGG16'),
     netFileName = 'imagenet-vgg-verydeep-16';
-elseif strcmp(netName, '18beta-AlexNet'),
-    netFileName = '18beta/imagenet-matconvnet-alex';
-elseif strcmp(netName, '18beta-VGG16'),
-    netFileName = '18beta/imagenet-matconvnet-vgg-verydeep-16';
 else
     error('Error: Unknown netName!');
 end;
-outputFolderName = sprintf('%s_finetune_e2s2_%s_run%d_exp%d', dataset.name, netName, run, exp);
+outputFolderName = sprintf('%s_e2s2_run%d_exp%d', dataset.name, run, exp);
 netPath = fullfile(glFeaturesFolder, 'CNN-Models', 'matconvnet', [netFileName, '.mat']);
 segmentFolder = fullfile(glFeaturesFolder, projectName, dataset.name, 'segmentations');
 outputFolder = fullfile(glFeaturesFolder, 'CNN-Models', 'E2S2', dataset.name, sprintf('Run%d', run), outputFolderName);
