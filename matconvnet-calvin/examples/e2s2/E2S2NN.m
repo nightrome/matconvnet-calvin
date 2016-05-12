@@ -83,25 +83,32 @@ classdef E2S2NN < CalvinNN
                 if isfield(weaklySupervised, 'labelPresence') && weaklySupervised.labelPresence.use,
                     assert(obj.nnOpts.misc.regionToPixel.use);
                     
+                    % Insert a softmax layer (not loss)
+                    softmaxBlock = dagnn.SoftMax();
+                    insertLayer(obj.net, 'regiontopixel8', 'softmaxloss', 'softmax', softmaxBlock, {}, {}, {});
+                    softmaxIdx = obj.net.getLayerIndex('softmax');
+                    softmaxInput = obj.net.layers(softmaxIdx).inputs{1};
+                    obj.net.setLayerInputs('softmax', {softmaxInput});
+                    
                     % Insert a labelpresence layer
                     labelPresenceOpts = weaklySupervised.labelPresence;
                     labelPresenceOpts = rmfield(labelPresenceOpts, 'use');
                     labelPresenceOpts = struct2Varargin(labelPresenceOpts);
                     labelPresenceBlock = dagnn.LabelPresence(labelPresenceOpts{:});
-                    insertLayer(obj.net, 'regiontopixel8', 'softmaxloss', 'labelpresence', labelPresenceBlock, {}, {'labelImage'}, {});
-                    labelPresenceIdx = obj.net.getLayerIndex('labelpresence');
-                    obj.net.layers(labelPresenceIdx).inputs{2} = 'labelImage';
-                    obj.net.layers(labelPresenceIdx).inputs(3)  = []; % Remove instanceWeights
-                    obj.net.layers(labelPresenceIdx).outputs(2) = []; % Remove labelImage
-                    obj.net.rebuild();
+                    insertLayer(obj.net, 'softmax', 'softmaxloss', 'labelpresence', labelPresenceBlock, {'labelImage'}, {}, {});
                     
                     % Change parameters for loss
-                    softmaxIdx = obj.net.getLayerIndex('softmaxloss');
-                    softmaxBlock = obj.net.layers(softmaxIdx).block;
-                    scoresVar = obj.net.layers(softmaxIdx).inputs{1};
-                    obj.net.replaceLayer('softmaxloss', 'softmaxloss', softmaxBlock, {scoresVar, 'labelImage', 'weightsImage'}, {}, {}, true);
+                    % (for compatibility we don't change the name of the loss)
+                    lossIdx = obj.net.getLayerIndex('softmaxloss');
+                    lossBlock = obj.net.layers(lossIdx).block;
+                    lossBlock.loss = 'log';
+                    scoresVar = obj.net.layers(lossIdx).inputs{1};
+                    replaceLayer(obj.net, 'softmaxloss', 'softmaxloss', lossBlock, {scoresVar, 'labelImage', 'weightsImage'}, {}, {}, true);
                 end
             end;
+            
+            % Sort layers by their first occurrence
+            sortLayers(obj.net);
         end
         
         function[stats] = testOnSet(obj, varargin)
@@ -206,6 +213,11 @@ classdef E2S2NN < CalvinNN
                 softmaxlossIdx = obj.net.getLayerIndex('softmaxloss');
                 obj.net.layers(softmaxlossIdx).inputs{1} = regiontopixelOutput;
                 obj.net.rebuild();
+            end;
+            % Disable softmax layer (that is before labelpresence)
+            softmaxIdx = obj.net.getLayerIndex('softmax');
+            if ~isnan(softmaxIdx),
+                obj.net.removeLayer('softmax');
             end;
             
             % Replace softmaxloss by softmax
