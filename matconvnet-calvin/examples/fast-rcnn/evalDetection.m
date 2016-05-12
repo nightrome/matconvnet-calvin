@@ -38,7 +38,7 @@ for cI = 1 : 20
     %
     [recall{cI}, prec{cI}, ap(cI,1), upperBound{cI}] = ...
         DetectionToPascalVOCFiles(testName, cI, currBoxes, currFilenames, currScores, ...
-        'FastRcnnMatconvnet', 1, nnOpts.misc.overlapNms);
+        'Matconvnet-Calvin', 1, nnOpts.misc.overlapNms);
     ap(cI)
 end
 
@@ -79,7 +79,7 @@ if isfield(stats.results(1), 'boxesRegressed')
         %
         [recall{cI}, prec{cI}, apRegressed(cI,1), upperBound{cI}] = ...
             DetectionToPascalVOCFiles(testName, cI, currBoxes, currFilenames, currScores, ...
-            'FastRcnnMatconvnet', 1, nnOpts.misc.overlapNms);
+            'Matconvnet-Calvin', 1, nnOpts.misc.overlapNms);
         apRegressed(cI)
     end
     

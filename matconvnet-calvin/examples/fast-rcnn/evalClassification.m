@@ -1,4 +1,5 @@
 function evalClassification(imdb, stats, nnOpts)
+% evalClassification(imdb, stats, nnOpts)
 
 % Get scores and labels
 scores = zeros(size(imdb.misc.testLabs));

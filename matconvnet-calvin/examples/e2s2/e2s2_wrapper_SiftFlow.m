@@ -63,7 +63,7 @@ end;
 outputFolderName = sprintf('%s_finetune_e2s2_%s_run%d_exp%d', dataset.name, netName, run, exp);
 netPath = fullfile(glFeaturesFolder, 'CNN-Models', 'matconvnet', [netFileName, '.mat']);
 segmentFolder = fullfile(glFeaturesFolder, projectName, dataset.name, 'segmentations');
-outputFolder = fullfile(glFeaturesFolder, 'CNN-Models', 'FastRcnnMatconvnet', 'SemSegm', dataset.name, sprintf('Run%d', run), outputFolderName);
+outputFolder = fullfile(glFeaturesFolder, 'CNN-Models', 'E2S2', dataset.name, sprintf('Run%d', run), outputFolderName);
 
 % Create outputFolder
 if ~exist(outputFolder, 'dir'),

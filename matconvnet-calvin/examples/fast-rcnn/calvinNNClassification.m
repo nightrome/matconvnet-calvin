@@ -36,7 +36,7 @@ nnOpts.gpus = SelectIdleGpu();
 % Setup data opts
 setupDataOpts(vocYear, testName);
 global DATAopts; % Database specific paths
-nnOpts.expDir = [DATAopts.resdir, sprintf('FastRcnnMatconvnet/CalvinClassificationRun/')];
+nnOpts.expDir = [DATAopts.resdir, 'Matconvnet-Calvin', '/', 'cls', '/'];
 
 % Start from pretrained network
 net = load(nnOpts.misc.netPath);
