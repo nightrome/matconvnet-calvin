@@ -14,12 +14,18 @@ assert(numGpus <= 1);
 % Load previous training snapshot
 lastCheckPoint = CalvinNN.findLastCheckpoint(obj.nnOpts.expDir);
 if isnan(lastCheckPoint)
-    lastCheckPoint = 0;
-end;
-start = obj.nnOpts.continue * lastCheckPoint;
-if start >= 1
+    % No checkpoint found
+    start = 0;
+    
+    % Save untrained net
+    obj.saveState(modelPath(start));
+else
+    % Load existing checkpoint and continue
+    start = obj.nnOpts.continue * lastCheckPoint;
     fprintf('Resuming by loading epoch %d\n', start);
-    [obj.net, obj.stats] = CalvinNN.loadState(modelPath(start));
+    if start >= 1
+        [obj.net, obj.stats] = CalvinNN.loadState(modelPath(start));
+    end
 end
 
 for epoch = start + 1 : obj.nnOpts.numEpochs
