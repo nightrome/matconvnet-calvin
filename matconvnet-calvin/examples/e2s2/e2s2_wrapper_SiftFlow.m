@@ -2,6 +2,8 @@
 % e2s2_wrapper_SiftFlow()
 %
 % A wrapper for Fast-RCNN with Matconvnet that allows to train and test a network.
+% Note: The network is prone to exploding gradients and therefore only
+% works with the beta16 MatConvNet networks.
 %
 % Copyright by Holger Caesar, 2015
 
@@ -14,8 +16,8 @@ netName = 'VGG16';
 dataset = SiftFlowDataset();
 gpus = 1;
 roiPool.use = true;
-roiPool.freeform.use = true;
-roiPool.freeform.combineFgBox = true;
+roiPool.freeform.use = false;
+roiPool.freeform.combineFgBox = false;
 roiPool.freeform.shareWeights = false;
 regionToPixel.use = true;
 regionToPixel.minPixFreq = [];
@@ -77,7 +79,6 @@ imageListTst = dataset.getImageListTst(true);
 
 % Store in imdb
 imdb = ImdbE2S2(dataset, segmentFolder);
-imdb.dataset = dataset;
 trainValList = rand(numel(imageListTrn), 1) <= trainValRatio;
 imdb.data.train = imageListTrn( trainValList);
 imdb.data.val   = imageListTrn(~trainValList);
