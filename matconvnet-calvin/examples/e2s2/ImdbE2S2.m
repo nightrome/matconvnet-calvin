@@ -124,9 +124,9 @@ classdef ImdbE2S2 < ImdbCalvin
             image = single(obj.dataset.getImage(imageName));
             
             % Move image to GPU
-            if strcmp(net.device, 'gpu'),
+            if strcmp(net.device, 'gpu')
                 image = gpuArray(image);
-            end;
+            end
             
             % Resize image and subtract mean image
             [image, oriImSize] = e2s2_prepareImage(net, image, batchOptsCopy.maxImageSize);
@@ -141,7 +141,7 @@ classdef ImdbE2S2 < ImdbCalvin
             clearvars segmentStructRP;
             
             % Get blobMasks from file
-            if roiPool.freeform.use,
+            if roiPool.freeform.use
                 blobMasksName = sprintf('blobMasks%dx%d', roiPool.size(1), roiPool.size(2));
                 segmentStructRP = load(segmentPathRP, blobMasksName);
                 if ~isfield(segmentStructRP, blobMasksName),
@@ -149,7 +149,7 @@ classdef ImdbE2S2 < ImdbCalvin
                 end;
                 blobMasksRP = segmentStructRP.(blobMasksName);
                 clearvars segmentStructRP;
-            end;
+            end
             
             % Get superpixels
             blobsSP = blobsRP(spInds);
@@ -161,33 +161,33 @@ classdef ImdbE2S2 < ImdbCalvin
                 segmentStructGT = load(segmentPathGT, 'propBlobs', 'labelListGT');
                 blobsGT = segmentStructGT.propBlobs(:);
                 labelListGT = segmentStructGT.labelListGT;
-                if isempty(blobsGT),
+                if isempty(blobsGT)
                     % Skip images without GT regions
                     return;
-                end;
+                end
                 
                 % Get blobMasks from file
-                if roiPool.freeform.use,
+                if roiPool.freeform.use
                     segmentStructGT = load(segmentPathGT, blobMasksName);
                     blobMasksGT = segmentStructGT.(blobMasksName);
-                end;
+                end
             end
             
             % Filter blobs according to IOU with GT
-            if batchOptsCopy.subsample && ~weaklySupervised.use,
+            if batchOptsCopy.subsample && ~weaklySupervised.use
                 % Compute IOUs between RP and GT
                 overlapRPGT = scoreBlobIoUs(blobsRP, blobsGT);
                 
                 % Compute IOUs between RP and each label
                 blobCountRP = numel(blobsRP);
                 overlapRPLabels = zeros(blobCountRP, obj.numClasses);
-                for labelIdx = 1 : obj.numClasses,
+                for labelIdx = 1 : obj.numClasses
                     sel = labelListGT == labelIdx;
                     
-                    if any(sel),
+                    if any(sel)
                         overlapRPLabels(:, labelIdx) = max(overlapRPGT(:, sel), [], 2);
-                    end;
-                end;
+                    end
+                end
                 
                 % Compute maximum overlap and labels
                 [maxOverlap, ~] = max(overlapRPLabels, [], 2);
@@ -199,26 +199,26 @@ classdef ImdbE2S2 < ImdbCalvin
             end;
             
             % Remove very big blobs
-            if isfield(batchOptsCopy, 'blobMaxSize') && ~isempty(batchOptsCopy.blobMaxSize) && batchOptsCopy.blobMaxSize ~= 1,
+            if isfield(batchOptsCopy, 'blobMaxSize') && ~isempty(batchOptsCopy.blobMaxSize) && batchOptsCopy.blobMaxSize ~= 1
                 imagePixelSize = oriImSize(1) * oriImSize(2);
                 pixelSizesRP = [blobsRP.size]';
                 blobIndsRP = intersect(blobIndsRP, find(pixelSizesRP <= imagePixelSize * batchOptsCopy.blobMaxSize));
-            end;
+            end
             
             % Additional testing options (limit regions etc.)
-            if testMode && isfield(nnOpts.misc, 'testOpts'),
+            if testMode && isfield(nnOpts.misc, 'testOpts')
                 % Default arguments
                 testOpts = nnOpts.misc.testOpts;
                 if ~isfield(testOpts, 'maxSizeRel') || isempty(testOpts.maxSizeRel),
                     maxSizeRel = 1;
                 else
                     maxSizeRel = testOpts.maxSizeRel;
-                end;
+                end
                 if ~isfield(testOpts, 'minSize') || isempty(testOpts.minSize),
                     minSize = 0;
                 else
                     minSize = testOpts.minSize;
-                end;
+                end
                 
                 % Select regions
                 imagePixelSize = oriImSize(1) * oriImSize(2);
@@ -230,55 +230,55 @@ classdef ImdbE2S2 < ImdbCalvin
             % At test time, make sure the whole image is included
             % (otherwise superpixels might be unlabeled!)
             % (this obviously limits the effect of maxSizeRel)
-            if testMode,
+            if testMode
                 wholeImageRegion = find([blobsRP.size] == oriImSize(1) * oriImSize(2), 1);
                 blobIndsRP = union(blobIndsRP, wholeImageRegion);
-            end;
+            end
             
             % Apply selection to relevant fields
             blobsRP = blobsRP(blobIndsRP);
             overlapListRP = overlapListRP(blobIndsRP, :);
-            if roiPool.freeform.use,
+            if roiPool.freeform.use
                 blobMasksRP = blobMasksRP(blobIndsRP);
-            end;
+            end
             
             % Compute pixel-level label frequencies (also used without inv-freqs)
-            if regionToPixel.use && ~weaklySupervised.use,
+            if regionToPixel.use && ~weaklySupervised.use
                 global labelPixelFreqsOriginal; %#ok<TLEV>
                 if isempty(labelPixelFreqsOriginal),
                     [labelPixelFreqsSum, labelPixelImageCount] = obj.dataset.getLabelPixelFreqs();
                     labelPixelFreqsOriginal = labelPixelFreqsSum ./ labelPixelImageCount;
-                end;
+                end
                 
                 % Cutoff extreme frequencies if required
                 % Normalizes the sum to one
-                if isfield(regionToPixel, 'minPixFreq') && ~isempty(regionToPixel.minPixFreq),
+                if isfield(regionToPixel, 'minPixFreq') && ~isempty(regionToPixel.minPixFreq)
                     labelPixelFreqs = freqClampMinimum(labelPixelFreqsOriginal, regionToPixel.minPixFreq);
                 else
                     labelPixelFreqs = labelPixelFreqsOriginal;
-                end;
+                end
             end;
             
             % Merge RP and GT
             blobsAll = blobsRP;
             overlapListAll = overlapListRP;
-            if roiPool.freeform.use,
+            if roiPool.freeform.use
                 blobMasksAll = blobMasksRP;
-            end;
+            end
             
-            if ~batchOptsCopy.removeGT,
+            if ~batchOptsCopy.removeGT
                 % Figure out which superpixels are part of a GT region and
                 % remove GT regions that don't overlap enough with a superpixel
                 % Note: the overlaps are precomputed for speedup
                 pixelSizesSP = [blobsSP.size]';
                 segmentPathSP = [obj.segmentFolderSP, filesep, imageName, '.mat'];
-                if exist(segmentPathSP, 'file'),
+                if exist(segmentPathSP, 'file')
                     segmentStructSP = load(segmentPathSP, 'overlapRatiosSPGT');
                     overlapRatiosSPGT = segmentStructSP.overlapRatiosSPGT;
                 else
                     imagePixelSize = oriImSize(1) * oriImSize(2);
                     overlapRatiosSPGT = computeBlobOverlapSum(blobsSP, blobsGT, imagePixelSize);
-                end;
+                end
                 overlapRatiosSPGT = bsxfun(@rdivide, overlapRatiosSPGT, pixelSizesSP);
                 overlapListGT = sparse(overlapRatiosSPGT' >= batchOptsCopy.overlapThreshGTSP);
                 overlappingGT = full(sum(overlapListGT, 2) > 0);
@@ -286,64 +286,64 @@ classdef ImdbE2S2 < ImdbCalvin
                 % Apply selection to GT
                 blobsGT = blobsGT(overlappingGT);
                 overlapListGT = overlapListGT(overlappingGT, :);
-                if roiPool.freeform.use,
+                if roiPool.freeform.use
                     blobMasksGT = blobMasksGT(overlappingGT);
-                end;
+                end
                 
                 % Merge RP and GT
                 blobsAll = [blobsAll; blobsGT];
                 overlapListAll = [overlapListAll; overlapListGT];
-                if roiPool.freeform.use,
+                if roiPool.freeform.use
                     blobMasksAll = [blobMasksAll; blobMasksGT];
                     assert(numel(blobMasksAll) == size(blobsAll, 1));
-                end;
-            end;
+                end
+            end
             assert(size(blobsAll, 1) == size(overlapListAll, 1));
             
             % Skip images without blobs (no RP and no GT after filtering)
-            if isempty(blobsAll),
+            if isempty(blobsAll)
                 return;
-            end;
+            end
             
             % Create boxes at the very end to avoid inconsistency
             boxesAll = single(cell2mat({blobsAll.rect}'));
             assert(size(blobsAll, 1) == size(boxesAll, 1));
             
             % Store regionToPixel info in a struct
-            if regionToPixel.use,
+            if regionToPixel.use
                 regionToPixelAux.overlapListAll = overlapListAll;
-                if ~testMode && ~weaklySupervised.use,
+                if ~testMode && ~weaklySupervised.use
                     assert(size(spLabelHistos, 1) == numel(blobsSP));
                     regionToPixelAux.labelPixelFreqs = labelPixelFreqs;
                     regionToPixelAux.spLabelHistos = spLabelHistos;
-                end;
-            end;
+                end
+            end
             
             % Flip image, boxes and masks
-            if batchOptsCopy.imageFlipping && rand() >= 0.5,
-                if roiPool.freeform.use,
+            if batchOptsCopy.imageFlipping && rand() >= 0.5
+                if roiPool.freeform.use
                     [image, boxesAll, blobMasksAll] = e2s2_flipImageBoxes(image, boxesAll, oriImSize, blobMasksAll);
                 else
                     [image, boxesAll] = e2s2_flipImageBoxes(image, boxesAll, oriImSize);
-                end;
-            end;
+                end
+            end
             
-            if weaklySupervised.use && ~testMode,
+            if weaklySupervised.use && ~testMode
                 % Get the image-level labels and weights
                 % Note: these should be as similar as possible to the ones
                 % in the regiontopixel layer.
                 [labelNames, labelCount] = obj.dataset.getLabelNames();
                 imLabelNames = obj.dataset.getImLabelList(imageName);
-                if isempty(imLabelNames),
+                if isempty(imLabelNames)
                     % Skip images that have no labels
                     return;
-                end;
+                end
                 imLabelInds = find(ismember(labelNames, imLabelNames));
                 
                 % Determine image-level frequencies
                 % Assume all labels take the same number of pixels in that image
                 % Note: On average it should be: sum(imLabelWeights) = 1
-                if weaklySupervised.invLabelFreqs,
+                if weaklySupervised.invLabelFreqs
                     [labelImFreqs, ~] = obj.dataset.getLabelImFreqs();
                     labelImFreqsNorm = labelImFreqs / sum(labelImFreqs) * labelCount;
                     imLabelWeights = 1 ./ labelImFreqsNorm(imLabelInds);
@@ -355,7 +355,7 @@ classdef ImdbE2S2 < ImdbCalvin
                 else
                     imLabelCount = numel(imLabelInds);
                     imLabelWeights = repmat(1 / imLabelCount, [imLabelCount, 1]);
-                end;
+                end
                 
                 % Reshape to loss layer format
                 imLabelInds    = reshape(imLabelInds, 1, 1, 1, []);
@@ -369,21 +369,21 @@ classdef ImdbE2S2 < ImdbCalvin
             
             % Store in output struct
             inputs = {'input', image, 'oriImSize', oriImSize, 'boxes', boxesAll};
-            if regionToPixel.use,
+            if regionToPixel.use
                 inputs = [inputs, {'regionToPixelAux', regionToPixelAux}];
-            end;
-            if ~testMode,
+            end
+            if ~testMode
                 inputs = [inputs, {'label', []}];
-            end;
-            if roiPool.freeform.use,
+            end
+            if roiPool.freeform.use
                 inputs = [inputs, {'blobMasks', blobMasksAll}];
-            end;
+            end
             if weaklySupervised.use  ...
                     && weaklySupervised.labelPresence.use ...
-                    && ~testMode,
+                    && ~testMode
                 inputs = [inputs, {'labelImage', imLabelInds}];
                 inputs = [inputs, {'weightsImage', imLabelWeights}];
-            end;
+            end
             numElements = 1; % One image
         end
         
@@ -391,23 +391,23 @@ classdef ImdbE2S2 < ImdbCalvin
             % Obtain the indices and ordering of all batches (for this epoch)
             
             batchCount = size(obj.data.(obj.datasetMode), 1);
-            if strcmp(obj.datasetMode, 'train'),
-                if obj.imageSample.use,
+            if strcmp(obj.datasetMode, 'train')
+                if obj.imageSample.use
                     allBatchInds = obj.imageSample.func.(obj.datasetMode)(batchCount);
                 else
                     allBatchInds = randperm(batchCount);
-                end;
-            elseif strcmp(obj.datasetMode, 'val'),
-                if obj.imageSample.use,
+                end
+            elseif strcmp(obj.datasetMode, 'val')
+                if obj.imageSample.use
                     allBatchInds = obj.imageSample.func.(obj.datasetMode)(batchCount);
                 else
                     allBatchInds = 1:batchCount;
-                end;
-            elseif strcmp(obj.datasetMode, 'test'),
+                end
+            elseif strcmp(obj.datasetMode, 'test')
                 allBatchInds = 1:batchCount;
             else
                 error('Error: Unknown datasetMode!');
-            end;
+            end
         end
         
         function switchColorType(obj)
@@ -425,9 +425,9 @@ classdef ImdbE2S2 < ImdbCalvin
             % Update the names of the current proposals/superpixels,
             % matching the current colorType and minSize.
             
-            if ~exist('batchOpts', 'var'),
+            if ~exist('batchOpts', 'var')
                 batchOpts = obj.batchOpts;
-            end;
+            end
             
             colorType = batchOpts.segments.colorTypes{batchOpts.segments.colorTypeIdx};
             minSize = batchOpts.segments.minSize;
@@ -443,9 +443,9 @@ classdef ImdbE2S2 < ImdbCalvin
             % Change color type if option is selected
             % This is not related to LR flipping, but the only way to
             % currently implement this.
-            if obj.batchOpts.segments.switchColorTypesEpoch,
+            if obj.batchOpts.segments.switchColorTypesEpoch
                 obj.switchColorType();
-            end;
+            end
         end
     end
 end
