@@ -137,7 +137,7 @@ switch opts.modelFamily
                 net.removeLayer(name);
             end
         end
-        net.meta.normalization.averageImage = reshape(net.meta.normalization.rgbMean,1,1,3);
+        net.meta.normalization.averageImage = reshape(net.meta.normalization.rgbMean, 1, 1, 3);
         predVar = net.getVarIndex('prediction');
         inputVar = 'input';
         imageNeedsToBeMultiple = true;

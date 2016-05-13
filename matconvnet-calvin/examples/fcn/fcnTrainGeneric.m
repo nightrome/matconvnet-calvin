@@ -99,17 +99,6 @@ end;
 % Setup logfile
 diary(logFilePath);
 
-% if existingEpoch == 0
-%     % Load an existing model
-%     netStruct = load(modelPathFunc(existingEpoch), 'net');
-%     net = dagnn.DagNN.loadobj(netStruct.net);
-%     clearvars netStruct;
-% elseif existingEpoch > 0
-%     net = {};
-% elseif isnan(existingEpoch)
-% 
-% end
-
 % Create imdb
 imdbFcn = ImdbFCN(dataset, expDir, dataRootDir, nnOpts);
 imdbFcn.batchOpts.useInvFreqWeights = useInvFreqWeights;
@@ -117,16 +106,6 @@ imdbFcn.batchOpts.useInvFreqWeights = useInvFreqWeights;
 % Save important settings
 settingsPath = fullfile(nnOpts.expDir, 'settings.mat');
 save(settingsPath, 'callArgs', 'nnOpts', 'imdbFcn');
-
-% % Save net before training %TODO: Move to CalvinNN?
-% if isnan(existingEpoch)
-%     saveStruct.net = net.saveobj();
-%     saveStruct.stats = []; %#ok<STRNU>
-%     modelPath = modelPathFunc(0);
-%     assert(~exist(modelPath, 'file'));
-%     save(modelPath, '-struct', 'saveStruct');
-%     clearvars saveStruct;
-% end
 
 % Create network
 nnClass = FCNNN(netPath, imdbFcn, nnOpts);

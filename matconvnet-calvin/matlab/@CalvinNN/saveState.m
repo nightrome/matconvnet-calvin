@@ -2,7 +2,7 @@ function saveState(obj, fileName)
 % saveState(obj, fileName)
 %
 % Save network and statistics for the current epoch.
-% Files are saved in v7.3 format to allow nets with > 2GB memory.
+% Depending on file size the net is saved in v7.3 format to allow nets with > 2GB size.
 %
 % Copyright by Holger Caesar, 2016
 
