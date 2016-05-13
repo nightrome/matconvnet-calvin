@@ -26,21 +26,19 @@ allBatchInds = state.allBatchInds;
 assert(~isempty(allBatchInds));
 
 % Initialize
-start = tic;
-num = 0;
-targetTime = 3; % Counter to not pollute screen with printf statements
-waitTime = 10;  % How long to wait to update the fprintf statements.
+epochNumElements = 0;
+epochTimer = tic;
+epochTime = 0;
 fprintf('Starting %s epoch: %d\n', obj.imdb.datasetMode, state.epoch);
 
-for t=1:obj.nnOpts.batchSize:numel(allBatchInds),
+for t = 1 : obj.nnOpts.batchSize : numel(allBatchInds)
     batchNumElements = 0;
     
-    for s=1:obj.nnOpts.numSubBatches,
+    for s = 1 : obj.nnOpts.numSubBatches
         % get this image batch and prefetch the next
         batchStart = t + s - 1;
         batchEnd = min(t + obj.nnOpts.batchSize - 1, numel(allBatchInds));
         batchInds = allBatchInds(batchStart : obj.nnOpts.numSubBatches : batchEnd);
-        num = num + numel(batchInds);
         
         % Skip subbatches with no images
         if numel(batchInds) == 0,
@@ -73,6 +71,7 @@ for t=1:obj.nnOpts.batchSize:numel(allBatchInds),
         end
         
         batchNumElements = batchNumElements + numElements;
+        epochNumElements = epochNumElements + numElements;
     end
     
     % Extract learning stats
@@ -86,23 +85,28 @@ for t=1:obj.nnOpts.batchSize:numel(allBatchInds),
     end
     
     % Print learning statistics
-    stats.num = num;
-    stats.time = toc(start);
+    newEpochTime = toc(epochTimer);
+    batchTime = newEpochTime - epochTime;
+    epochTime = newEpochTime;
     
-    if stats.time > targetTime || numel(allBatchInds) <= obj.nnOpts.batchSize
-        targetTime = targetTime + waitTime;
-        fprintf('%s: epoch %02d: %3d/%3d: %.1f Hz', ...
-            obj.imdb.datasetMode, ...
-            state.epoch, ...
-            fix(t / obj.nnOpts.batchSize)+1, ceil(numel(allBatchInds) / obj.nnOpts.batchSize), ...
-            stats.num / stats.time);
-        for field = setdiff(fieldnames(stats)', {'num', 'time', 'results'}) 
-            field = char(field); %#ok<FXSET>
-            fprintf(' %s:', field);
-            fprintf(' %.3f', stats.(field));
-        end
-        fprintf('\n');
+    stats.num = epochNumElements;
+    stats.time = epochTime;
+    
+    curBatch = fix(t / obj.nnOpts.batchSize) + 1;
+    totalBatches = ceil(numel(allBatchInds) / obj.nnOpts.batchSize);
+    currentSpeed = batchNumElements / batchTime;
+    averageSpeed = epochNumElements / epochTime;
+    
+    fprintf('%s: epoch %02d: %3d/%3d:', obj.imdb.datasetMode, state.epoch, ...
+        curBatch, totalBatches);
+    fprintf(' %.1f Hz (%.1f Hz)', averageSpeed, currentSpeed);
+    
+    for field = setdiff(fieldnames(stats)', {'num', 'time', 'results'})
+        field = char(field); %#ok<FXSET>
+        fprintf(' %s:', field);
+        fprintf(' %.3f', stats.(field));
     end
+    fprintf('\n');
 end
 
 % Give back results at test time
