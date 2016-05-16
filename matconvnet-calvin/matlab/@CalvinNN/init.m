@@ -11,7 +11,6 @@ defnnOpts.continue = true;
 defnnOpts.batchSize = 2;
 defnnOpts.numSubBatches = 2;
 defnnOpts.gpus = [];
-defnnOpts.prefetch = false;
 defnnOpts.numEpochs = 16;
 defnnOpts.learningRate = [repmat(1e-3, [1, 12]), repmat(1e-4, [1, 4])];
 defnnOpts.weightDecay = 0.0005;
@@ -23,8 +22,10 @@ defnnOpts.testFn = @(imdb, nnOpts, net, inputs, batchInds) error('Error: Test fu
 defnnOpts.misc = struct(); % fields used by custom layers are stored here
 defnnOpts.plotEval = true;
 
-% Fast R-CNN options
+% Network options
 defnnOpts.convertToTrain = true;
+
+% Fast R-CNN options
 defnnOpts.fastRcnn = true;
 defnnOpts.fastRcnnParams = true; % learning rates and weight decay
 defnnOpts.misc.roiPool.use = true;
@@ -35,7 +36,6 @@ defnnOpts.bboxRegress = true;
 nnOpts = vl_argparse_old(defnnOpts, varargin, 'nonrecursive');
 
 % Check settings
-assert(~nnOpts.prefetch, 'Error: Prefetch is not supported in Matconvnet-Calvin!');
 assert(numel(nnOpts.learningRate) == 1 || numel(nnOpts.learningRate) == nnOpts.numEpochs);
 
 % Do not create directory in evaluation mode

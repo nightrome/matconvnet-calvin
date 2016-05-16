@@ -14,6 +14,8 @@ classdef FCNNN < CalvinNN
             %
             % Does not call the equivalent function in CalvinNN.
             
+            fprintf('Converting test AlexNet-style network to train FCN (1x1 convolutions, loss, etc.)...\n');
+            
             % Get initial model from VGG-VD-16
             obj.net = fcnInitializeModelGeneric(obj.imdb, 'sourceModelPath', obj.nnOpts.misc.netPath, ...
                 'init', obj.nnOpts.misc.init, 'initLinCombPath', obj.nnOpts.misc.initLinCombPath, ...

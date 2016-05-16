@@ -19,6 +19,8 @@ lastConvPoolName = p.Results.lastConvPoolName;
 firstFCName = p.Results.firstFCName;
 finalFCName = p.Results.finalFCName;
 
+fprintf('Converting normal network to Fast R-CNN network (ROI pooling, box regression, etc.)...\n');
+
 %%% Add weights to loss layer. Note that this field remains empty when not
 % given as input. So the loss layers should ignore empty weights.
 softmaxInputs = obj.net.layers(obj.net.getLayerIndex('softmaxloss')).inputs;

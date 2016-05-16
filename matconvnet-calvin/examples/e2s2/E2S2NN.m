@@ -14,6 +14,8 @@ classdef E2S2NN < CalvinNN
             % Run default conversion method
             convertNetwork@CalvinNN(obj);
             
+            fprintf('Converting Fast R-CNN network to End-to-end region based network (region-to-pixel layer, etc.)...\n');
+            
             % Insert a regiontopixel layer before the loss
             if obj.nnOpts.misc.regionToPixel.use,
                 regionToPixelOpts = obj.nnOpts.misc.regionToPixel;

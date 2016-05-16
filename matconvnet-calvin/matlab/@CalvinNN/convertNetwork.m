@@ -6,6 +6,8 @@ function convertNetwork(obj)
 %
 % Copyright by Holger Caesar, 2015
 
+fprintf('Converting test network to train network (dropout, loss, etc.)...\n');
+
 % Add dropout layers after relu6 and relu7
 dropout6Layer = dagnn.DropOut();
 dropout7Layer = dagnn.DropOut();
