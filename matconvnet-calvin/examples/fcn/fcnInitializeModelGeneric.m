@@ -10,7 +10,7 @@ function net = fcnInitializeModelGeneric(imdb, varargin)
 
 opts.sourceModelUrl = 'http://www.vlfeat.org/matconvnet/models/imagenet-vgg-verydeep-16.mat';
 opts.sourceModelPath = 'data/models/imagenet-vgg-verydeep-16.mat';
-opts.adaptClassifier = true; % Changes number of classes to imdb.labelCount
+opts.adaptClassifier = true; % Changes number of classes to imdb.numClasses
 opts.init = 'zeros';
 opts.initLinCombPath = '';
 opts.enableCudnn = false;
@@ -65,12 +65,12 @@ if size(net.params(fc8bIdx).value, 1) ~= 1
     net.params(fc8bIdx).value = net.params(fc8bIdx).value';
 end
 
-% Modify the last fully-connected layer to have labelCount output classes
+% Modify the last fully-connected layer to have numClasses output classes
 if opts.adaptClassifier
     fc8fSize = size(net.params(fc8fIdx).value);
     fc8bSize = size(net.params(fc8bIdx).value);
-    fc8fSize(end) = imdb.labelCount;
-    fc8bSize(end) = imdb.labelCount;
+    fc8fSize(end) = imdb.numClasses;
+    fc8bSize(end) = imdb.numClasses;
     
     if strStartsWith(opts.init, 'lincomb')
         % Load linear combination weights
@@ -97,7 +97,7 @@ if opts.adaptClassifier
         else
             error('Error: Unknown initialization!');
         end
-        targetClassInds = 1:imdb.labelCount;
+        targetClassInds = 1:imdb.numClasses;
         sel = ~isnan(clsClassInds);
         clsClassInds = clsClassInds(sel);
         targetClassInds = targetClassInds(sel);
@@ -151,13 +151,13 @@ net.setLayerOutputs('fc8', {'x38'});
 % Upsampling and prediction layer
 % -------------------------------------------------------------------------
 
-filters = single(bilinear_u(64, imdb.labelCount, imdb.labelCount));
+filters = single(bilinear_u(64, imdb.numClasses, imdb.numClasses));
 net.addLayer('deconv32', ...
     dagnn.ConvTranspose(...
     'size', size(filters), ...
     'upsample', 32, ...
     'crop', [16 16 16 16], ...
-    'numGroups', imdb.labelCount, ...
+    'numGroups', imdb.numClasses, ...
     'hasBias', false), ...
     'x38', 'prediction', 'deconvf');
 

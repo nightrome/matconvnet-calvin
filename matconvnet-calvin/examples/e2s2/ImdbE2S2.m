@@ -47,6 +47,8 @@ classdef ImdbE2S2 < ImdbCalvin
             obj.segmentFolder = segmentFolder;
             obj.updateSegmentNames();
             
+            obj.numClasses = dataset.labelCount;
+            
             % Reset global variables
             global labelPixelFreqsOriginal;
             labelPixelFreqsOriginal = [];

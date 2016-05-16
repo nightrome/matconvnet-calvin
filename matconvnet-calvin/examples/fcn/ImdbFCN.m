@@ -54,7 +54,7 @@ classdef ImdbFCN < ImdbCalvin
                 %%% VOC specific
                 if strStartsWith(obj.dataset.name, 'VOC')
                     % Get PASCAL VOC segmentation dataset plus Berkeley's additional segmentations
-
+                    
                     imdbInt = vocSetup('dataDir', obj.batchOpts.dataDir, ...
                         'edition', obj.batchOpts.vocEdition, ...
                         'includeTest', false, ...
@@ -100,9 +100,6 @@ classdef ImdbFCN < ImdbCalvin
                     imdbInt.translateLabels = false;
                     imdbInt.imageNameToLabelMap = @(imageName) obj.dataset.getImLabelMap(imageName);
                 end
-                
-                % Dataset-independent imdb fields
-                imdbInt.labelCount = obj.dataset.labelCount;
                 
                 % Specify level of supervision for each train image
                 if ~nnOpts.misc.weaklySupervised
@@ -157,8 +154,13 @@ classdef ImdbFCN < ImdbCalvin
             
             % Get training and test/validation subsets
             % We always validate and test on val
-            obj.data.train = find(imdbInt.images.set == 1 & imdbInt.images.segmentation);
-            obj.data.val = find(imdbInt.images.set == 2 & imdbInt.images.segmentation);
+            trainInds = find(imdbInt.images.set == 1 & imdbInt.images.segmentation);
+            valInds   = find(imdbInt.images.set == 2 & imdbInt.images.segmentation);
+            obj.data.train = imdbInt.images.name(trainInds); %#ok<FNDSB>
+            obj.data.val   = imdbInt.images.name(valInds); %#ok<FNDSB>
+            
+            % Dataset-independent imdb fields
+            obj.numClasses = obj.dataset.labelCount;
             
             % Store in class object
             obj.imdb = imdbInt;
@@ -201,132 +203,167 @@ classdef ImdbFCN < ImdbCalvin
             end
             imageIdx = batchIdx;
             
-            % Initializations
-            image = zeros(obj.batchOpts.imageSize(1), obj.batchOpts.imageSize(2), 3, imageCount, 'single');
-            lx = 1 : obj.batchOpts.labelStride : obj.batchOpts.imageSize(2);
-            ly = 1 : obj.batchOpts.labelStride : obj.batchOpts.imageSize(1);
-            labels = zeros(numel(ly), numel(lx), 1, imageCount, 'double'); % must be double for to avoid numerical precision errors in vl_nnloss, when using many classes
-            if nnOpts.misc.weaklySupervised
-                labelsImageCell = cell(imageCount, 1);
+            % Init labels
+            if ~testMode
+                lx = 1 : obj.batchOpts.labelStride : obj.batchOpts.imageSize(2);
+                ly = 1 : obj.batchOpts.labelStride : obj.batchOpts.imageSize(1);
+                labels = zeros(numel(ly), numel(lx), 1, imageCount, 'double'); % must be double for to avoid numerical precision errors in vl_nnloss, when using many classes
+                if nnOpts.misc.weaklySupervised
+                    labelsImageCell = cell(imageCount, 1);
+                end
+                if nnOpts.misc.maskThings
+                    assert(isa(obj.dataset, 'EdiStuffDataset'));
+                    datasetIN = ImageNetDataset();
+                end
+                masksThingsCell = cell(imageCount, 1); % by default this is empty
             end
-            if nnOpts.misc.maskThings
-                assert(isa(obj.dataset, 'EdiStuffDataset'));
-                datasetIN = ImageNetDataset();
-            end
-            masksThingsCell = cell(imageCount, 1); % by default this is empty
             
+            % Get image
             if true
                 % Get image
-                imageName = obj.imdb.images.name{imageIdx};
-                rgb = double(obj.dataset.getImage(imageName)) * 255;
-                if size(rgb,3) == 1
-                    rgb = cat(3, rgb, rgb, rgb);
-                end
+                imageName = obj.data.(obj.datasetMode){imageIdx};
+                imageOri = single(obj.dataset.getImage(imageName)) * 255;
                 
-                % Get pixel-level GT
-                if obj.dataset.annotation.hasPixelLabels || obj.imdb.images.isFullySupervised(imageIdx)
-                    anno = uint16(obj.batchOpts.imageNameToLabelMap(imageName));
+                if ~testMode
+                    image = zeros(obj.batchOpts.imageSize(1), obj.batchOpts.imageSize(2), 3, imageCount, 'single');
                     
-                    % Translate labels s.t. 255 is mapped to 0
-                    if obj.batchOpts.translateLabels,
-                        % Before: 255 = ignore, 0 = bkg, 1:labelCount = classes
-                        % After : 0 = ignore, 1 = bkg, 2:labelCount+1 = classes
-                        anno = mod(anno + 1, 256);
+                    % Crop and rescale image
+                    h = size(imageOri, 1);
+                    w = size(imageOri, 2);
+                    sz = obj.batchOpts.imageSize(1 : 2);
+                    scale = max(h / sz(1), w / sz(2));
+                    scale = scale .* (1 + (rand(1) - .5) / 5);
+                    sy = round(scale * ((1:sz(1)) - sz(1)/2) + h/2);
+                    sx = round(scale * ((1:sz(2)) - sz(2)/2) + w/2);
+                    
+                    % Flip image
+                    if obj.batchOpts.imageFlipping && rand > 0.5
+                        sx = fliplr(sx);
                     end
-                    % 0 = ignore, 1:labelCount = classes
+                    
+                    % Get image indices in valid area
+                    okx = find(1 <= sx & sx <= w);
+                    oky = find(1 <= sy & sy <= h);
+                    image(oky, okx, :, 1) = imageOri(sy(oky), sx(okx), :);
                 else
-                    anno = [];
+                    image = imageOri;
+                    
+                    % Workaround: Limit image size to avoid running out of RAM
+                    maxImSize = 700;
+                    if ~isempty(maxImSize),
+                        maxSize = max(size(image, 1), size(image, 2));
+                        if maxSize > maxImSize,
+                            factor = maxImSize / maxSize;
+                            image = imresize(image, factor);
+                        end;
+                    end;
+                    
+                    % Some networks requires the image to be a multiple of 32 pixels
+                    imageNeedsToBeMultiple = true;
+                    if imageNeedsToBeMultiple
+                        sz = [size(image, 1), size(image, 2)];
+                        sz = round(sz / 32) * 32;
+                        image = imresize(image, sz);
+                    end
                 end
-                
-                % Crop and rescale image
-                h = size(rgb, 1);
-                w = size(rgb, 2);
-                sz = obj.batchOpts.imageSize(1 : 2);
-                scale = max(h / sz(1), w / sz(2));
-                scale = scale .* (1 + (rand(1) - .5) / 5);
-                sy = round(scale * ((1:sz(1)) - sz(1)/2) + h/2);
-                sx = round(scale * ((1:sz(2)) - sz(2)/2) + w/2);
-                
-                % Flip image
-                if obj.batchOpts.imageFlipping && rand > 0.5
-                    sx = fliplr(sx);
-                end
-                
-                % Get image indices in valid area
-                okx = find(1 <= sx & sx <= w);
-                oky = find(1 <= sy & sy <= h);
                 
                 % Subtract mean image
-                image(oky, okx, :, 1) = bsxfun(@minus, rgb(sy(oky), sx(okx), :), obj.batchOpts.rgbMean);
-                
+                image = bsxfun(@minus, image, obj.batchOpts.rgbMean);
+            end
+            
+            % Get labels
+            if true                
                 % Fully supervised: Get pixel level labels
-                if ~isempty(anno)
-                    tlabels = zeros(sz(1), sz(2), 'double');
-                    tlabels(oky,okx) = anno(sy(oky), sx(okx));
-                    tlabels = single(tlabels(ly,lx));
-                    labels(:, :, 1, 1) = tlabels; % 0: ignore
-                end
-                
-                % Weakly supervised: extract image-level labels
-                if nnOpts.misc.weaklySupervised
-                    if ~isempty(anno) && ~all(anno(:) == 0)
-                        % Get image labels from pixel labels
-                        % These are already translated (if necessary)
-                        curLabelsImage = unique(anno);
-                    else
-                        curLabelsImage = obj.dataset.getImLabelInds(imageName);
+                if ~testMode
+                    % Get pixel-level GT
+                    if obj.dataset.annotation.hasPixelLabels || obj.imdb.images.isFullySupervised(imageIdx)
+                        anno = uint16(obj.batchOpts.imageNameToLabelMap(imageName));
                         
                         % Translate labels s.t. 255 is mapped to 0
-                        if obj.batchOpts.translateLabels
-                            curLabelsImage = mod(curLabelsImage + 1, 256);
+                        if obj.batchOpts.translateLabels,
+                            % Before: 255 = ignore, 0 = bkg, 1:n = classes
+                            % After : 0 = ignore, 1 = bkg, 2:n+1 = classes
+                            anno = mod(anno + 1, 256);
                         end
-                        
-                        if obj.dataset.annotation.labelOneIsBg
-                            % Add background label
-                            curLabelsImage = unique([0; curLabelsImage(:)]);
-                        end
+                        % 0 = ignore, 1:n = classes
+                    else
+                        anno = [];
                     end
                     
-                    % Remove invalid pixels
-                    curLabelsImage(curLabelsImage == 0) = [];
-                    
-                    % Store image-level labels
-                    labelsImageCell{1} = single(curLabelsImage(:));
+                    if ~isempty(anno)
+                        tlabels = zeros(sz(1), sz(2), 'double');
+                        tlabels(oky,okx) = anno(sy(oky), sx(okx));
+                        tlabels = single(tlabels(ly, lx));
+                        labels(:, :, 1, 1) = tlabels; % 0: ignore
+                    end
+                end
+                
+                if ~testMode
+                    % Weakly supervised: extract image-level labels
+                    if nnOpts.misc.weaklySupervised
+                        if ~isempty(anno) && ~all(anno(:) == 0)
+                            % Get image labels from pixel labels
+                            % These are already translated (if necessary)
+                            curLabelsImage = unique(anno);
+                        else
+                            curLabelsImage = obj.dataset.getImLabelInds(imageName);
+                            
+                            % Translate labels s.t. 255 is mapped to 0
+                            if obj.batchOpts.translateLabels
+                                curLabelsImage = mod(curLabelsImage + 1, 256);
+                            end
+                            
+                            if obj.dataset.annotation.labelOneIsBg
+                                % Add background label
+                                curLabelsImage = unique([0; curLabelsImage(:)]);
+                            end
+                        end
+                        
+                        % Remove invalid pixels
+                        curLabelsImage(curLabelsImage == 0) = [];
+                        
+                        % Store image-level labels
+                        labelsImageCell{1} = single(curLabelsImage(:));
+                    end
                 end
                 
                 % Optional: Mask out thing pixels
-                if nnOpts.misc.maskThings
-                    % Get mask
-                    longName = datasetIN.shortNameToLongName(imageName);
-                    mask = datasetIN.getImLabelBoxesMask(longName);
-                    
-                    % Resize it if necessary
-                    if size(mask, 1) ~= size(image, 1) || ...
-                            size(mask, 2) ~= size(image, 2)
-                        mask = imresize(mask, [size(image, 1), size(image, 2)]);
+                if ~testMode
+                    if nnOpts.misc.maskThings
+                        % Get mask
+                        longName = datasetIN.shortNameToLongName(imageName);
+                        mask = datasetIN.getImLabelBoxesMask(longName);
+                        
+                        % Resize it if necessary
+                        if size(mask, 1) ~= size(image, 1) || ...
+                                size(mask, 2) ~= size(image, 2)
+                            mask = imresize(mask, [size(image, 1), size(image, 2)]);
+                        end
+                        masksThingsCell{1} = mask;
                     end
-                    masksThingsCell{1} = mask;
                 end
             end
             
             % Extract inverse class frequencies from dataset
-            if obj.batchOpts.useInvFreqWeights,
-                if nnOpts.misc.weaklySupervised,
-                    classWeights = obj.dataset.getLabelImFreqs('train');
+            if ~testMode
+                if obj.batchOpts.useInvFreqWeights,
+                    if nnOpts.misc.weaklySupervised,
+                        classWeights = obj.dataset.getLabelImFreqs('train');
+                    else
+                        classWeights = obj.dataset.getLabelPixelFreqs('train');
+                    end
+                    
+                    % Inv freq and normalize classWeights
+                    classWeights = classWeights ./ sum(classWeights);
+                    nonEmpty = classWeights ~= 0;
+                    classWeights(nonEmpty) = 1 ./ classWeights(nonEmpty);
+                    classWeights = classWeights ./ sum(classWeights);
+                    assert(~any(isnan(classWeights)));
                 else
-                    classWeights = obj.dataset.getLabelPixelFreqs('train');
+                    classWeights = [];
                 end
-                
-                % Inv freq and normalize classWeights
-                classWeights = classWeights ./ sum(classWeights);
-                nonEmpty = classWeights ~= 0;
-                classWeights(nonEmpty) = 1 ./ classWeights(nonEmpty);
-                classWeights = classWeights ./ sum(classWeights);
-                assert(~any(isnan(classWeights)));
-            else
-                classWeights = [];
+                obj.batchOpts.classWeights = classWeights;
             end
-            obj.batchOpts.classWeights = classWeights;
             
             % Move image to GPU
             if strcmp(net.device, 'gpu')
@@ -335,27 +372,29 @@ classdef ImdbFCN < ImdbCalvin
             
             % Store in output struct
             inputs = {'input', image};
-            if obj.dataset.annotation.hasPixelLabels || obj.imdb.images.isFullySupervised(imageIdx)
-                inputs = [inputs, {'label', labels}];
+            if ~testMode
+                if obj.dataset.annotation.hasPixelLabels || obj.imdb.images.isFullySupervised(imageIdx)
+                    inputs = [inputs, {'label', labels}];
+                end
+                if nnOpts.misc.weaklySupervised
+                    assert(~any(cellfun(@(x) isempty(x), labelsImageCell)));
+                    inputs = [inputs, {'labelsImage', labelsImageCell}];
+                end
+                
+                % Instance/pixel weights, can be left empty
+                inputs = [inputs, {'classWeights', obj.batchOpts.classWeights}];
+                
+                % Decide which level of supervision to pick
+                if nnOpts.misc.semiSupervised
+                    % SS
+                    isWeaklySupervised = ~obj.imdb.images.isFullySupervised(batchIdx);
+                else
+                    % FS or WS
+                    isWeaklySupervised = nnOpts.misc.weaklySupervised;
+                end
+                inputs = [inputs, {'isWeaklySupervised', isWeaklySupervised}];
+                inputs = [inputs, {'masksThingsCell', masksThingsCell}];
             end
-            if nnOpts.misc.weaklySupervised
-                assert(~any(cellfun(@(x) isempty(x), labelsImageCell)));
-                inputs = [inputs, {'labelsImage', labelsImageCell}];
-            end
-            
-            % Instance/pixel weights, can be left empty
-            inputs = [inputs, {'classWeights', obj.batchOpts.classWeights}];
-            
-            % Decide which level of supervision to pick
-            if nnOpts.misc.semiSupervised
-                % SS
-                isWeaklySupervised = ~obj.imdb.images.isFullySupervised(batchIdx);
-            else
-                % FS or WS
-                isWeaklySupervised = nnOpts.misc.weaklySupervised;
-            end
-            inputs = [inputs, {'isWeaklySupervised', isWeaklySupervised}];
-            inputs = [inputs, {'masksThingsCell', masksThingsCell}];
             numElements = 1; % One image
         end
         

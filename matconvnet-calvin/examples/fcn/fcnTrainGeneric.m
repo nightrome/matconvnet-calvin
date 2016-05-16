@@ -112,8 +112,3 @@ nnClass = FCNNN(netPath, imdbFcn, nnOpts);
 
 % Train the network
 nnClass.train();
-
-% Output stats
-stats = nnClass.stats; %#ok<NASGU>
-statsPath = fullfile(nnOpts.expDir, 'stats.mat');
-save(statsPath, 'stats');
