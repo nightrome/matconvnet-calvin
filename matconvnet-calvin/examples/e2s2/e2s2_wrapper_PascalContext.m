@@ -81,7 +81,6 @@ trainValList = rand(numel(imageListTrn), 1) <= trainValRatio;
 imdb.data.train = imageListTrn( trainValList);
 imdb.data.val   = imageListTrn(~trainValList);
 imdb.data.test  = imageListTst;
-imdb.numClasses = dataset.labelCount;
 imdb.batchOpts.segments = structOverwriteFields(imdb.batchOpts.segments, segments);
 imdb.updateSegmentNames();
 
