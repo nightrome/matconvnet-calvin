@@ -28,8 +28,8 @@ classdef FCNNN < CalvinNN
                 % upgrade model fto FCN8s
                 obj.net = fcnInitializeModel8sGeneric(obj.imdb.numClasses, obj.net);
             end
-            obj.net.meta.normalization.rgbMean = obj.imdb.imdb.rgbMean;
-            obj.net.meta.classes = obj.imdb.imdb.classes.name;
+            obj.net.meta.normalization.rgbMean = obj.imdb.batchOpts.rgbMean;
+            obj.net.meta.classes = obj.imdb.batchOpts.classes.name;
             
             if obj.nnOpts.misc.weaklySupervised
                 wsPresentWeight = 1 / (1 + wsUseAbsent);

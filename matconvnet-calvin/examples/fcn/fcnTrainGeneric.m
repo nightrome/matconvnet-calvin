@@ -100,7 +100,7 @@ end;
 diary(logFilePath);
 
 % Create imdb
-imdbFcn = ImdbFCN(dataset, expDir, dataRootDir, nnOpts);
+imdbFcn = ImdbFCN(dataset, dataRootDir, nnOpts);
 imdbFcn.batchOpts.useInvFreqWeights = useInvFreqWeights;
 
 % Save important settings

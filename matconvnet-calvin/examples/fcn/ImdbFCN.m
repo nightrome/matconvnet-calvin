@@ -8,18 +8,14 @@ classdef ImdbFCN < ImdbCalvin
     properties
         % Set in constructor
         dataset
-        imdb
         
         batchOpts = struct();
     end
     methods
-        function obj = ImdbFCN(dataset, expDir, dataRootDir, nnOpts)
+        function obj = ImdbFCN(dataset, dataRootDir, nnOpts)
             % Call default constructor
             obj = obj@ImdbCalvin();
             obj.dataset = dataset;
-            
-            % Set folders and files
-            obj.batchOpts.imdbPath = fullfile(expDir, 'imdb.mat');
             
             % FCN-specific
             obj.batchOpts.imageSize = [512, 512] - 128;
@@ -48,122 +44,125 @@ classdef ImdbFCN < ImdbCalvin
             %
             % Creates or load the current VOC-style IMDB.
             
-            if exist(obj.batchOpts.imdbPath, 'file')
-                imdbInt = load(obj.batchOpts.imdbPath);
-            else
-                %%% VOC specific
-                if strStartsWith(obj.dataset.name, 'VOC')
-                    % Get PASCAL VOC segmentation dataset plus Berkeley's additional segmentations
-                    
-                    imdbInt = vocSetup('dataDir', obj.batchOpts.dataDir, ...
+            %%% VOC specific
+            if strStartsWith(obj.dataset.name, 'VOC')
+                % Get PASCAL VOC segmentation dataset plus Berkeley's additional segmentations
+                
+                % Load imdbVoc
+                imdbPath = fullfile(nnOpts.expDir, 'imdbVoc.mat');
+                if exist(imdbPath, 'file')
+                    load(imdbPath, 'imdbVoc', 'rgbStats');
+                else
+                    imdbVoc = vocSetup('dataDir', obj.batchOpts.dataDir, ...
                         'edition', obj.batchOpts.vocEdition, ...
                         'includeTest', false, ...
                         'includeSegmentation', true, ...
                         'includeDetection', false);
                     if obj.batchOpts.vocAdditionalSegmentations
-                        imdbInt = vocSetupAdditionalSegmentations(imdbInt, 'dataDir', obj.batchOpts.dataDir);
+                        imdbVoc = vocSetupAdditionalSegmentations(imdbVoc, 'dataDir', obj.batchOpts.dataDir);
                     end
+                    rgbStats = getDatasetStatistics(imdbVoc);
                     
-                    stats = getDatasetStatistics(imdbInt);
-                    imdbInt.rgbMean = stats.rgbMean;
-                    imdbInt.translateLabels = true;
-                    imdbInt.imageNameToLabelMap = @(imageName) imread(sprintf(obj.imdb.paths.classSegmentation, imageName));
-                else
-                    %%% Other datasets
-                    % Get labels and image path
-                    imdbInt.classes.name = obj.dataset.getLabelNames();
-                    imdbInt.paths.image = fullfile(obj.dataset.getImagePath(), sprintf('%%s%s', obj.dataset.imageExt));
-                    
-                    % Get trn + tst/val images
-                    imageListTrn = obj.dataset.getImageListTrn();
-                    imageListTst = obj.dataset.getImageListTst();
-                    
-                    % Remove images without labels
-                    missingImageIndicesTrn = obj.dataset.getMissingImageIndices('train');
-                    imageListTrn(missingImageIndicesTrn) = [];
-                    % TODO: is it a good idea to remove test images?
-                    % (only doing it on non-competitive EdiStuff
-                    if isa(obj.dataset, 'EdiStuffDataset') || isa(obj.dataset, 'EdiStuffSubsetDataset')
-                        missingImageIndicesTst = obj.dataset.getMissingImageIndices('test');
-                        imageListTst(missingImageIndicesTst) = [];
-                    end
-                    imageCountTrn = numel(imageListTrn);
-                    imageCountTst = numel(imageListTst);
-                    
-                    imdbInt.images.name = [imageListTrn; imageListTst];
-                    imdbInt.images.segmentation = true(imageCountTrn+imageCountTst, 1);
-                    imdbInt.images.set = nan(imageCountTrn+imageCountTst, 1);
-                    imdbInt.images.set(1:imageCountTrn) = 1;
-                    imdbInt.images.set(imageCountTrn+1:end) = 2;
-                    
-                    imdbInt.rgbMean = obj.dataset.getMeanColor();
-                    imdbInt.translateLabels = false;
-                    imdbInt.imageNameToLabelMap = @(imageName) obj.dataset.getImLabelMap(imageName);
+                    save(imdbPath, 'imdbVoc', 'rgbStats');
                 end
+                obj.batchOpts = structOverwriteFields(obj.batchOpts, imdbVoc);
                 
-                % Specify level of supervision for each train image
-                if ~nnOpts.misc.weaklySupervised
-                    % FS
-                    imdbInt.images.isFullySupervised = true(numel(imdbInt.images.name), 1);
-                elseif ~semiSupervised
-                    % WS
-                    imdbInt.images.isFullySupervised = false(numel(imdbInt.images.name), 1);
-                else
-                    % SS: Set x% of train and all val to true
-                    imdbInt.images.isFullySupervised = true(numel(imdbInt.images.name), 1);
-                    if isa(obj.dataset, 'EdiStuffDataset')
-                        selWS = find(~ismember(imdbInt.images.name, obj.dataset.datasetFS.getImageListTrn()));
-                        assert(numel(selWS) == 18431);
-                    else
-                        selTrain = find(imdbInt.images.set == 1);
-                        selTrain = selTrain(randperm(numel(selTrain)));
-                        selWS = selTrain((selTrain / numel(selTrain)) >= semiSupervisedRate);
-                    end
-                    imdbInt.images.isFullySupervised(selWS) = false;
-                    
-                    if nnOpts.misc.semiSupervisedOnlyFS
-                        % Keep x% of train and all val
-                        selFS = imdbInt.images.isFullySupervised(:) | imdbInt.images.set(:) == 2;
-                        imdbInt.images.name = imdbInt.images.name(selFS);
-                        imdbInt.images.set = imdbInt.images.set(selFS);
-                        imdbInt.images.segmentation = imdbInt.images.segmentation(selFS);
-                        imdbInt.images.isFullySupervised = imdbInt.images.isFullySupervised(selFS);
-                        
-                        if strStartsWith(obj.dataset.name, 'VOC')
-                            imdbInt.images.id = imdbInt.images.id(selFS);
-                            imdbInt.images.classification = imdbInt.images.classification(selFS);
-                            imdbInt.images.size = imdbInt.images.size(:, selFS);
-                        end
-                    end
+                obj.batchOpts.rgbMean = rgbStats.rgbMean;
+                obj.batchOpts.rgbMean = reshape(obj.batchOpts.rgbMean, [1 1 3]);
+                obj.batchOpts.translateLabels = true;
+                obj.batchOpts.imageNameToLabelMap = @(imageName) imread(sprintf(obj.batchOpts.paths.classSegmentation, imageName));
+            else
+                %%% Other datasets
+                % Get labels and image path
+                obj.batchOpts.classes.name = obj.dataset.getLabelNames();
+                obj.batchOpts.paths.image = fullfile(obj.dataset.getImagePath(), sprintf('%%s%s', obj.dataset.imageExt));
+                
+                % Get trn + tst/val images
+                imageListTrn = obj.dataset.getImageListTrn();
+                imageListTst = obj.dataset.getImageListTst();
+                
+                % Remove images without labels
+                missingImageIndicesTrn = obj.dataset.getMissingImageIndices('train');
+                imageListTrn(missingImageIndicesTrn) = [];
+                % TODO: is it a good idea to remove test images?
+                % (only doing it on non-competitive EdiStuff
+                if isa(obj.dataset, 'EdiStuffDataset') || isa(obj.dataset, 'EdiStuffSubsetDataset')
+                    missingImageIndicesTst = obj.dataset.getMissingImageIndices('test');
+                    imageListTst(missingImageIndicesTst) = [];
                 end
+                imageCountTrn = numel(imageListTrn);
+                imageCountTst = numel(imageListTst);
                 
-                % Make sure val images are always fully supervised
-                imdbInt.images.isFullySupervised(imdbInt.images.set == 2) = true;
+                obj.batchOpts.images.name = [imageListTrn; imageListTst];
+                obj.batchOpts.images.segmentation = true(imageCountTrn+imageCountTst, 1);
+                obj.batchOpts.images.set = nan(imageCountTrn+imageCountTst, 1);
+                obj.batchOpts.images.set(1:imageCountTrn) = 1;
+                obj.batchOpts.images.set(imageCountTrn+1:end) = 2;
                 
-                % Print overview of the fully and weakly supervised number of training
-                % images
-                fsCount = sum( imdbInt.images.isFullySupervised(:) & imdbInt.images.set(:) == 1);
-                wsCount = sum(~imdbInt.images.isFullySupervised(:) & imdbInt.images.set(:) == 1);
-                fsRatio = fsCount / (fsCount+wsCount);
-                wsRatio = 1 - fsRatio;
-                fprintf('Images in train: %d FS (%.1f%%), %d WS (%.1f%%)...\n', fsCount, fsRatio * 100, wsCount, wsRatio * 100);
-                
-                % Save imdb
-                save(obj.batchOpts.imdbPath, '-struct', 'imdbInt');
+                obj.batchOpts.rgbMean = obj.dataset.getMeanColor();
+                obj.batchOpts.rgbMean = reshape(obj.batchOpts.rgbMean, [1 1 3]);
+                obj.batchOpts.translateLabels = false;
+                obj.batchOpts.imageNameToLabelMap = @(imageName) obj.dataset.getImLabelMap(imageName);
             end
+            
+            % Specify level of supervision for each train image
+            if ~nnOpts.misc.weaklySupervised
+                % FS
+                obj.batchOpts.images.isFullySupervised = true(numel(obj.batchOpts.images.name), 1);
+            elseif ~semiSupervised
+                % WS
+                obj.batchOpts.images.isFullySupervised = false(numel(obj.batchOpts.images.name), 1);
+            else
+                % SS: Set x% of train and all val to true
+                obj.batchOpts.images.isFullySupervised = true(numel(obj.batchOpts.images.name), 1);
+                if isa(obj.dataset, 'EdiStuffDataset')
+                    selWS = find(~ismember(obj.batchOpts.images.name, obj.dataset.datasetFS.getImageListTrn()));
+                    assert(numel(selWS) == 18431);
+                else
+                    selTrain = find(obj.batchOpts.images.set == 1);
+                    selTrain = selTrain(randperm(numel(selTrain)));
+                    selWS = selTrain((selTrain / numel(selTrain)) >= semiSupervisedRate);
+                end
+                obj.batchOpts.images.isFullySupervised(selWS) = false;
+                
+                if nnOpts.misc.semiSupervisedOnlyFS
+                    % Keep x% of train and all val
+                    selFS = obj.batchOpts.images.isFullySupervised(:) | obj.batchOpts.images.set(:) == 2;
+                    obj.batchOpts.images.name = obj.batchOpts.images.name(selFS);
+                    obj.batchOpts.images.set = obj.batchOpts.images.set(selFS);
+                    obj.batchOpts.images.segmentation = obj.batchOpts.images.segmentation(selFS);
+                    obj.batchOpts.images.isFullySupervised = obj.batchOpts.images.isFullySupervised(selFS);
+                    
+                    if strStartsWith(obj.dataset.name, 'VOC')
+                        obj.batchOpts.images.id = obj.batchOpts.images.id(selFS);
+                        obj.batchOpts.images.classification = obj.batchOpts.images.classification(selFS);
+                        obj.batchOpts.images.size = obj.batchOpts.images.size(:, selFS);
+                    end
+                end
+            end
+            
+            % Make sure val images are always fully supervised
+            obj.batchOpts.images.isFullySupervised(obj.batchOpts.images.set == 2) = true;
+            
+            % Print overview of the fully and weakly supervised number of training
+            % images
+            fsCount = sum( obj.batchOpts.images.isFullySupervised(:) & obj.batchOpts.images.set(:) == 1);
+            wsCount = sum(~obj.batchOpts.images.isFullySupervised(:) & obj.batchOpts.images.set(:) == 1);
+            fsRatio = fsCount / (fsCount+wsCount);
+            wsRatio = 1 - fsRatio;
+            fprintf('Images in train: %d FS (%.1f%%), %d WS (%.1f%%)...\n', fsCount, fsRatio * 100, wsCount, wsRatio * 100);
             
             % Get training and test/validation subsets
             % We always validate and test on val
-            trainInds = find(imdbInt.images.set == 1 & imdbInt.images.segmentation);
-            valInds   = find(imdbInt.images.set == 2 & imdbInt.images.segmentation);
-            obj.data.train = imdbInt.images.name(trainInds); %#ok<FNDSB>
-            obj.data.val   = imdbInt.images.name(valInds); %#ok<FNDSB>
+            trainInds = find(obj.batchOpts.images.set == 1 & obj.batchOpts.images.segmentation);
+            valInds   = find(obj.batchOpts.images.set == 2 & obj.batchOpts.images.segmentation);
+            obj.data.train = obj.batchOpts.images.name(trainInds); %#ok<FNDSB>
+            obj.data.val   = obj.batchOpts.images.name(valInds); %#ok<FNDSB>
+            obj.data.train = obj.data.train(:);
+            obj.data.val   = obj.data.val(:);
             
             % Dataset-independent imdb fields
             obj.numClasses = obj.dataset.labelCount;
-            
-            % Store in class object
-            obj.imdb = imdbInt;
         end
         
         function[inputs, numElements] = getBatch(obj, batchIdx, net, nnOpts)
@@ -177,31 +176,14 @@ classdef ImdbFCN < ImdbCalvin
             % Check inputs
             assert(~isempty(obj.datasetMode));
             assert(numel(batchIdx) == 1);
-            
-            % Dummy init
-            inputs = {};
-            numElements = 0;
-            
-            % Determine whether testing
-            testMode = strcmp(obj.datasetMode, 'test');
-            
-            %%%
+            imageCount = numel(batchIdx);
+            imageIdx = batchIdx;
             
             % Check settings
             assert(~isempty(obj.batchOpts.rgbMean));
-            obj.batchOpts.rgbMean = reshape(obj.batchOpts.rgbMean, [1 1 3]);
             
-            % Make sure that the subbatch size is one image
-            imageCount = numel(batchIdx);
-            if imageCount == 0
-                % Empty batch
-                return;
-            elseif imageCount == 1
-                % Default
-            else
-                error('Error: GetBatch cannot process more than 1 image at a time!');
-            end
-            imageIdx = batchIdx;
+            % Determine whether testing
+            testMode = strcmp(obj.datasetMode, 'test');
             
             % Init labels
             if ~testMode
@@ -272,11 +254,11 @@ classdef ImdbFCN < ImdbCalvin
             end
             
             % Get labels
-            if true                
+            if true
                 % Fully supervised: Get pixel level labels
                 if ~testMode
                     % Get pixel-level GT
-                    if obj.dataset.annotation.hasPixelLabels || obj.imdb.images.isFullySupervised(imageIdx)
+                    if obj.dataset.annotation.hasPixelLabels || obj.batchOpts.images.isFullySupervised(imageIdx)
                         anno = uint16(obj.batchOpts.imageNameToLabelMap(imageName));
                         
                         % Translate labels s.t. 255 is mapped to 0
@@ -373,7 +355,8 @@ classdef ImdbFCN < ImdbCalvin
             % Store in output struct
             inputs = {'input', image};
             if ~testMode
-                if obj.dataset.annotation.hasPixelLabels || obj.imdb.images.isFullySupervised(imageIdx)
+                %TODO: fix imageIdx relative to subset
+                if obj.dataset.annotation.hasPixelLabels || obj.batchOpts.images.isFullySupervised(imageIdx)
                     inputs = [inputs, {'label', labels}];
                 end
                 if nnOpts.misc.weaklySupervised
@@ -387,7 +370,7 @@ classdef ImdbFCN < ImdbCalvin
                 % Decide which level of supervision to pick
                 if nnOpts.misc.semiSupervised
                     % SS
-                    isWeaklySupervised = ~obj.imdb.images.isFullySupervised(batchIdx);
+                    isWeaklySupervised = ~obj.batchOpts.images.isFullySupervised(imageIdx);
                 else
                     % FS or WS
                     isWeaklySupervised = nnOpts.misc.weaklySupervised;
@@ -401,13 +384,13 @@ classdef ImdbFCN < ImdbCalvin
         function[allBatchInds] = getAllBatchInds(obj)
             % Obtain the indices and ordering of all batches (for this epoch)
             
-            batchCount = size(obj.data.(obj.datasetMode), 1);
+            batchCount = numel(obj.data.(obj.datasetMode));
             if strcmp(obj.datasetMode, 'train')
-                allBatchInds = randperm(batchCount);
+                allBatchInds = randperm(batchCount)';
             elseif strcmp(obj.datasetMode, 'val'),
-                allBatchInds = 1:batchCount;
+                allBatchInds = (1:batchCount)';
             elseif strcmp(obj.datasetMode, 'test'),
-                allBatchInds = 1:batchCount;
+                allBatchInds = (1:batchCount)';
             else
                 error('Error: Unknown datasetMode!');
             end
