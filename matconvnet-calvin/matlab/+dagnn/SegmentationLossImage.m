@@ -155,7 +155,7 @@ classdef SegmentationLossImage < dagnn.Loss
             % - dzdImageSoftmax(ci(~obj.isPresent)) changes the sign
             
             %%%% Get inputs
-            assert(numel(inputs) == 3);
+            assert(numel(inputs) == 4);
             scoresMap = inputs{1};
             imageSizeY = size(scoresMap, 1);
             labelCount = size(scoresMap, 3);
