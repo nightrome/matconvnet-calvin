@@ -11,7 +11,7 @@ mask = nan(sampleCount, 1, 'like', obj.scoresMapSoftmax); % contains the coordin
 for imageIdx = 1 : imageCount
     offset = (imageIdx-1) * labelCount;
     
-    if ~isempty(masksThingsCell{imageIdx})
+    if ~isempty(masksThingsCell) && ~isempty(masksThingsCell{imageIdx})
         maskThings = masksThingsCell{imageIdx};
         if isa(obj.scoresMapSoftmax, 'gpuArray')
             maskThings = gpuArray(maskThings);
@@ -30,7 +30,7 @@ for imageIdx = 1 : imageCount
         end
         
         % Remove things such that the highest score lies on stuff
-        if ~isempty(masksThingsCell{imageIdx})
+        if ~isempty(masksThingsCell) && ~isempty(masksThingsCell{imageIdx})
             s = bsxfun(@times, s, ~maskThings);
             
             % DEBUG
