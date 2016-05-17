@@ -47,10 +47,9 @@ classdef ImdbFCN < ImdbCalvin
             %%% VOC specific
             if strStartsWith(obj.dataset.name, 'VOC')
                 % Get PASCAL VOC segmentation dataset plus Berkeley's additional segmentations
-                
-                % Load imdbVoc
                 imdbPath = fullfile(nnOpts.expDir, 'imdbVoc.mat');
                 if exist(imdbPath, 'file')
+                    % Load imdbVoc
                     load(imdbPath, 'imdbVoc', 'rgbStats');
                 else
                     imdbVoc = vocSetup('dataDir', obj.batchOpts.dataDir, ...

@@ -14,11 +14,11 @@ run = 28;
 exp = 0;
 netName = 'VGG16';
 dataset = SiftFlowDataset();
-gpus = 1;
+gpus = 4;
 roiPool.use = true;
-roiPool.freeform.use = false;
-roiPool.freeform.combineFgBox = false;
-roiPool.freeform.shareWeights = false;
+roiPool.freeform.use = true;
+roiPool.freeform.combineFgBox = true;
+roiPool.freeform.shareWeights = true;
 regionToPixel.use = true;
 regionToPixel.minPixFreq = [];
 regionToPixel.inverseLabelFreqs = true;
@@ -52,9 +52,9 @@ end;
 
 % Create paths
 if strcmp(netName, 'AlexNet'),
-    netFileName = 'imagenet-caffe-alex';
+    netFileName = 'beta16/imagenet-caffe-alex';
 elseif strcmp(netName, 'VGG16'),
-    netFileName = 'imagenet-vgg-verydeep-16';
+    netFileName = 'beta16/imagenet-vgg-verydeep-16';
 else
     error('Error: Unknown netName!');
 end;
