@@ -21,9 +21,13 @@ classdef SegmentationLossPixel < dagnn.Loss
 
             % Get inputs
             assert(numel(inputs) == 3);
-            scores = inputs{1};
+            scoresMap = inputs{1};
             labels = inputs{2};
             classWeights = inputs{3};
+            
+            % Check inputs
+            assert(~isempty(scoresMap));
+            assert(~isempty(labels));
             
             % Compute invMass
             mass = sum(sum(labels > 0, 2), 1); % Removed the +1
@@ -64,13 +68,13 @@ classdef SegmentationLossPixel < dagnn.Loss
                 assert(~any(isnan(obj.instanceWeights(:))))
             end
             
-            outputs{1} = vl_nnloss(scores, labels, [], ...
+            outputs{1} = vl_nnloss(scoresMap, labels, [], ...
                 'loss', obj.loss, ...
                 'instanceWeights', obj.instanceWeights);
             
             assert(gather(~isnan(outputs{1})));
             n = obj.numAveraged;
-            m = n + size(scores, 4);
+            m = n + size(scoresMap, 4);
             obj.average = (n * obj.average + double(gather(outputs{1}))) / m;
             obj.numAveraged = m;
         end
@@ -78,10 +82,10 @@ classdef SegmentationLossPixel < dagnn.Loss
         function [derInputs, derParams] = backward(obj, inputs, params, derOutputs) %#ok<INUSL>
             
             % Get inputs
-            scores = inputs{1};
+            scoresMap = inputs{1};
             labels = inputs{2};
             
-            derInputs{1} = vl_nnloss(scores, labels, derOutputs{1}, ...
+            derInputs{1} = vl_nnloss(scoresMap, labels, derOutputs{1}, ...
                 'loss', obj.loss, ...
                 'instanceWeights', obj.instanceWeights);
             derInputs{2} = [];

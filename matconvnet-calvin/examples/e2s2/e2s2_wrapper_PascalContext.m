@@ -20,7 +20,7 @@ roiPool.freeform.shareWeights = true;
 regionToPixel.use = true;
 regionToPixel.minPixFreq = [];
 regionToPixel.inverseLabelFreqs = false;
-regionToPixel.replicateUnpureSPs = true;
+regionToPixel.replicateUnpureSPs = false;
 regionToPixel.normalizeImageMass = true;
 trainValRatio = 0.9;
 randSeed = 20;
@@ -38,6 +38,7 @@ segments.switchColorTypesBatch = true;
 segments.colorTypes = {'Rgb', 'Hsv', 'Lab'};
 segments.colorTypeIdx = 1;
 fastRcnnParams = false;
+mapToPixels = true;
 
 % Initialize random number generator seed
 if ~isempty(randSeed);
@@ -98,6 +99,7 @@ nnOpts.misc.roiPool = roiPool;
 nnOpts.misc.regionToPixel = regionToPixel;
 nnOpts.bboxRegress = false;
 nnOpts.fastRcnnParams = fastRcnnParams;
+nnOpts.misc.mapToPixels = mapToPixels;
 
 % Save the current options
 netOptsPath = fullfile(outputFolder, 'net-opts.mat');

@@ -115,6 +115,9 @@ classdef ImdbE2S2 < ImdbCalvin
                     assert(weaklySupervised.labelPresence.use);
                     batchOptsCopy.subsample = false;
                     batchOptsCopy.removeGT = true;
+                    
+                    % Optionally compute accuracy at training time
+                    weaklySupervised.computeAcc = obj.dataset.annotation.hasPixelLabels;
                 end;
             else
                 weaklySupervised.use = false;
@@ -245,7 +248,7 @@ classdef ImdbE2S2 < ImdbCalvin
             end
             
             % Compute pixel-level label frequencies (also used without inv-freqs)
-            if regionToPixel.use && ~weaklySupervised.use
+            if regionToPixel.use && (~weaklySupervised.use || weaklySupervised.computeAcc)
                 global labelPixelFreqsOriginal; %#ok<TLEV>
                 if isempty(labelPixelFreqsOriginal),
                     [labelPixelFreqsSum, labelPixelImageCount] = obj.dataset.getLabelPixelFreqs();
@@ -314,8 +317,9 @@ classdef ImdbE2S2 < ImdbCalvin
             % Store regionToPixel info in a struct
             if regionToPixel.use
                 regionToPixelAux.overlapListAll = overlapListAll;
-                if ~testMode && ~weaklySupervised.use
+                if ~testMode && (~weaklySupervised.use || weaklySupervised.computeAcc)
                     assert(size(spLabelHistos, 1) == numel(blobsSP));
+                    assert(size(spLabelHistos, 2) == obj.numClasses);
                     regionToPixelAux.labelPixelFreqs = labelPixelFreqs;
                     regionToPixelAux.spLabelHistos = spLabelHistos;
                 end
@@ -330,40 +334,35 @@ classdef ImdbE2S2 < ImdbCalvin
                 end
             end
             
+            if nnOpts.misc.mapToPixels && ~testMode
+                if weaklySupervised.use
+                    classWeights = obj.dataset.getLabelImFreqs();
+                else
+                    classWeights = obj.dataset.getLabelPixelFreqs();
+                end
+                classWeights = classWeights ./ sum(classWeights);
+                nonEmpty = classWeights ~= 0;
+                classWeights(nonEmpty) = 1 ./ classWeights(nonEmpty);
+                classWeights = classWeights ./ sum(classWeights);
+                assert(~any(isnan(classWeights)));
+                
+                % Reshape to loss layer format
+                classWeights = reshape(classWeights, 1, 1, 1, []);
+            else
+                classWeights = [];
+            end
+            
             if weaklySupervised.use && ~testMode
                 % Get the image-level labels and weights
                 % Note: these should be as similar as possible to the ones
                 % in the regiontopixel layer.
-                [labelNames, labelCount] = obj.dataset.getLabelNames();
+                labelNames = obj.dataset.getLabelNames();
                 imLabelNames = obj.dataset.getImLabelList(imageName);
                 if isempty(imLabelNames)
                     % Skip images that have no labels
                     return;
                 end
-                imLabelInds = find(ismember(labelNames, imLabelNames));
-                
-                % Determine image-level frequencies
-                % Assume all labels take the same number of pixels in that image
-                % Note: On average it should be: sum(imLabelWeights) = 1
-                if weaklySupervised.invLabelFreqs
-                    [labelImFreqs, ~] = obj.dataset.getLabelImFreqs();
-                    labelImFreqsNorm = labelImFreqs / sum(labelImFreqs) * labelCount;
-                    imLabelWeights = 1 ./ labelImFreqsNorm(imLabelInds);
-                    
-                    % Renormalize mass to (average of) 1
-                    if weaklySupervised.normalizeImageMass,
-                        imLabelWeights = imLabelWeights ./ sum(imLabelWeights);
-                    end;
-                else
-                    imLabelCount = numel(imLabelInds);
-                    imLabelWeights = repmat(1 / imLabelCount, [imLabelCount, 1]);
-                end
-                
-                % Reshape to loss layer format
-                imLabelInds    = reshape(imLabelInds, 1, 1, 1, []);
-                imLabelWeights = reshape(imLabelWeights, 1, 1, 1, []);
-                assert(numel(imLabelInds) == numel(imLabelWeights));
-                assert(~any(imLabelWeights == 0)); %temporary check for bugs, to be removed
+                labelsImage = find(ismember(labelNames, imLabelNames));
             end;
             
             % Convert boxes to transposed Girshick format
@@ -375,7 +374,7 @@ classdef ImdbE2S2 < ImdbCalvin
                 inputs = [inputs, {'regionToPixelAux', regionToPixelAux}];
             end
             if ~testMode
-                inputs = [inputs, {'label', []}];
+                inputs = [inputs, {'labelsSP', []}];
             end
             if roiPool.freeform.use
                 inputs = [inputs, {'blobMasks', blobMasksAll}];
@@ -383,8 +382,20 @@ classdef ImdbE2S2 < ImdbCalvin
             if weaklySupervised.use  ...
                     && weaklySupervised.labelPresence.use ...
                     && ~testMode
-                inputs = [inputs, {'labelImage', imLabelInds}];
-                inputs = [inputs, {'weightsImage', imLabelWeights}];
+                
+                % For the SuperPixelToPixelMap layer
+                inputs = [inputs, {'blobsSP', blobsSP}];
+                
+                % For the SegmentationLossImage layer
+                inputs = [inputs, {'labelsImage', {labelsImage}}];
+                inputs = [inputs, {'masksThingsCell', {}}];
+
+            end
+            if nnOpts.misc.mapToPixels && ~testMode
+                % For the SegmentationLoss* and SegmentationAccuracyFlexible layers
+                labels = obj.dataset.getImLabelMap(imageName);
+                inputs = [inputs, {'labels', labels}];
+                inputs = [inputs, {'classWeights', classWeights}];
             end
             numElements = 1; % One image
         end

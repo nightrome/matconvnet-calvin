@@ -16,30 +16,34 @@ classdef E2S2NN < CalvinNN
             
             fprintf('Converting Fast R-CNN network to End-to-end region based network (region-to-pixel layer, etc.)...\n');
             
+            % Rename variables for use on superpixel level (not pixel-level)
+            obj.net.renameVar('label', 'labelsSP');
+            obj.net.renameVar('instanceWeights', 'instanceWeightsSP');
+            
             % Insert a regiontopixel layer before the loss
-            if obj.nnOpts.misc.regionToPixel.use,
+            if obj.nnOpts.misc.regionToPixel.use
                 regionToPixelOpts = obj.nnOpts.misc.regionToPixel;
                 regionToPixelOpts = rmfield(regionToPixelOpts, 'use');
                 regionToPixelOpts = struct2Varargin(regionToPixelOpts);
                 regionToPixelBlock = dagnn.RegionToPixel(regionToPixelOpts{:});
-                insertLayer(obj.net, 'fc8', 'softmaxloss', 'regiontopixel8', regionToPixelBlock, 'regionToPixelAux', {'label', 'instanceWeights'});
-            end;
+                insertLayer(obj.net, 'fc8', 'softmaxloss', 'regiontopixel8', regionToPixelBlock, 'regionToPixelAux', {'labelsSP', 'instanceWeightsSP'});
+            end
             
             % Add batch normalization before ReLUs if specified (conv only,
             % not fc layers)
-            if isfield(obj.nnOpts.misc, 'batchNorm') && obj.nnOpts.misc.batchNorm,
+            if isfield(obj.nnOpts.misc, 'batchNorm') && obj.nnOpts.misc.batchNorm
                 % Get relus that have no FC layer before them
                 reluInds = find(arrayfun(@(x) isa(x.block, 'dagnn.ReLU'), obj.net.layers));
                 order = obj.net.getLayerExecutionOrder();
-                for i = 1 : numel(reluInds),
+                for i = 1 : numel(reluInds)
                     predIdx = order(find(order == reluInds(i)) - 1);
-                    if strStartsWith(obj.net.layers(predIdx).name, 'fc'),
+                    if strStartsWith(obj.net.layers(predIdx).name, 'fc')
                         reluInds(i) = nan;
-                    end;
-                end;
+                    end
+                end
                 reluInds = reluInds(~isnan(reluInds));
                 
-                for i = 1 : numel(reluInds),
+                for i = 1 : numel(reluInds)
                     % Relu
                     reluIdx = reluInds(i);
                     reluLayerName = obj.net.layers(reluIdx).name;
@@ -58,56 +62,71 @@ classdef E2S2NN < CalvinNN
                     layerParamValues = layerBlock.initParams();
                     layerName = sprintf('bn_%s', reluLayerName);
                     layerParamNames = cell(1, numel(layerParamValues));
-                    for i = 1 : numel(layerParamValues), %#ok<FXSET>
+                    for i = 1 : numel(layerParamValues) %#ok<FXSET>
                         layerParamNames{i} = sprintf('%s_%d', layerName, i);
-                    end;
+                    end
                     insertLayer(obj.net, leftLayerName, reluLayerName, layerName, layerBlock, {}, {}, layerParamNames);
                     
-                    for i = 1 : numel(layerParamValues), %#ok<FXSET>
+                    for i = 1 : numel(layerParamValues) %#ok<FXSET>
                         paramIdx = obj.net.getParamIndex(layerParamNames{i});
                         obj.net.params(paramIdx).value = layerParamValues{i};
                         obj.net.params(paramIdx).learningRate = 0.1; %TODO: are these good values?
                         obj.net.params(paramIdx).weightDecay = 0;
-                    end;
-                end;
-            end;
+                    end
+                end
+            end
             
-            %%% Weakly supervised learning options
-            % Check that only one ws option is chosen
-            if isfield(obj.nnOpts.misc, 'weaklySupervised'),
+            % Weakly supervised learning options
+            if isfield(obj.nnOpts.misc, 'weaklySupervised')
                 weaklySupervised = obj.nnOpts.misc.weaklySupervised;
             else
                 weaklySupervised.use = false;
-            end;
+            end
             
-            if weaklySupervised.use,
+            % Map from superpixels to pixels
+            if obj.nnOpts.misc.mapToPixels
+                insertLayer(obj.net, 'regiontopixel8', 'softmaxloss', 'pixelmap', dagnn.SuperPixelToPixelMap, {'blobsSP'}, {}, {});
+                pixelMapIdx = obj.net.getLayerIndex('pixelmap');
+                obj.net.setLayerInputs('pixelmap', obj.net.layers(pixelMapIdx).inputs([1, 4]));
+                obj.net.renameVar(obj.net.layers(pixelMapIdx).outputs{1}, 'prediction');
+                
+                % Add an optional accuracy layer
+                accLayer = dagnn.SegmentationAccuracyFlexible('labelCount', obj.imdb.numClasses);
+                obj.net.addLayer('accuracy', accLayer, {'prediction', 'labels'}, 'accuracy');
+                obj.net.vars(obj.net.getVarIndex('prediction')).precious = true;
+                obj.net.vars(obj.net.getVarIndex('labels')).precious = true;
+                obj.net.vars(obj.net.getVarIndex('accuracy')).precious = true;
+                
+                %%% FS loss
+                if ~weaklySupervised.use
+                    % Check that settings are compatible
+                    assert(~obj.nnOpts.misc.regionToPixel.replicateUnpureSPs);
+                    
+                    lossIdx = obj.net.getLayerIndex('softmaxloss');
+                    scoresVar = obj.net.layers(lossIdx).inputs{1};
+                    layerFS = dagnn.SegmentationLossPixel();
+                    replaceLayer(obj.net, 'softmaxloss', 'softmaxloss', layerFS, {scoresVar, 'labels', 'classWeights'}, {}, {}, true);
+                end
+            end
+            
+            if weaklySupervised.use
+                %%% WS loss
+                % Check that settings are compatible
+                assert(~obj.nnOpts.misc.regionToPixel.replicateUnpureSPs);
+                
                 % Incur a loss per class
                 if isfield(weaklySupervised, 'labelPresence') && weaklySupervised.labelPresence.use,
                     assert(obj.nnOpts.misc.regionToPixel.use);
-                    
-                    % Insert a softmax layer (not loss)
-                    softmaxBlock = dagnn.SoftMax();
-                    insertLayer(obj.net, 'regiontopixel8', 'softmaxloss', 'softmax', softmaxBlock, {}, {}, {});
-                    softmaxIdx = obj.net.getLayerIndex('softmax');
-                    softmaxInput = obj.net.layers(softmaxIdx).inputs{1};
-                    obj.net.setLayerInputs('softmax', {softmaxInput});
-                    
-                    % Insert a labelpresence layer
-                    labelPresenceOpts = weaklySupervised.labelPresence;
-                    labelPresenceOpts = rmfield(labelPresenceOpts, 'use');
-                    labelPresenceOpts = struct2Varargin(labelPresenceOpts);
-                    labelPresenceBlock = dagnn.LabelPresence(labelPresenceOpts{:});
-                    insertLayer(obj.net, 'softmax', 'softmaxloss', 'labelpresence', labelPresenceBlock, {'labelImage'}, {}, {});
+                    assert(mapToPixels);
                     
                     % Change parameters for loss
                     % (for compatibility we don't change the name of the loss)
                     lossIdx = obj.net.getLayerIndex('softmaxloss');
-                    lossBlock = obj.net.layers(lossIdx).block;
-                    lossBlock.loss = 'log';
                     scoresVar = obj.net.layers(lossIdx).inputs{1};
-                    replaceLayer(obj.net, 'softmaxloss', 'softmaxloss', lossBlock, {scoresVar, 'labelImage', 'weightsImage'}, {}, {}, true);
+                    layerWS = dagnn.SegmentationLossImage('useAbsent', obj.nnOpts.misc.weaklySupervised.useAbsent);
+                    replaceLayer(obj.net, 'softmaxloss', 'softmaxloss', layerWS, {scoresVar, 'labelsImage', 'classWeights', 'masksThingsCell'}, {}, {}, true);
                 end
-            end;
+            end
             
             % Sort layers by their first occurrence
             sortLayers(obj.net);
@@ -144,9 +163,9 @@ classdef E2S2NN < CalvinNN
             end;
             
             % Restore the original test set
-            if ~isempty(temp),
+            if ~isempty(temp)
                 obj.imdb.data.test = temp;
-            end;
+            end
         end
         
         function extractFeatures(obj, featFolder)
@@ -163,7 +182,7 @@ classdef E2S2NN < CalvinNN
             % Set network to testing mode
             outputVarIdx = obj.prepareNetForTest();
             
-            for imageIdx = 1 : imageCount,
+            for imageIdx = 1 : imageCount
                 printProgress('Classifying images', imageIdx, imageCount, 10);
                 
                 % Get batch
@@ -181,7 +200,7 @@ classdef E2S2NN < CalvinNN
                 featPath = fullfile(featFolder, [imageName, '.mat']);
                 features = double(curProbs); %#ok<NASGU>
                 save(featPath, 'features', '-v6');
-            end;
+            end
             
             % Reset test set
             obj.imdb.data.test = tempTest;
@@ -191,9 +210,9 @@ classdef E2S2NN < CalvinNN
             % [outputVarIdx] = prepareNetForTest(obj)
             
             % Move to GPU
-            if ~isempty(obj.nnOpts.gpus),
+            if ~isempty(obj.nnOpts.gpus)
                 obj.net.move('gpu');
-            end;
+            end
             
             % Enable test mode
             obj.imdb.setDatasetMode('test');
@@ -210,36 +229,36 @@ classdef E2S2NN < CalvinNN
             % Disable labelpresence layer (these needs to happen before we
             % remove the softmax layer)
             labelpresenceIdx = obj.net.getLayerIndex('labelpresence');
-            if ~isnan(labelpresenceIdx),
+            if ~isnan(labelpresenceIdx)
                 obj.net.removeLayer('labelpresence');
                 softmaxlossIdx = obj.net.getLayerIndex('softmaxloss');
                 obj.net.layers(softmaxlossIdx).inputs{1} = regiontopixelOutput;
                 obj.net.rebuild();
-            end;
+            end
             % Disable softmax layer (that is before labelpresence)
             softmaxIdx = obj.net.getLayerIndex('softmax');
-            if ~isnan(softmaxIdx),
+            if ~isnan(softmaxIdx)
                 obj.net.removeLayer('softmax');
-            end;
+            end
             
             % Replace softmaxloss by softmax
             lossIdx = find(cellfun(@(x) isa(x, 'dagnn.Loss'), {obj.net.layers.block}));
             lossName = obj.net.layers(lossIdx).name;
             lossType = obj.net.layers(lossIdx).block.loss;
             lossInputs = obj.net.layers(lossIdx).inputs;
-            if strcmp(lossType, 'softmaxlog'),
+            if strcmp(lossType, 'softmaxlog')
                 obj.net.removeLayer(lossName);
                 outputLayerName = 'softmax';
                 obj.net.addLayer(outputLayerName, dagnn.SoftMax(), lossInputs{1}, 'scores', {});
                 outputLayerIdx = obj.net.getLayerIndex(outputLayerName);
                 outputVarIdx = obj.net.layers(outputLayerIdx).outputIndexes;
-            elseif strcmp(lossType, 'log'),
+            elseif strcmp(lossType, 'log')
                 % Only output the scores of the regiontopixel layer
                 obj.net.removeLayer(lossName);
                 outputVarIdx = obj.net.getVarIndex(obj.net.getOutputs{1});
             else
                 error('Error: Unknown loss function!');
-            end;
+            end
             assert(numel(outputVarIdx) == 1);
         end
         
@@ -261,25 +280,25 @@ classdef E2S2NN < CalvinNN
             
             epoch = numel(obj.stats.train);
             statsPath = fullfile(obj.nnOpts.expDir, sprintf('stats-%s-epoch%d.mat', subset, epoch));
-            if exist(statsPath, 'file') && cacheProbs,
+            if exist(statsPath, 'file') && cacheProbs
                 % Get stats from disk
                 statsStruct = load(statsPath, 'stats');
                 stats = statsStruct.stats;
             else
                 % Check that settings are valid
-                if ~isinf(limitImageCount),
+                if ~isinf(limitImageCount)
                     assert(~cacheProbs);
-                end;
+                end
                 
                 % Limit images if specified (for quicker evaluation)
-                if ~isinf(limitImageCount),
+                if ~isinf(limitImageCount)
                     sel = randperm(numel(obj.imdb.data.test), min(limitImageCount, numel(obj.imdb.data.test)));
                     obj.imdb.data.test = obj.imdb.data.test(sel);
-                end;
+                end
                 
                 % Get probabilities (softmaxed scores) for each region
                 probsPath = fullfile(obj.nnOpts.expDir, sprintf('probs-%s-epoch%d.mat', subset, epoch));
-                if exist(probsPath, 'file') && cacheProbs,
+                if exist(probsPath, 'file') && cacheProbs
                     probsStruct = load(probsPath, 'probs');
                     probs = probsStruct.probs;
                 else
@@ -290,15 +309,15 @@ classdef E2S2NN < CalvinNN
                     % Set network to testing mode
                     outputVarIdx = obj.prepareNetForTest();
                     
-                    for imageIdx = 1 : imageCount,
+                    for imageIdx = 1 : imageCount
                         printProgress('Classifying images', imageIdx, imageCount, 10);
                         
                         % Check whether GT labels are available for this image
                         imageName = obj.imdb.data.test{imageIdx};
                         labelMap = obj.imdb.dataset.getImLabelMap(imageName);
-                        if all(labelMap(:) == 0),
+                        if all(labelMap(:) == 0)
                             continue;
-                        end;
+                        end
                         
                         % Get batch
                         inputs = obj.imdb.getBatch(imageIdx, obj.net, obj.nnOpts);
@@ -312,45 +331,45 @@ classdef E2S2NN < CalvinNN
                         
                         % Store
                         probs{imageIdx} = double(curProbs);
-                    end;
+                    end
                     
                     % Cache to disk
-                    if cacheProbs,
+                    if cacheProbs
                         fprintf('Saving probs to disk: %s\n', probsPath);
-                        if varByteSize(probs) > 2e9,
+                        if varByteSize(probs) > 2e9
                             matVersion = '-v7.3';
                         else
                             matVersion = '-v6';
-                        end;
+                        end
                         save(probsPath, 'probs', matVersion);
-                    end;
-                end;
+                    end
+                end
                 
                 % Compute accuracy
                 [pixAcc, meanClassPixAcc] = evaluatePixAcc(obj.imdb.dataset, obj.imdb.data.test, probs, obj.imdb.segmentFolderSP);
                 
                 % Compute meanIOU
-                if computeMeanIou,
+                if computeMeanIou
                     stats.meanIOU = evaluateMeanIOU(obj.imdb.data.test, probs, obj.imdb.segmentFolderSP);
-                end;
+                end
                 
                 % Store results
                 stats.pixAcc = pixAcc;
                 stats.meanClassPixAcc = meanClassPixAcc;
                 stats.trainLoss = obj.stats.train(end).objective;
                 stats.valLoss   = obj.stats.val(end).objective;
-                if cacheProbs,
+                if cacheProbs
                     if exist(statsPath, 'file'),
                         error('StatsPath already exists: %s', statsPath);
-                    end;
+                    end
                     save(statsPath, 'stats');
-                end;
+                end
             end
         end
     end
     
     methods (Static)
-        function stats = extractStats(net, ~)
+        function stats = extractStatsOldLoss(net, ~)
             % stats = extractStats(net)
             %
             % Extract all losses from the network.
