@@ -402,26 +402,7 @@ classdef FCNNN < CalvinNN
         end
     end
     
-    methods (Static)
-        function stats = extractStats(net, ~)
-            % stats = extractStats(net)
-            %
-            % Extract all losses from the network.
-            % Contrary to CalvinNN.extractStats(..) this measures loss on
-            % an image (subbatch) level, not on a region level!
-            
-            lossInds = find(cellfun(@(x) isa(x, 'dagnn.Loss'), {net.layers.block}));
-            stats = struct();
-            for lossIdx = 1 : numel(lossInds)
-                layerIdx = lossInds(lossIdx);
-                objective = net.layers(layerIdx).block.average ...
-                    * net.layers(layerIdx).block.numAveraged ...
-                    / net.layers(layerIdx).block.numSubBatches;
-                assert(~isnan(objective));
-                stats.(net.layers(layerIdx).outputs{1}) = objective;
-            end
-        end
-        
+    methods (Static)        
         function [IU, meanIU, pixelAccuracy, meanAccuracy] = getAccuracies(confusion)
             pos = sum(confusion, 2);
             res = sum(confusion, 1)';
