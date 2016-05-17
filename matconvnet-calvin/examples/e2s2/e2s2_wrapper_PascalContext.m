@@ -12,7 +12,7 @@ run = 2;
 exp = 0;
 netName = 'VGG16';
 dataset = PascalContextDataset();
-gpus = [];
+gpus = 4;
 roiPool.use = true;
 roiPool.freeform.use = true;
 roiPool.freeform.combineFgBox = true;
@@ -49,9 +49,9 @@ if ~isempty(randSeed);
 end;
 % Create paths
 if strcmp(netName, 'AlexNet'),
-    netFileName = 'imagenet-caffe-alex';
+    netFileName = 'beta16/imagenet-caffe-alex';
 elseif strcmp(netName, 'VGG16'),
-    netFileName = 'imagenet-vgg-verydeep-16';
+    netFileName = 'beta16/imagenet-vgg-verydeep-16';
 else
     error('Error: Unknown netName!');
 end;
