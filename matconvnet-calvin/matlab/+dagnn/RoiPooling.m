@@ -93,14 +93,7 @@ classdef RoiPooling < dagnn.Layer
         end
         
         function backwardAdvanced(obj, layer)
-            %BACKWARDADVANCED Advanced driver for backward computation
-            %  BACKWARDADVANCED(OBJ, LAYER) is the advanced interface to compute
-            %  the backward step of the layer.
-            %
-            %  The advanced interface can be changed in order to extend DagNN
-            %  non-trivially, or to optimise certain blocks.
-            %
-            % Calvin: This layer needs to be modified as the output "label"
+            % This layer needs to be modified as the output "label"
             % does not have a derivative and therefore backpropagation
             % would be skipped in the normal function.
             
