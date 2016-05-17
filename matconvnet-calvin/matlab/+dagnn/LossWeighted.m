@@ -25,6 +25,9 @@ classdef LossWeighted < dagnn.Loss
             scores = inputs{1};
             labels = inputs{2};
             instanceWeights = inputs{3};
+            
+            % Check inputs
+            assert(~isempty(labels));
             if ~isempty(instanceWeights)
                 assert(numel(instanceWeights) == size(scores, 4));
                 assert(numel(instanceWeights) == size(labels, ndims(labels)));

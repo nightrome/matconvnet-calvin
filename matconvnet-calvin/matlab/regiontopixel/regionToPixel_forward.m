@@ -11,9 +11,9 @@ function[scoresSP, labelsSP, weightsSP, mapSP] = regionToPixel_forward(scoresAll
 
 % Move to CPU
 gpuMode = isa(scoresAll, 'gpuArray');
-if gpuMode,
+if gpuMode
     scoresAll = gather(scoresAll);
-end;
+end
 
 % Check inputs
 assert(~any(isnan(scoresAll(:)) | isinf(scoresAll(:))));
@@ -31,19 +31,19 @@ scoresSP = nan(labelCount, spCount, 'single'); % Note that zeros will be counted
 mapSP = nan(labelCount, spCount);
 
 % Compute maximum scores and map/mask for the backward pass
-for spIdx = 1 : spCount,
+for spIdx = 1 : spCount
     ancestors = find(overlapListAll(:, spIdx));
-    if ~isempty(ancestors),
+    if ~isempty(ancestors)
         % For each label, compute the ancestor with the highest score
         [scoresSP(:, spIdx), curInds] = max(scoresAll(:, ancestors), [], 2);
         curBoxInds = ancestors(curInds);
         mapSP(:, spIdx) = curBoxInds;
-    end;
-end;
+    end
+end
 
 % Compute sample target labels and weights
 splitWeightUnpureSPs = isfield(regionToPixelAux, 'spLabelHistos');
-if ~splitWeightUnpureSPs,
+if ~splitWeightUnpureSPs
     % Set dummy outputs
     labelsSP = [];
     weightsSP = [];
@@ -67,7 +67,7 @@ else
     
     % Replicate regions with multiple labels
     % (change: scoresSP, labelsTargetSP, mapSP, pixelSizesSP)
-    if replicateUnpureSPs,
+    if replicateUnpureSPs
         scoresSPRepl = cell(spCount, 1);
         labelsTargetSPRepl = cell(spCount, 1);
         mapSPRepl = cell(spCount, 1);
@@ -87,21 +87,21 @@ else
     else
         [~, labelsSP] = max(spLabelHistos, [], 2);
         pixelSizesSP = sum(spLabelHistos, 2);
-    end;
+    end
     
     % Renormalize label weights to have on average a weight == 1 (!)
     % Note: division by the number of images on which these frequencies are
     % computed is now outsourced to getBatch.
-    if inverseLabelFreqs,
+    if inverseLabelFreqs
         weightsSP = pixelSizesSP ./ (labelPixelFreqs(labelsSP) * labelCount);
     else
         weightsSP = pixelSizesSP  / sum(labelPixelFreqs);
-    end;
+    end
     
     % Renormalize to (average of) 1
-    if normalizeImageMass,
+    if normalizeImageMass
         weightsSP = weightsSP ./ sum(weightsSP);
-    end;
+    end
     
     % Reshape and append label weights
     labelsSP  = reshape(labelsSP,  1, 1, 1, []);
@@ -109,12 +109,12 @@ else
     
     % Final checks (only in train, in test NANs are fine)
     assert(~any(isnan(scoresSP(:)) | isinf(scoresSP(:))));
-end;
+end
 
 % Reshape the scores
 scoresSP = reshape(scoresSP, [1, 1, size(scoresSP)]);
 
 % Convert outputs back to GPU if necessary
-if gpuMode,
+if gpuMode
     scoresSP = gpuArray(scoresSP);
-end;
+end

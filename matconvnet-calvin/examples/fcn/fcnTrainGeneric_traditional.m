@@ -1,4 +1,4 @@
-function fcnTrainGeneric(varargin)
+function fcnTrainGeneric_traditional(varargin)
 % fcnTrainGeneric(varargin)
 %
 % Train FCN model using MatConvNet.
