@@ -4,7 +4,7 @@ classdef LossWeighted < dagnn.Loss
     % The same as dagnn.Loss, but (optionally) allows to specify
     % instanceWeights as an additional input.
     %
-    % inputs: scores, labels, [instanceWeights]
+    % inputs: scoresSP, labelsSP, [instanceWeightsSP]
     % outputs: loss
     %
     % Note: If you use instanceWeights to change the total weight of this
@@ -22,19 +22,19 @@ classdef LossWeighted < dagnn.Loss
             
             % Get inputs
             assert(numel(inputs) == 3);
-            scores = inputs{1};
-            labels = inputs{2};
-            instanceWeights = inputs{3};
+            scoresSP = inputs{1};
+            labelsSP = inputs{2};
+            instanceWeightsSP = inputs{3};
             
             % Check inputs
-            assert(~isempty(labels));
-            if ~isempty(instanceWeights)
-                assert(numel(instanceWeights) == size(scores, 4));
-                assert(numel(instanceWeights) == size(labels, ndims(labels)));
+            assert(~isempty(labelsSP));
+            if ~isempty(instanceWeightsSP)
+                assert(numel(instanceWeightsSP) == size(scoresSP, 4));
+                assert(numel(instanceWeightsSP) == size(labelsSP, ndims(labelsSP)));
             end
             
             % Compute loss
-            outputs{1} = vl_nnloss(scores, labels, [], 'loss', obj.loss, 'instanceWeights', instanceWeights);
+            outputs{1} = vl_nnloss(scoresSP, labelsSP, [], 'loss', obj.loss, 'instanceWeights', instanceWeightsSP);
             
             % Update statistics
             n = obj.numAveraged;
@@ -49,11 +49,11 @@ classdef LossWeighted < dagnn.Loss
             
             % Get inputs
             assert(numel(derOutputs) == 1);
-            scores = inputs{1};
-            labels = inputs{2};
-            instanceWeights = inputs{3};
+            scoresSP = inputs{1};
+            labelsSP = inputs{2};
+            instanceWeightsSP = inputs{3};
             
-            derInputs{1} = vl_nnloss(scores, labels, derOutputs{1}, 'loss', obj.loss, 'instanceWeights', instanceWeights);
+            derInputs{1} = vl_nnloss(scoresSP, labelsSP, derOutputs{1}, 'loss', obj.loss, 'instanceWeights', instanceWeightsSP);
             derInputs{2} = [];
             derInputs{3} = [];
             derParams = {};
