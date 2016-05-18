@@ -56,8 +56,6 @@ classdef SuperPixelToPixelMap < dagnn.Layer
                 end
             end
             
-            assert(~any(isnan(scoresMap(:))));
-            
             % Convert outputs back to GPU if necessary
             if gpuMode
                 scoresMap = gpuArray(scoresMap);
