@@ -68,11 +68,13 @@ classdef SegmentationLossPixel < dagnn.Loss
                 assert(~any(isnan(obj.instanceWeights(:))))
             end
             
-            outputs{1} = vl_nnloss(scoresMap, labels, [], ...
+            % Compute loss
+            loss = vl_nnloss(scoresMap, labels, [], ...
                 'loss', obj.loss, ...
                 'instanceWeights', obj.instanceWeights);
             
-            assert(gather(~isnan(outputs{1})));
+            assert(gather(~isnan(loss) && ~isinf(loss)));
+            outputs{1} = loss;
             n = obj.numAveraged;
             m = n + size(scoresMap, 4);
             obj.average = (n * obj.average + double(gather(outputs{1}))) / m;

@@ -26,7 +26,7 @@ classdef E2S2NN < CalvinNN
                 regionToPixelOpts = rmfield(regionToPixelOpts, 'use');
                 regionToPixelOpts = struct2Varargin(regionToPixelOpts);
                 regionToPixelBlock = dagnn.RegionToPixel(regionToPixelOpts{:});
-                insertLayer(obj.net, 'fc8', 'softmaxloss', 'regiontopixel8', regionToPixelBlock, 'regionToPixelAux', {'labelsSP', 'instanceWeightsSP'});
+                insertLayer(obj.net, 'fc8', 'softmaxloss', 'regiontopixel8', regionToPixelBlock, 'overlapListAll', {});
             end
             
             % Add batch normalization before ReLUs if specified (conv only,
@@ -84,24 +84,19 @@ classdef E2S2NN < CalvinNN
             end
             
             % Map from superpixels to pixels
-            if obj.nnOpts.misc.mapToPixels
-                insertLayer(obj.net, 'regiontopixel8', 'softmaxloss', 'pixelmap', dagnn.SuperPixelToPixelMap, {'blobsSP'}, {}, {});
+            if true
+                fprintf('Adding mapping from superpixel to pixel level...\n');
+                
+                insertLayer(obj.net, 'regiontopixel8', 'softmaxloss', 'pixelmap', dagnn.SuperPixelToPixelMap, {'blobsSP', 'oriImSize'}, {}, {});
                 pixelMapIdx = obj.net.getLayerIndex('pixelmap');
-                obj.net.setLayerInputs('pixelmap', obj.net.layers(pixelMapIdx).inputs([1, 4]));
                 obj.net.renameVar(obj.net.layers(pixelMapIdx).outputs{1}, 'prediction');
                 
                 % Add an optional accuracy layer
                 accLayer = dagnn.SegmentationAccuracyFlexible('labelCount', obj.imdb.numClasses);
                 obj.net.addLayer('accuracy', accLayer, {'prediction', 'labels'}, 'accuracy');
-                obj.net.vars(obj.net.getVarIndex('prediction')).precious = true;
-                obj.net.vars(obj.net.getVarIndex('labels')).precious = true;
-                obj.net.vars(obj.net.getVarIndex('accuracy')).precious = true;
                 
-                %%% FS loss
+                % FS loss
                 if ~weaklySupervised.use
-                    % Check that settings are compatible
-                    assert(~obj.nnOpts.misc.regionToPixel.replicateUnpureSPs);
-                    
                     lossIdx = obj.net.getLayerIndex('softmaxloss');
                     scoresVar = obj.net.layers(lossIdx).inputs{1};
                     layerFS = dagnn.SegmentationLossPixel();
@@ -110,14 +105,9 @@ classdef E2S2NN < CalvinNN
             end
             
             if weaklySupervised.use
-                %%% WS loss
-                % Check that settings are compatible
-                assert(~obj.nnOpts.misc.regionToPixel.replicateUnpureSPs);
-                
-                % Incur a loss per class
+                % WS loss
                 if isfield(weaklySupervised, 'labelPresence') && weaklySupervised.labelPresence.use,
                     assert(obj.nnOpts.misc.regionToPixel.use);
-                    assert(mapToPixels);
                     
                     % Change parameters for loss
                     % (for compatibility we don't change the name of the loss)

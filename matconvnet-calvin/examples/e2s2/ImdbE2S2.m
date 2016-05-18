@@ -138,10 +138,9 @@ classdef ImdbE2S2 < ImdbCalvin
             
             % Get segmentation structure
             segmentPathRP = [obj.segmentFolderRP, filesep, imageName, '.mat'];
-            segmentStructRP = load(segmentPathRP, 'propBlobs', 'overlapList', 'superPixelInds', 'superPixelLabelHistos');
+            segmentStructRP = load(segmentPathRP, 'propBlobs', 'overlapList', 'superPixelInds');
             overlapListRP = segmentStructRP.overlapList;
             spInds = segmentStructRP.superPixelInds;
-            spLabelHistos = segmentStructRP.superPixelLabelHistos;
             blobsRP = segmentStructRP.propBlobs(:);
             clearvars segmentStructRP;
             
@@ -247,23 +246,6 @@ classdef ImdbE2S2 < ImdbCalvin
                 blobMasksRP = blobMasksRP(blobIndsRP);
             end
             
-            % Compute pixel-level label frequencies (also used without inv-freqs)
-            if regionToPixel.use && (~weaklySupervised.use || weaklySupervised.computeAcc)
-                global labelPixelFreqsOriginal; %#ok<TLEV>
-                if isempty(labelPixelFreqsOriginal),
-                    [labelPixelFreqsSum, labelPixelImageCount] = obj.dataset.getLabelPixelFreqs();
-                    labelPixelFreqsOriginal = labelPixelFreqsSum ./ labelPixelImageCount;
-                end
-                
-                % Cutoff extreme frequencies if required
-                % Normalizes the sum to one
-                if isfield(regionToPixel, 'minPixFreq') && ~isempty(regionToPixel.minPixFreq)
-                    labelPixelFreqs = freqClampMinimum(labelPixelFreqsOriginal, regionToPixel.minPixFreq);
-                else
-                    labelPixelFreqs = labelPixelFreqsOriginal;
-                end
-            end;
-            
             % Merge RP and GT
             blobsAll = blobsRP;
             overlapListAll = overlapListRP;
@@ -314,17 +296,6 @@ classdef ImdbE2S2 < ImdbCalvin
             boxesAll = single(cell2mat({blobsAll.rect}'));
             assert(size(blobsAll, 1) == size(boxesAll, 1));
             
-            % Store regionToPixel info in a struct
-            if regionToPixel.use
-                regionToPixelAux.overlapListAll = overlapListAll;
-                if ~testMode && (~weaklySupervised.use || weaklySupervised.computeAcc)
-                    assert(size(spLabelHistos, 1) == numel(blobsSP));
-                    assert(size(spLabelHistos, 2) == obj.numClasses);
-                    regionToPixelAux.labelPixelFreqs = labelPixelFreqs;
-                    regionToPixelAux.spLabelHistos = spLabelHistos;
-                end
-            end
-            
             % Flip image, boxes and masks
             if batchOptsCopy.imageFlipping && rand() >= 0.5
                 if roiPool.freeform.use
@@ -334,7 +305,7 @@ classdef ImdbE2S2 < ImdbCalvin
                 end
             end
             
-            if nnOpts.misc.mapToPixels && ~testMode
+            if nnOpts.misc.invFreqWeights && ~testMode
                 if weaklySupervised.use
                     classWeights = obj.dataset.getLabelImFreqs();
                 else
@@ -371,10 +342,7 @@ classdef ImdbE2S2 < ImdbCalvin
             % Store in output struct
             inputs = {'input', image, 'oriImSize', oriImSize, 'boxes', boxesAll};
             if regionToPixel.use
-                inputs = [inputs, {'regionToPixelAux', regionToPixelAux}];
-            end
-            if ~testMode
-                inputs = [inputs, {'labelsSP', []}];
+                inputs = [inputs, {'overlapListAll', overlapListAll}];
             end
             if roiPool.freeform.use
                 inputs = [inputs, {'blobMasks', blobMasksAll}];
@@ -382,22 +350,25 @@ classdef ImdbE2S2 < ImdbCalvin
             if weaklySupervised.use  ...
                     && weaklySupervised.labelPresence.use ...
                     && ~testMode
-                
-                % For the SuperPixelToPixelMap layer
-                inputs = [inputs, {'blobsSP', blobsSP}];
-                
                 % For the SegmentationLossImage layer
                 inputs = [inputs, {'labelsImage', {labelsImage}}];
                 inputs = [inputs, {'masksThingsCell', {}}];
-
             end
-            if nnOpts.misc.mapToPixels && ~testMode
-                % For the SegmentationLoss* and SegmentationAccuracyFlexible layers
-                labels = obj.dataset.getImLabelMap(imageName);
+            if ~testMode
+                % For the SuperPixelToPixelMap, SegmentationLoss* and SegmentationAccuracyFlexible layers
+                labels = double(obj.dataset.getImLabelMap(imageName));
+                inputs = [inputs, {'blobsSP', blobsSP}];
                 inputs = [inputs, {'labels', labels}];
                 inputs = [inputs, {'classWeights', classWeights}];
             end
             numElements = 1; % One image
+            
+            % Debug: Check that SPs cover entire image
+            covered = false(size(labels));
+            for spIdx = 1 : numel(blobsSP)
+                inds = blobToImageInds(blobsSP(spIdx), oriImSize);
+                covered(inds) = true;
+            end
         end
         
         function[allBatchInds] = getAllBatchInds(obj)

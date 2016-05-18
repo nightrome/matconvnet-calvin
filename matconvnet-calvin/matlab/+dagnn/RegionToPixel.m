@@ -2,23 +2,10 @@ classdef RegionToPixel < dagnn.Layer
     % Go from a region level to a pixel level.
     % (to be able to compute a loss there)
     %
-    % inputs are: scoresAll, regionToPixelAux
-    % outputs are: scoresSP, labelsSP, weightsSP
-    %
-    % Note: 
-    % - The presence/absence of regionToPixelAux.spLabelHistos indicates
-    %   whether we are in train/val or test mode.
-    % - For weakly supervised learning the outputs labelsSP and weightsSP
-    %   are ignored.
+    % inputs are: scoresAll, overlapListAll
+    % outputs are: scoresSP
     %
     % Copyright by Holger Caesar, 2015
-    
-    properties
-        inverseLabelFreqs = true;
-        normalizeImageMass = true;
-        replicateUnpureSPs = true;
-        minPixFreq = []; % used only in getBatch
-    end
     
     properties (Transient)
         mask
@@ -28,14 +15,13 @@ classdef RegionToPixel < dagnn.Layer
         function outputs = forward(obj, inputs, params) %#ok<INUSD>
             assert(numel(inputs) == 2);
             scoresAll = inputs{1};
-            regionToPixelAux = inputs{2};
-            [scoresSP, labelsSP, weightsSP, obj.mask] = regionToPixel_forward(scoresAll, regionToPixelAux, obj.inverseLabelFreqs, obj.normalizeImageMass, obj.replicateUnpureSPs);
+            overlapListAll = inputs{2};
+            
+            [scoresSP, obj.mask] = regionToPixel_forward(scoresAll, overlapListAll);
             
             % Split labels into labels and instance weights
-            outputs = cell(3, 1);
+            outputs = cell(1, 1);
             outputs{1} = scoresSP;
-            outputs{2} = labelsSP;
-            outputs{3} = weightsSP;
         end
         
         function [derInputs, derParams] = backward(obj, inputs, params, derOutputs) %#ok<INUSL>

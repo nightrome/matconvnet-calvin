@@ -2,7 +2,7 @@ classdef SuperPixelToPixelMap < dagnn.Layer
     % Convert pixel label scores to presence/absence scores for each class per batch.
     % (to be able to compute an image-level loss there)
     %
-    % inputs are: scoresSP, blobsSP
+    % inputs are: scoresSP, blobsSP, oriImSize
     % outputs are: scoresImage
     %
     % Copyright by Holger Caesar, 2015
@@ -15,9 +15,10 @@ classdef SuperPixelToPixelMap < dagnn.Layer
         function outputs = forward(obj, inputs, params) %#ok<INUSD>
             
             % Get inputs
-            assert(numel(inputs) == 2);
+            assert(numel(inputs) == 3);
             scoresSP = inputs{1};
             blobsSP = inputs{2};
+            oriImSize = inputs{3};
             labelCount = size(scoresSP, 3);
             spCount = size(scoresSP, 4);
             
@@ -27,10 +28,11 @@ classdef SuperPixelToPixelMap < dagnn.Layer
                 scoresSP = gather(scoresSP);
             end
             
-            % Init
-            imageSize = max(cell2mat({blobsSP.rect}')); %TODO: get the proper image size
-            imageSize = imageSize(3:4);
-            scoresMap = nan(imageSize(1), imageSize(2), labelCount, 1, 'like', scoresSP);
+            % Init (if we don't have scores for a pixel/superpixel, because it is not
+            % included in any region, we just set all scores of that pixel to
+            % the lowest score overall)
+            minScore = min(scoresSP(:)) - 1e-4;
+            scoresMap = minScore * ones(oriImSize(1), oriImSize(2), labelCount, 1, 'like', scoresSP);
             obj.mask = cell(spCount, labelCount);
             
             for spIdx = 1 : spCount
@@ -41,11 +43,13 @@ classdef SuperPixelToPixelMap < dagnn.Layer
                 
                 % Copy scores to all pixels in that superpixel
                 for labelIdx = 1 : labelCount
-                    curInds = blobSubY + imageSize(1) * (blobSubX-1) + imageSize(1) * imageSize(2) * (labelIdx-1);
+                    curInds = blobSubY + oriImSize(1) * (blobSubX-1) + oriImSize(1) * oriImSize(2) * (labelIdx-1);
                     obj.mask{spIdx, labelIdx} = curInds;
                     scoresMap(curInds) = scoresSP(:, :, labelIdx, spIdx);
                 end
             end
+            
+            assert(~any(isnan(scoresMap(:))));
             
             % Convert outputs back to GPU if necessary
             if gpuMode
@@ -77,16 +81,11 @@ classdef SuperPixelToPixelMap < dagnn.Layer
             
             % Map pixel gradients to superpixels
             for spIdx = 1 : spCount                
-                % Copy scores to all pixels in that superpixel
+                % Sum gradients for all pixels in that superpixel
                 for labelIdx = 1 : labelCount
-                    % If any of the gradients is not 0, we copy it to the
-                    % whole superpixel (otherwise it remains 0)
                     curInds = obj.mask{spIdx, labelIdx};
-                    temp = dzdy(curInds);
-                    temp = temp(temp ~= 0);
-                    if ~isempty(temp)
-                       dzdx(1, 1, labelIdx, spIdx) = temp;
-                    end
+                    curGradients = dzdy(curInds);
+                    dzdx(1, 1, labelIdx, spIdx) = sum(curGradients);
                 end
             end
             
@@ -99,6 +98,7 @@ classdef SuperPixelToPixelMap < dagnn.Layer
             % Store gradients
             derInputs{1} = dzdx;
             derInputs{2} = [];
+            derInputs{3} = [];
             derParams = {};
         end
         
