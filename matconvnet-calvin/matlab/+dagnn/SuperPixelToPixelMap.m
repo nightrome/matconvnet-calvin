@@ -38,6 +38,11 @@ classdef SuperPixelToPixelMap < dagnn.Layer
             for spIdx = 1 : spCount
                 blob = blobsSP(spIdx);
                 
+                % Skips SPs that don't have scores
+                if any(isnan(scoresSP(:, :, :, spIdx)))
+                    continue;
+                end
+                
                 % Get all pix. coords for the mask
                 [blobSubY, blobSubX] = blobToImageSubs(blob);
                 
@@ -45,7 +50,9 @@ classdef SuperPixelToPixelMap < dagnn.Layer
                 for labelIdx = 1 : labelCount
                     curInds = blobSubY + oriImSize(1) * (blobSubX-1) + oriImSize(1) * oriImSize(2) * (labelIdx-1);
                     obj.mask{spIdx, labelIdx} = curInds;
-                    scoresMap(curInds) = scoresSP(:, :, labelIdx, spIdx);
+                    
+                    curScore = scoresSP(:, :, labelIdx, spIdx);
+                    scoresMap(curInds) = curScore;
                 end
             end
             
@@ -84,8 +91,10 @@ classdef SuperPixelToPixelMap < dagnn.Layer
                 % Sum gradients for all pixels in that superpixel
                 for labelIdx = 1 : labelCount
                     curInds = obj.mask{spIdx, labelIdx};
-                    curGradients = dzdy(curInds);
-                    dzdx(1, 1, labelIdx, spIdx) = sum(curGradients);
+                    if ~isempty(curInds)
+                        curGradients = dzdy(curInds);
+                        dzdx(1, 1, labelIdx, spIdx) = sum(curGradients);
+                    end
                 end
             end
             
