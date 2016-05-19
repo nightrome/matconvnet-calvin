@@ -30,14 +30,8 @@ classdef SegmentationAccuracyFlexible < dagnn.Loss
             obj.confusion = obj.confusion + ...
                 accumarray([labels(ok), predictions(ok)], 1, [obj.labelCount, obj.labelCount]);
             
-            % compute various statistics of the confusion matrix
-            pos = sum(obj.confusion, 2);
-            res = sum(obj.confusion, 1)';
-            tp = diag(obj.confusion);
-            
-            obj.pixelAccuracy = sum(tp) / max(1, sum(obj.confusion(:)));
-            obj.meanAccuracy = mean(tp ./ max(1, pos));
-            obj.meanIntersectionUnion = mean(tp ./ max(1, pos + res - tp));
+            % Compute accuracies
+            [obj.pixelAccuracy, obj.meanAccuracy, obj.meanIntersectionUnion] = confMatToAccuracies(obj.confusion);
             
             obj.average = [obj.pixelAccuracy; obj.meanAccuracy; obj.meanIntersectionUnion];
             obj.numAveraged = obj.numAveraged + numPixels;

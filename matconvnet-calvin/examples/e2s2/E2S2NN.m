@@ -374,7 +374,7 @@ classdef E2S2NN < CalvinNN
                 % Final statistics, remove classes missing in test
                 % Note: Printing statistics earlier does not make sense if we remove missing
                 % classes
-                [stats.iu, stats.miu, stats.pacc, stats.macc] = FCNNN.getAccuracies(confusion);
+                [stats.miu, stats.pacc, stats.macc] = confMatToAccuracies(confusion);
                 stats.confusion = confusion;
                 fprintf('Results:\n');
                 fprintf('pixelAcc: %5.2f, meanAcc: %5.2f, meanIU: %5.2f \n', ...

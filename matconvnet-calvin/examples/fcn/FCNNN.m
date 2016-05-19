@@ -380,7 +380,7 @@ classdef FCNNN < CalvinNN
                     % Final statistics, remove classes missing in test
                     % Note: Printing statistics earlier does not make sense if we remove missing
                     % classes
-                    [stats.iu, stats.miu, stats.pacc, stats.macc] = FCNNN.getAccuracies(confusion);
+                    [stats.miu, stats.pacc, stats.macc] = confMatToAccuracies(confusion);
                     stats.confusion = confusion;
                     fprintf('Results:\n');
                     fprintf('pixelAcc: %5.2f, meanAcc: %5.2f, meanIU: %5.2f \n', ...
@@ -395,18 +395,7 @@ classdef FCNNN < CalvinNN
         end
     end
     
-    methods (Static)        
-        function [IU, meanIU, pixelAccuracy, meanAccuracy] = getAccuracies(confusion)
-            pos = sum(confusion, 2);
-            res = sum(confusion, 1)';
-            tp = diag(confusion);
-            IU = tp ./ max(1, pos + res - tp);
-            missing = pos == 0;
-            meanIU = mean(IU(~missing));
-            pixelAccuracy = sum(tp) / max(1, sum(confusion(:)));
-            meanAccuracy = mean(tp(~missing) ./ pos(~missing));
-        end
-        
+    methods (Static)   
         function displayImage(colorCount, im, lb, outputMap)
             subplot(2, 2, 1);
             image(im);
