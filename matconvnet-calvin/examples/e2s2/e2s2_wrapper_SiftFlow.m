@@ -20,10 +20,6 @@ roiPool.freeform.use = true;
 roiPool.freeform.combineFgBox = true;
 roiPool.freeform.shareWeights = true;
 regionToPixel.use = true;
-regionToPixel.minPixFreq = [];
-regionToPixel.inverseLabelFreqs = true;
-regionToPixel.replicateUnpureSPs = true;
-regionToPixel.normalizeImageMass = true;
 trainValRatio = 0.9;
 randSeed = 280;
 logFile = 'log.txt';
@@ -40,6 +36,7 @@ segments.switchColorTypesBatch = true;
 segments.colorTypes = {'Rgb', 'Hsv', 'Lab'};
 segments.colorTypeIdx = 1;
 fastRcnnParams = false;
+invFreqWeights = true;
 
 % Initialize random number generator seed
 if ~isempty(randSeed);
@@ -95,9 +92,9 @@ nnOpts.numSubBatches = batchSize; % Always the same as batchSize!
 nnOpts.gpus = gpus;
 nnOpts.continue = CalvinNN.findLastCheckpoint(outputFolder) > 0;
 nnOpts.learningRate = learningRate;
-nnOpts.extractStatsFn = @E2S2NN.extractStats;
 nnOpts.misc.roiPool = roiPool;
 nnOpts.misc.regionToPixel = regionToPixel;
+nnOpts.misc.invFreqWeights = invFreqWeights;
 nnOpts.bboxRegress = false;
 nnOpts.fastRcnnParams = fastRcnnParams;
 
