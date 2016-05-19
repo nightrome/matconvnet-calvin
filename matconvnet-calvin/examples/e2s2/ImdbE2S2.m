@@ -115,9 +115,6 @@ classdef ImdbE2S2 < ImdbCalvin
                     assert(weaklySupervised.labelPresence.use);
                     batchOptsCopy.subsample = false;
                     batchOptsCopy.removeGT = true;
-                    
-                    % Optionally compute accuracy at training time
-                    weaklySupervised.computeAcc = obj.dataset.annotation.hasPixelLabels;
                 end;
             else
                 weaklySupervised.use = false;
