@@ -21,6 +21,7 @@ defnnOpts.extractStatsFn = @CalvinNN.extractStats;
 defnnOpts.testFn = @(imdb, nnOpts, net, inputs, batchInds) error('Error: Test function not implemented'); % function used at test time to evaluate performance
 defnnOpts.misc = struct(); % fields used by custom layers are stored here
 defnnOpts.plotEval = true;
+defnnOpts.plotEvalAll = true;
 
 % Network options
 defnnOpts.convertToTrain = true;

@@ -63,18 +63,30 @@ for epoch = start + 1 : obj.nnOpts.numEpochs
         values = [];
         leg = {};
         datasetModes = {'train', 'val'};
-        for datasetModeIdx = 1:numel(datasetModes)
+        for datasetModeIdx = 1 : numel(datasetModes)
             datasetMode = datasetModes{datasetModeIdx};
+            fields = setdiff(fieldnames(obj.stats.train), {'num', 'time'});
             
-            for f = setdiff(fieldnames(obj.stats.train)', {'num', 'time'})
-                f = char(f); %#ok<FXSET>
-                leg{end+1} = sprintf('%s (%s)', f, datasetMode); %#ok<AGROW>
-                tmp = [obj.stats.(datasetMode).(f)];
-                values(end+1,:) = tmp(1,:)'; %#ok<AGROW>
+            for fieldIdx = 1 : numel(fields)
+                field = fields{fieldIdx};
+                fieldValues = [obj.stats.(datasetMode).(field)];
+                
+                for i = 1 : size(fieldValues, 1)
+                    if size(fieldValues, 1) == 1 || ~nnOpts.plotEvalAll
+                        % For i.e. objective with 1 value
+                        leg{end + 1} = sprintf('%s (%s)', field, datasetMode); %#ok<AGROW>
+                    else
+                        % For i.e. accuracy with 3 values
+                        leg{end + 1} = sprintf('%s-%d (%s)', field, i, datasetMode); %#ok<AGROW>
+                    end
+                    values(end + 1, :) = fieldValues(i, :)'; %#ok<AGROW>
+                end
             end
         end
         plot(1:epoch, values');
-        legend(leg{:}); xlabel('epoch'); ylabel('objective');
+        legend(leg{:});
+        xlabel('epoch');
+        ylabel('objective');
         grid on;
         drawnow;
         print(1, modelFigPath, '-dpdf'); %#ok<MCPRT>
