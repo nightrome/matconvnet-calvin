@@ -18,7 +18,6 @@ roiPool.freeform.use = true;
 roiPool.freeform.combineFgBox = true;
 roiPool.freeform.shareWeights = true;
 regionToPixel.use = true;
-trainValRatio = 0.9;
 randSeed = 20;
 logFile = 'log.txt';
 batchSize = 10;
@@ -73,10 +72,8 @@ imageListTst = dataset.getImageListTst(true);
 
 % Store in imdb
 imdb = ImdbE2S2(dataset, segmentFolder);
-imdb.dataset = dataset;
-trainValList = rand(numel(imageListTrn), 1) <= trainValRatio;
-imdb.data.train = imageListTrn( trainValList);
-imdb.data.val   = imageListTrn(~trainValList);
+imdb.data.train = imageListTrn;
+imdb.data.val   = imageListTst; % val is always the same as test
 imdb.data.test  = imageListTst;
 imdb.batchOpts.segments = structOverwriteFields(imdb.batchOpts.segments, segments);
 imdb.updateSegmentNames();
