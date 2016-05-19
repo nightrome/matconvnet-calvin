@@ -128,14 +128,12 @@ classdef E2S2NN < CalvinNN
             % Initial settings
             p = inputParser;
             addParameter(p, 'subset', 'test');
-            addParameter(p, 'computeMeanIou', true);
-            addParameter(p, 'cacheProbs', true);
+            addParameter(p, 'doCache', true);
             addParameter(p, 'limitImageCount', Inf);
             parse(p, varargin{:});
             
             subset = p.Results.subset;
-            computeMeanIou = p.Results.computeMeanIou;
-            cacheProbs = p.Results.cacheProbs;
+            doCache = p.Results.doCache;
             limitImageCount = p.Results.limitImageCount;
             
             % Set the datasetMode to be active
@@ -147,7 +145,7 @@ classdef E2S2NN < CalvinNN
             end
             
             % Run test
-            stats = obj.test('subset', subset, 'computeMeanIou', computeMeanIou, 'cacheProbs', cacheProbs, 'limitImageCount', limitImageCount);
+            stats = obj.test('subset', subset, 'doCache', doCache, 'limitImageCount', limitImageCount);
             if ~strcmp(subset, 'test'),
                 stats.loss = [obj.stats.(subset)(end).objective]';
             end;
@@ -212,27 +210,15 @@ classdef E2S2NN < CalvinNN
             obj.imdb.batchOpts.segments.colorTypeIdx = 1;
             obj.imdb.updateSegmentNames();
             
-            % Get pixel output variable name
-            regiontopixelIdx = obj.net.getLayerIndex('regiontopixel8');
-            regiontopixelOutput = obj.net.layers(regiontopixelIdx).outputs{1};
-            
-            % Disable labelpresence layer (these needs to happen before we
-            % remove the softmax layer)
-            labelpresenceIdx = obj.net.getLayerIndex('labelpresence');
-            if ~isnan(labelpresenceIdx)
-                obj.net.removeLayer('labelpresence');
-                softmaxlossIdx = obj.net.getLayerIndex('softmaxloss');
-                obj.net.layers(softmaxlossIdx).inputs{1} = regiontopixelOutput;
-                obj.net.rebuild();
-            end
-            % Disable softmax layer (that is before labelpresence)
-            softmaxIdx = obj.net.getLayerIndex('softmax');
-            if ~isnan(softmaxIdx)
-                obj.net.removeLayer('softmax');
+            % Remove accuracy layer
+            accuracyIdx = obj.net.getLayerIndex('accuracy');
+            if ~isnan(accuracyIdx)
+                obj.net.removeLayer('accuracy');
             end
             
             % Replace softmaxloss by softmax
             lossIdx = find(cellfun(@(x) isa(x, 'dagnn.Loss'), {obj.net.layers.block}));
+            assert(numel(lossIdx) == 1);
             lossName = obj.net.layers(lossIdx).name;
             lossType = obj.net.layers(lossIdx).block.loss;
             lossInputs = obj.net.layers(lossIdx).inputs;
@@ -249,6 +235,10 @@ classdef E2S2NN < CalvinNN
             else
                 error('Error: Unknown loss function!');
             end
+            
+            % Set output variable to be precious
+            obj.net.vars(outputVarIdx).precious = true;
+            
             assert(numel(outputVarIdx) == 1);
         end
         
@@ -258,26 +248,34 @@ classdef E2S2NN < CalvinNN
             % Initial settings
             p = inputParser;
             addParameter(p, 'subset', 'test');
-            addParameter(p, 'computeMeanIou', true);
-            addParameter(p, 'cacheProbs', true);
+            addParameter(p, 'doCache', true);
+            addParameter(p, 'plotFreq', 15);
+            addParameter(p, 'printFreq', 30);
             addParameter(p, 'limitImageCount', Inf);
             parse(p, varargin{:});
             
             subset = p.Results.subset;
-            computeMeanIou = p.Results.computeMeanIou;
-            cacheProbs = p.Results.cacheProbs;
+            doCache = p.Results.doCache;
+            plotFreq = p.Results.plotFreq;
+            printFreq = p.Results.printFreq;
             limitImageCount = p.Results.limitImageCount;
+            
+            % Check that settings are valid
+            if ~isinf(limitImageCount)
+                assert(~doCache);
+            end
             
             epoch = numel(obj.stats.train);
             statsPath = fullfile(obj.nnOpts.expDir, sprintf('stats-%s-epoch%d.mat', subset, epoch));
-            if exist(statsPath, 'file') && cacheProbs
+            labelingDir = fullfile(obj.nnOpts.expDir, sprintf('labelings-%s-epoch-%d', subset, epoch));
+            if exist(statsPath, 'file') && doCache
                 % Get stats from disk
                 statsStruct = load(statsPath, 'stats');
                 stats = statsStruct.stats;
             else
-                % Check that settings are valid
-                if ~isinf(limitImageCount)
-                    assert(~cacheProbs);
+                % Create output folder
+                if ~exist(labelingDir, 'dir')
+                    mkdir(labelingDir);
                 end
                 
                 % Limit images if specified (for quicker evaluation)
@@ -286,73 +284,108 @@ classdef E2S2NN < CalvinNN
                     obj.imdb.data.test = obj.imdb.data.test(sel);
                 end
                 
-                % Get probabilities (softmaxed scores) for each region
-                probsPath = fullfile(obj.nnOpts.expDir, sprintf('probs-%s-epoch%d.mat', subset, epoch));
-                if exist(probsPath, 'file') && cacheProbs
-                    probsStruct = load(probsPath, 'probs');
-                    probs = probsStruct.probs;
-                else
-                    % Init
-                    imageCount = numel(obj.imdb.data.test); % even if we test on train it must say "test" here
-                    probs = cell(imageCount, 1);
-                    
-                    % Set network to testing mode
-                    outputVarIdx = obj.prepareNetForTest();
-                    
-                    for imageIdx = 1 : imageCount
-                        printProgress('Classifying images', imageIdx, imageCount, 10);
-                        
-                        % Check whether GT labels are available for this image
-                        imageName = obj.imdb.data.test{imageIdx};
-                        labelMap = obj.imdb.dataset.getImLabelMap(imageName);
-                        if all(labelMap(:) == 0)
-                            continue;
-                        end
-                        
-                        % Get batch
-                        inputs = obj.imdb.getBatch(imageIdx, obj.net, obj.nnOpts);
-                        
-                        % Run forward pass
-                        obj.net.eval(inputs);
-                        
-                        % Extract probs
-                        curProbs = obj.net.vars(outputVarIdx).value;
-                        curProbs = gather(reshape(curProbs, [size(curProbs, 3), size(curProbs, 4)]))';
-                        
-                        % Store
-                        probs{imageIdx} = double(curProbs);
+                % Init
+                imageCount = numel(obj.imdb.data.test); % even if we test on train it must say "test" here
+                confusion = zeros(obj.imdb.numClasses, obj.imdb.numClasses);
+                evalTimer = tic;
+                
+                % Prepare colors for visualization
+                labelNames = obj.imdb.dataset.getLabelNames();
+                colorMapping = FCNNN.labelColors(obj.imdb.numClasses);
+                colorMappingError = [0, 0, 0; ...    % background
+                    1, 0, 0; ...    % too much
+                    1, 1, 0; ...    % too few
+                    0, 1, 0; ...    % rightClass
+                    0, 0, 1];       % wrongClass
+                
+                % Set network to testing mode
+                outputVarIdx = obj.prepareNetForTest();
+                
+                for imageIdx = 1 : imageCount                    
+                    % Check whether GT labels are available for this image
+                    imageName = obj.imdb.data.test{imageIdx};
+                    labelMap = obj.imdb.dataset.getImLabelMap(imageName);
+                    if all(labelMap(:) == 0)
+                        continue;
                     end
                     
-                    % Cache to disk
-                    if cacheProbs
-                        fprintf('Saving probs to disk: %s\n', probsPath);
-                        if varByteSize(probs) > 2e9
-                            matVersion = '-v7.3';
-                        else
-                            matVersion = '-v6';
+                    % Get batch
+                    inputs = obj.imdb.getBatch(imageIdx, obj.net, obj.nnOpts);
+                    
+                    % Run forward pass
+                    obj.net.eval(inputs);
+                    
+                    % Get pixel level predictions
+                    scores = obj.net.vars(outputVarIdx).value;
+                    [~, outputMap] = max(scores, [], 3);
+                    outputMap = gather(outputMap);
+                    
+                    % Accumulate errors
+                    ok = labelMap > 0;
+                    confusion = confusion + accumarray([labelMap(ok), outputMap(ok)], 1, size(confusion));
+                    
+                    % Plot example images
+                    if mod(imageIdx - 1, plotFreq) == 0 || imageIdx == imageCount
+                        
+                        % Create tiled image with image+gt+outputMap
+                        if true
+                            % Create tiling
+                            tile = ImageTile();
+                            
+                            % Add GT image
+                            image = obj.imdb.dataset.getImage(imageName) * 255;
+                            tile.addImage(image / 255);
+                            labelMapIm = ind2rgb(double(labelMap), colorMapping);
+                            labelMapIm = imageInsertBlobLabels(labelMapIm, labelMap, labelNames);
+                            tile.addImage(labelMapIm);
+                            
+                            % Add prediction image
+                            outputMapNoBg = outputMap;
+                            outputMapNoBg(labelMap == 0) = 0;
+                            outputMapIm = ind2rgb(outputMapNoBg, colorMapping);
+                            outputMapIm = imageInsertBlobLabels(outputMapIm, outputMapNoBg, labelNames);
+                            tile.addImage(outputMapIm);
+                            
+                            % Highlight differences between GT and outputMap
+                            errorMap = ones(size(labelMap));
+                            
+                            % For datasets without bg
+                            rightClass = labelMap == outputMap & labelMap >= 1;
+                            wrongClass = labelMap ~= outputMap & labelMap >= 1;
+                            errorMap(rightClass) = 4;
+                            errorMap(wrongClass) = 5;
+                            errorIm = ind2rgb(double(errorMap), colorMappingError);
+                            tile.addImage(errorIm);
+                            
+                            % Save segmentatioPredn
+                            image = tile.getTiling('totalX', numel(tile.images), 'delimiterPixels', 1, 'backgroundBlack', false);
+                            imPath = fullfile(labelingDir, [imageName, '.png']);
+                            imwrite(image, imPath);
                         end
-                        save(probsPath, 'probs', matVersion);
+                    end
+                    
+                    % Print message
+                    if mod(imageIdx - 1, printFreq) == 0 || imageIdx == imageCount
+                        evalTime = toc(evalTimer);
+                        fprintf('Processing image %d of %d (%.2f Hz)...\n', imageIdx, imageCount, imageIdx / evalTime);
                     end
                 end
                 
-                % Compute accuracy
-                [pixAcc, meanClassPixAcc] = evaluatePixAcc(obj.imdb.dataset, obj.imdb.data.test, probs, obj.imdb.segmentFolderSP);
+                % Final statistics, remove classes missing in test
+                % Note: Printing statistics earlier does not make sense if we remove missing
+                % classes
+                [stats.iu, stats.miu, stats.pacc, stats.macc] = FCNNN.getAccuracies(confusion);
+                stats.confusion = confusion;
+                fprintf('Results:\n');
+                fprintf('pixelAcc: %5.2f, meanAcc: %5.2f, meanIU: %5.2f \n', ...
+                    100 * stats.pacc, 100 * stats.macc, 100 * stats.miu);
                 
-                % Compute meanIOU
-                if computeMeanIou
-                    stats.meanIOU = evaluateMeanIOU(obj.imdb.data.test, probs, obj.imdb.segmentFolderSP);
-                end
-                
-                % Store results
-                stats.pixAcc = pixAcc;
-                stats.meanClassPixAcc = meanClassPixAcc;
-                stats.trainLoss = obj.stats.train(end).objective;
-                stats.valLoss   = obj.stats.val(end).objective;
-                if cacheProbs
+                % Save results
+                if doCache
                     if exist(statsPath, 'file'),
                         error('StatsPath already exists: %s', statsPath);
                     end
-                    save(statsPath, 'stats');
+                    save(statsPath, '-struct', 'stats');
                 end
             end
         end

@@ -337,7 +337,7 @@ classdef ImdbE2S2 < ImdbCalvin
             boxesAll = boxesAll(:, [2, 1, 4, 3])';
             
             % Store in output struct
-            inputs = {'input', image, 'oriImSize', oriImSize, 'boxes', boxesAll};
+            inputs = {'input', image, 'oriImSize', oriImSize, 'boxes', boxesAll, 'blobsSP', blobsSP};
             if regionToPixel.use
                 inputs = [inputs, {'overlapListAll', overlapListAll}];
             end
@@ -354,18 +354,10 @@ classdef ImdbE2S2 < ImdbCalvin
             if ~testMode
                 % For the SuperPixelToPixelMap, SegmentationLoss* and SegmentationAccuracyFlexible layers
                 labels = double(obj.dataset.getImLabelMap(imageName));
-                inputs = [inputs, {'blobsSP', blobsSP}];
                 inputs = [inputs, {'labels', labels}];
                 inputs = [inputs, {'classWeights', classWeights}];
             end
             numElements = 1; % One image
-            
-            % Debug: Check that SPs cover entire image
-            covered = false(size(labels));
-            for spIdx = 1 : numel(blobsSP)
-                inds = blobToImageInds(blobsSP(spIdx), oriImSize);
-                covered(inds) = true;
-            end
         end
         
         function[allBatchInds] = getAllBatchInds(obj)

@@ -157,16 +157,10 @@ classdef FCNNN < CalvinNN
             obj.imdb.setDatasetMode('test');
             obj.net.mode = 'test';
             
-            % Disable accuracy layer
+            % Remove accuracy layer
             accuracyIdx = obj.net.getLayerIndex('accuracy');
             if ~isnan(accuracyIdx),
                 obj.net.removeLayer('accuracy');
-            end;
-            
-            % Disable softmax layer (that is before labelpresence)
-            softmaxIdx = obj.net.getLayerIndex('softmax');
-            if ~isnan(softmaxIdx),
-                obj.net.removeLayer('softmax');
             end;
             
             % Remove loss or replace by normal softmax
@@ -240,7 +234,7 @@ classdef FCNNN < CalvinNN
                     mkdir(labelingDir);
                 end
                 
-                % Prepare stuff for visualization
+                % Prepare colors for visualization
                 labelNames = obj.imdb.dataset.getLabelNames();
                 colorMapping = FCNNN.labelColors(obj.imdb.numClasses);
                 colorMappingError = [0, 0, 0; ...    % background
@@ -284,7 +278,7 @@ classdef FCNNN < CalvinNN
                     % Run forward pass
                     obj.net.eval(inputs);
                     
-                    % Forward image through net and get predictions
+                    % Get pixel level predictions
                     scores = obj.net.vars(outputVarIdx).value;
                     [~, outputMap] = max(scores, [], 3);
                     outputMap = gather(outputMap);
@@ -388,10 +382,9 @@ classdef FCNNN < CalvinNN
                     % classes
                     [stats.iu, stats.miu, stats.pacc, stats.macc] = FCNNN.getAccuracies(confusion);
                     stats.confusion = confusion;
-                    fprintf('Result with all classes:\n');
-                    fprintf('IU %4.1f ', 100 * stats.iu);
-                    fprintf('\n meanIU: %5.2f pixelAcc: %5.2f, meanAcc: %5.2f\n', ...
-                        100 * stats.miu, 100 * stats.pacc, 100 * stats.macc);
+                    fprintf('Results:\n');
+                    fprintf('pixelAcc: %5.2f, meanAcc: %5.2f, meanIU: %5.2f \n', ...
+                        100 * stats.pacc, 100 * stats.macc, 100 * stats.miu);
                     
                     % Save results
                     if doCache
