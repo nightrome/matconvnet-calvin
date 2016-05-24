@@ -72,7 +72,7 @@ for epoch = start + 1 : obj.nnOpts.numEpochs
                 fieldValues = [obj.stats.(datasetMode).(field)];
                 
                 for i = 1 : size(fieldValues, 1)
-                    if size(fieldValues, 1) == 1 || ~nnOpts.plotEvalAll
+                    if size(fieldValues, 1) == 1 || ~obj.nnOpts.plotEvalAll
                         % For i.e. objective with 1 value
                         leg{end + 1} = sprintf('%s (%s)', field, datasetMode); %#ok<AGROW>
                     else
