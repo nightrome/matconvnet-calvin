@@ -7,7 +7,7 @@ function state = accumulateGradients(obj, state, net, batchSize)
 % Copyright by Matconvnet (cnn_train_dag.m)
 % Modified by Holger Caesar, 2016
 
-for p=1:numel(net.params)
+for p = 1 : numel(net.params)
     switch net.params(p).trainMethod
         case 'average' % mainly for batch normalization
             thisLR = net.params(p).learningRate;
