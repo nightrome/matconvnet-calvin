@@ -59,35 +59,73 @@ for epoch = start + 1 : obj.nnOpts.numEpochs
     
     % Plot statistics
     if obj.nnOpts.plotEval
-        figure(1); clf;
-        values = [];
-        leg = {};
-        datasetModes = {'train', 'val'};
-        for datasetModeIdx = 1 : numel(datasetModes)
-            datasetMode = datasetModes{datasetModeIdx};
-            fields = setdiff(fieldnames(obj.stats.train), {'num', 'time'});
-            
-            for fieldIdx = 1 : numel(fields)
-                field = fields{fieldIdx};
-                fieldValues = [obj.stats.(datasetMode).(field)];
-                
-                for i = 1 : size(fieldValues, 1)
-                    if size(fieldValues, 1) == 1 || ~obj.nnOpts.plotEvalAll
-                        % For i.e. objective with 1 value
-                        leg{end + 1} = sprintf('%s (%s)', field, datasetMode); %#ok<AGROW>
-                    else
-                        % For i.e. accuracy with 3 values
-                        leg{end + 1} = sprintf('%s-%d (%s)', field, i, datasetMode); %#ok<AGROW>
-                    end
-                    values(end + 1, :) = fieldValues(i, :)'; %#ok<AGROW>
-                end
+        plotAccuracy = isfield(obj.stats.val, 'accuracy') && obj.nnOpts.plotAccuracy;
+        cmap = parula(3);
+        cmap(3, :) = [255, 140, 0] / 255;
+        
+        if true
+            figure(1); clf;
+            if plotAccuracy
+                subplot(2, 1, 1);
             end
+            hold on;
+            leg = {};
+            datasetModes = {'train', 'val'};
+            for datasetModeIdx = 1 : numel(datasetModes)
+                datasetMode = datasetModes{datasetModeIdx};
+                field = 'objective';
+                fieldValues = [obj.stats.(datasetMode).(field)];
+                if datasetModeIdx == 1
+                    marker = '-';
+                else
+                    marker = '--';
+                end
+                
+                % For i.e. objective with 1 value
+                leg{end + 1} = sprintf('%s (%s)', field, datasetMode); %#ok<AGROW>
+                values = fieldValues(1, :)';
+                plot(1:epoch, values, 'Color', cmap(1, :), 'LineStyle', marker);
+            end
+            legend(leg);
+            xlabel('epoch');
+            ylabel('objective');
+            grid on;
         end
-        plot(1:epoch, values');
-        legend(leg{:});
-        xlabel('epoch');
-        ylabel('objective');
-        grid on;
+        
+        if plotAccuracy
+            subplot(2, 1, 2);
+            hold on;
+            
+            leg = {};
+            datasetModes = {'train', 'val'};
+            for datasetModeIdx = 1 : numel(datasetModes)
+                datasetMode = datasetModes{datasetModeIdx};
+                field = 'accuracy';
+                fieldValues = [obj.stats.(datasetMode).(field)];
+                if datasetModeIdx == 1
+                    marker = '-';
+                else
+                    marker = '--';
+                end
+                
+                leg{end + 1} = sprintf('Pix. Acc. (%s)', datasetMode); %#ok<AGROW>
+                values = fieldValues(1, :)';
+                plot(1:epoch, values, 'Color', cmap(1, :), 'LineStyle', marker);
+
+                leg{end + 1} = sprintf('Class. Acc. (%s)', datasetMode); %#ok<AGROW>
+                values = fieldValues(2, :)';
+                plot(1:epoch, values, 'Color', cmap(2, :), 'LineStyle', marker);
+                
+                leg{end + 1} = sprintf('Mean IU (%s)', datasetMode); %#ok<AGROW>
+                values = fieldValues(3, :)';
+                plot(1:epoch, values, 'Color', cmap(3, :), 'LineStyle', marker);
+            end
+            legend(leg);
+            xlabel('epoch');
+            ylabel('accuracy');
+            grid on;
+        end
+        
         drawnow;
         print(1, modelFigPath, '-dpdf'); %#ok<MCPRT>
     end
