@@ -114,11 +114,3 @@ nnClass.train();
 % Test the network
 stats = nnClass.test();
 disp(stats);
-
-% Save the results
-statsPath = fullfile(outputFolder, sprintf('stats-epoch-%d.mat', nnClass.nnOpts.numEpochs));
-if exist(statsPath, 'file'),
-    error('Error: statsPath already exists: %s', statsPath);
-else
-    save(statsPath, 'stats', '-v6');
-end;
