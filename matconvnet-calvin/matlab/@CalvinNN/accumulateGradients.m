@@ -14,7 +14,7 @@ for p = 1 : numel(net.params)
             net.params(p).value = ...
                 (1 - thisLR) * net.params(p).value + ...
                 (thisLR / batchSize / net.params(p).fanout) * net.params(p).der;
-            
+            assert(gather(~any(isnan(net.params(p).value(:)))));
         case 'gradient'
             thisDecay = obj.nnOpts.weightDecay * net.params(p).weightDecay;
             thisLR = state.learningRate * net.params(p).learningRate;
