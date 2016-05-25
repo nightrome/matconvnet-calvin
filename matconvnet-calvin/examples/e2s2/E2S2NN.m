@@ -160,17 +160,17 @@ classdef E2S2NN < CalvinNN
             obj.net.mode = 'test';
             
             % Reset segments to default
+            obj.imdb.batchOpts.segments.switchColorTypesEpoch = false;
+            obj.imdb.batchOpts.segments.switchColorTypesBatch = false;
             obj.imdb.batchOpts.segments.colorTypeIdx = 1;
             obj.imdb.updateSegmentNames();
             
             % Remove accuracy layer
             accuracyIdx = obj.net.getLayerIndex('accuracy');
-            if ~isnan(accuracyIdx)
-                obj.net.removeLayer('accuracy');
-            end
             
             % Replace softmaxloss by softmax
             lossIdx = find(cellfun(@(x) isa(x, 'dagnn.Loss'), {obj.net.layers.block}));
+            lossIdx(lossIdx == accuracyIdx) = [];
             assert(numel(lossIdx) == 1);
             lossName = obj.net.layers(lossIdx).name;
             lossType = obj.net.layers(lossIdx).block.loss;
@@ -188,9 +188,6 @@ classdef E2S2NN < CalvinNN
             else
                 error('Error: Unknown loss function!');
             end
-            
-            % Set output variable to be precious
-            obj.net.vars(outputVarIdx).precious = true;
             
             assert(numel(outputVarIdx) == 1);
         end
