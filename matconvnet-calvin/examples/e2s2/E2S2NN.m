@@ -327,7 +327,7 @@ classdef E2S2NN < CalvinNN
                 % Final statistics, remove classes missing in test
                 % Note: Printing statistics earlier does not make sense if we remove missing
                 % classes
-                [stats.miu, stats.pacc, stats.macc] = confMatToAccuracies(confusion);
+                [stats.pacc, stats.macc, stats.miu] = confMatToAccuracies(confusion);
                 stats.confusion = confusion;
                 fprintf('Results:\n');
                 fprintf('pixelAcc: %5.2f, meanAcc: %5.2f, meanIU: %5.2f \n', ...
@@ -340,27 +340,6 @@ classdef E2S2NN < CalvinNN
                     end
                     save(statsPath, '-struct', 'stats');
                 end
-            end
-        end
-    end
-    
-    methods (Static)
-        function stats = extractStatsOldLoss(net, ~)
-            % stats = extractStats(net)
-            %
-            % Extract all losses from the network.
-            % Contrary to CalvinNN.extractStats(..) this measures loss on
-            % an image (subbatch) level, not on a region level!
-            
-            lossInds = find(cellfun(@(x) isa(x, 'dagnn.Loss'), {net.layers.block}));
-            stats = struct();
-            for lossIdx = 1 : numel(lossInds)
-                layerIdx = lossInds(lossIdx);
-                objective = net.layers(layerIdx).block.average ...
-                    * net.layers(layerIdx).block.numAveraged ...
-                    / net.layers(layerIdx).block.numSubBatches;
-                assert(~isnan(objective));
-                stats.(net.layers(layerIdx).outputs{1}) = objective;
             end
         end
     end
