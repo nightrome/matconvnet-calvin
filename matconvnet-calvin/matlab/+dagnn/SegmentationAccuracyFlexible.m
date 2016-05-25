@@ -27,8 +27,7 @@ classdef SegmentationAccuracyFlexible < dagnn.Loss
             % compute statistics only on accumulated pixels
             ok = labels > 0;
             numPixels = sum(ok(:));
-            obj.confusion = obj.confusion + ...
-                accumarray([labels(ok), predictions(ok)], 1, [obj.labelCount, obj.labelCount]);
+            obj.confusion = obj.confusion + accumarray([labels(ok), predictions(ok)], 1, [obj.labelCount, obj.labelCount]);
             
             % Compute accuracies
             [obj.pixelAccuracy, obj.meanAccuracy, obj.meanIntersectionUnion] = confMatToAccuracies(obj.confusion);
