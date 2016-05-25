@@ -330,7 +330,7 @@ classdef E2S2NN < CalvinNN
                 [stats.pacc, stats.macc, stats.miu] = confMatToAccuracies(confusion);
                 stats.confusion = confusion;
                 fprintf('Results:\n');
-                fprintf('pixelAcc: %5.2f, meanAcc: %5.2f, meanIU: %5.2f \n', ...
+                fprintf('pixelAcc: %5.2f%%, meanAcc: %5.2f%%, meanIU: %5.2f%%\n', ...
                     100 * stats.pacc, 100 * stats.macc, 100 * stats.miu);
                 
                 % Save results
