@@ -165,11 +165,9 @@ classdef E2S2NN < CalvinNN
             obj.imdb.batchOpts.segments.colorTypeIdx = 1;
             obj.imdb.updateSegmentNames();
             
-            % Remove accuracy layer
-            accuracyIdx = obj.net.getLayerIndex('accuracy');
-            
             % Replace softmaxloss by softmax
             lossIdx = find(cellfun(@(x) isa(x, 'dagnn.Loss'), {obj.net.layers.block}));
+            accuracyIdx = obj.net.getLayerIndex('accuracy');
             lossIdx(lossIdx == accuracyIdx) = [];
             assert(numel(lossIdx) == 1);
             lossName = obj.net.layers(lossIdx).name;
@@ -202,6 +200,7 @@ classdef E2S2NN < CalvinNN
             addParameter(p, 'plotFreq', 15);
             addParameter(p, 'printFreq', 30);
             addParameter(p, 'limitImageCount', Inf);
+            addParameter(p, 'storeOutputMaps', false);
             parse(p, varargin{:});
             
             subset = p.Results.subset;
@@ -209,6 +208,7 @@ classdef E2S2NN < CalvinNN
             plotFreq = p.Results.plotFreq;
             printFreq = p.Results.printFreq;
             limitImageCount = p.Results.limitImageCount;
+            storeOutputMaps = p.Results.storeOutputMaps;
             
             % Check that settings are valid
             if ~isinf(limitImageCount)
@@ -217,15 +217,19 @@ classdef E2S2NN < CalvinNN
             
             epoch = numel(obj.stats.train);
             statsPath = fullfile(obj.nnOpts.expDir, sprintf('stats-%s-epoch%d.mat', subset, epoch));
-            labelingDir = fullfile(obj.nnOpts.expDir, sprintf('labelings-%s-epoch-%d', subset, epoch));
+            labelingFolder = fullfile(obj.nnOpts.expDir, sprintf('labelings-%s-epoch-%d', subset, epoch));
+            outputFolder = fullfile(obj.nnOpts.expDir, sprintf('outputMaps-%s-epoch-%d', subset, epoch));
             if exist(statsPath, 'file') && doCache
                 % Get stats from disk
                 statsStruct = load(statsPath, 'stats');
                 stats = statsStruct.stats;
             else
                 % Create output folder
-                if ~exist(labelingDir, 'dir')
-                    mkdir(labelingDir);
+                if ~exist(labelingFolder, 'dir')
+                    mkdir(labelingFolder);
+                end
+                if ~exist(outputFolder, 'dir') && storeOutputMaps
+                    mkdir(outputFolder);
                 end
                 
                 % Limit images if specified (for quicker evaluation)
@@ -307,11 +311,17 @@ classdef E2S2NN < CalvinNN
                             errorIm = ind2rgb(double(errorMap), colorMappingError);
                             tile.addImage(errorIm);
                             
-                            % Save segmentatioPredn
+                            % Save segmentation
                             image = tile.getTiling('totalX', numel(tile.images), 'delimiterPixels', 1, 'backgroundBlack', false);
-                            imPath = fullfile(labelingDir, [imageName, '.png']);
+                            imPath = fullfile(labelingFolder, [imageName, '.png']);
                             imwrite(image, imPath);
                         end
+                    end
+                    
+                    % Store outputMaps to disk
+                    if storeOutputMaps
+                        outputPath = fullfile(outputFolder, [imageName, '.mat']);
+                        save(outputPath, 'outputMap');
                     end
                     
                     % Print message
