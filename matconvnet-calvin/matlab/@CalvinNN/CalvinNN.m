@@ -43,9 +43,10 @@ classdef CalvinNN < handle
         convertNetwork(obj, net);
         convertNetworkToFastRcnn(obj, varargin);
         init(obj, varargin);
+        plotStats(obj, epochs, stats, plotAccuracy);
         saveState(obj, fileName);
-        train(obj);
         stats = test(obj);
+        train(obj);
     end
     
     methods (Access = protected)

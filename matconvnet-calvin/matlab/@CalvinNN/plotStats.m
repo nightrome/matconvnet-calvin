@@ -1,5 +1,5 @@
-function plotStats(epochs, stats, plotAccuracy)
-% plotStats(epochs, stats, plotAccuracy)
+function plotStats(obj, epochs, stats, plotAccuracy) %#ok<INUSL>
+% plotStats(obj, epochs, stats, plotAccuracy)
 %
 % Plot the results of different metrics on train and validation set.
 %
@@ -13,7 +13,7 @@ if true
     figure(1);
     clf;
     if plotAccuracy
-        subplot(2, 1, 1);
+        hsp1 = subplot(2, 1, 1);
     end
     hold on;
     leg = {};
@@ -33,14 +33,15 @@ if true
         values = fieldValues(1, :)';
         plot(epochs, values, 'Color', cmap(1, :), 'LineStyle', marker);
     end
-    legend(leg);
+    hleg1 = legend(leg, 'Location', 'NorthEastOutSide');
+    
     xlabel('epoch');
     ylabel('objective');
     grid on;
 end
 
 if plotAccuracy
-    subplot(2, 1, 2);
+    hsp2 = subplot(2, 1, 2);
     hold on;
     
     leg = {};
@@ -67,7 +68,20 @@ if plotAccuracy
         values = fieldValues(3, :)';
         plot(epochs, values, 'Color', cmap(3, :), 'LineStyle', marker);
     end
-    legend(leg);
+    
+    % Define legend
+    hleg2 = legend(leg, 'Location', 'NorthEastOutSide');
+    
+    % Align both plots
+    if false
+        plotPos1 = get(hsp1, 'Position');
+        plotPos2 = get(hsp2, 'Position');
+        set(hsp2, 'Position', [plotPos1(1), plotPos2(2), plotPos1(3:4)]);
+        legPos1 = get(hleg1, 'Position');
+        legPos2 = get(hleg2, 'Position');
+        set(hleg2, 'Position', [legPos1(1), legPos2(2), legPos1(3:4)]);
+    end
+    
     xlabel('epoch');
     ylabel('accuracy');
     grid on;
