@@ -84,11 +84,13 @@ classdef FCNNN < CalvinNN
             addParameter(p, 'subset', 'test');
             addParameter(p, 'limitImageCount', Inf);
             addParameter(p, 'findMapping', false);
+            addParameter(p, 'storeOutputMaps', false);
             parse(p, varargin{:});
             
             subset = p.Results.subset;
             limitImageCount = p.Results.limitImageCount;
             findMapping = p.Results.findMapping;
+            storeOutputMaps = p.Results.storeOutputMaps;
             
             % Set the datasetMode to be active
             if strcmp(subset, 'test'),
@@ -99,7 +101,7 @@ classdef FCNNN < CalvinNN
             end
             
             % Run test
-            stats = obj.test('subset', subset, 'limitImageCount', limitImageCount, 'findMapping', findMapping);
+            stats = obj.test('subset', subset, 'limitImageCount', limitImageCount, 'findMapping', findMapping, 'storeOutputMaps', storeOutputMaps);
             
             % Restore the original test set
             if ~isempty(temp),
@@ -196,7 +198,7 @@ classdef FCNNN < CalvinNN
             addParameter(p, 'plotFreq', 15);
             addParameter(p, 'printFreq', 30);
             addParameter(p, 'showPlot', false);
-            addParameter(p, 'doOutputMaps', true);
+            addParameter(p, 'storeOutputMaps', false);
             parse(p, varargin{:});
             
             subset = p.Results.subset;
@@ -206,12 +208,12 @@ classdef FCNNN < CalvinNN
             plotFreq = p.Results.plotFreq;
             printFreq = p.Results.printFreq;
             showPlot = p.Results.showPlot;
-            doOutputMaps = p.Results.doOutputMaps;
+            storeOutputMaps = p.Results.storeOutputMaps;
             
             epoch = numel(obj.stats.train);
             statsPath = fullfile(obj.nnOpts.expDir, sprintf('stats-%s-epoch%d.mat', subset, epoch));
             labelingDir = fullfile(obj.nnOpts.expDir, sprintf('labelings-%s-epoch-%d', subset, epoch));
-            mapOutputFolder = fullfile(obj.nnOpts.expDir, sprintf('outputMaps-epoch-%d', epoch));
+            mapOutputFolder = fullfile(obj.nnOpts.expDir, sprintf('outputMaps-%s-epoch-%d', subset, epoch));
             if exist(statsPath, 'file'),
                 % Get stats from disk
                 statsStruct = load(statsPath, 'stats');
@@ -227,7 +229,7 @@ classdef FCNNN < CalvinNN
                 outputVarIdx = obj.prepareNetForTest();
                 
                 % Create output folder
-                if doOutputMaps && ~exist(mapOutputFolder, 'dir')
+                if storeOutputMaps && ~exist(mapOutputFolder, 'dir')
                     mkdir(mapOutputFolder)
                 end
                 if ~exist(labelingDir, 'dir')
@@ -289,9 +291,9 @@ classdef FCNNN < CalvinNN
                     confusion = confusion + accumarray([labelMap(ok), outputMap(ok)], 1, size(confusion));
                     
                     % If a folder was specified, output the predicted label maps
-                    if doOutputMaps
+                    if storeOutputMaps
                         outputPath = fullfile(mapOutputFolder, [imageName, '.mat']);
-                        if obj.imdb.numClasses > 200
+                        if obj.imdb.numClasses > 70
                             save(outputPath, 'outputMap');
                         else
                             save(outputPath, 'outputMap', 'scores');
