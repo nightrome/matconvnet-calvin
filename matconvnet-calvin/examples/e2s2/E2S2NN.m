@@ -71,6 +71,17 @@ classdef E2S2NN < CalvinNN
                 end
             end
             
+            if isfield(obj.nnOpts.misc, 'softmaxBeforeRegionToPixel') && obj.nnOpts.misc.softmaxBeforeRegionToPixel
+                % Change softmaxloss to just log loss
+                % Keep name for compatibility reasons
+                lossIdx = obj.net.getLayerIndex('softmaxloss');
+                obj.net.layers(lossIdx).block.loss = 'log';
+                
+                % Insert softmax before regiontopixel8
+                softmaxBlock = dagnn.SoftMax();
+                insertLayer(obj.net, 'fc8', 'regiontopixel8', 'softmax', softmaxBlock);
+            end
+            
             % Sort layers by their first occurrence
             sortLayers(obj.net);
         end
@@ -83,11 +94,13 @@ classdef E2S2NN < CalvinNN
             addParameter(p, 'subset', 'test');
             addParameter(p, 'doCache', true);
             addParameter(p, 'limitImageCount', Inf);
+            addParameter(p, 'storeOutputMaps', false);
             parse(p, varargin{:});
             
             subset = p.Results.subset;
             doCache = p.Results.doCache;
             limitImageCount = p.Results.limitImageCount;
+            storeOutputMaps = p.Results.storeOutputMaps;
             
             % Set the datasetMode to be active
             if strcmp(subset, 'test'),
@@ -98,7 +111,7 @@ classdef E2S2NN < CalvinNN
             end
             
             % Run test
-            stats = obj.test('subset', subset, 'doCache', doCache, 'limitImageCount', limitImageCount);
+            stats = obj.test('subset', subset, 'doCache', doCache, 'limitImageCount', limitImageCount, 'storeOutputMaps', storeOutputMaps);
             if ~strcmp(subset, 'test'),
                 stats.loss = [obj.stats.(subset)(end).objective]';
             end;
@@ -109,43 +122,43 @@ classdef E2S2NN < CalvinNN
             end
         end
         
-        function extractFeatures(obj, featFolder)
-            % extractFeatures(obj, featFolder)
-            
-            % Init
-            imageList = unique([obj.imdb.data.train; obj.imdb.data.val; obj.imdb.data.test]);
-            imageCount = numel(imageList);
-            
-            % Update imdb's test set
-            tempTest = obj.imdb.data.test;
-            obj.imdb.data.test = imageList;
-            
-            % Set network to testing mode
-            outputVarIdx = obj.prepareNetForTest();
-            
-            for imageIdx = 1 : imageCount
-                printProgress('Classifying images', imageIdx, imageCount, 10);
-                
-                % Get batch
-                inputs = obj.imdb.getBatch(imageIdx, obj.net);
-                
-                % Run forward pass
-                obj.net.eval(inputs);
-                
-                % Extract probs
-                curProbs = obj.net.vars(outputVarIdx).value;
-                curProbs = gather(reshape(curProbs, [size(curProbs, 3), size(curProbs, 4)]))';
-                
-                % Store
-                imageName = imageList{imageIdx};
-                featPath = fullfile(featFolder, [imageName, '.mat']);
-                features = double(curProbs); %#ok<NASGU>
-                save(featPath, 'features', '-v6');
-            end
-            
-            % Reset test set
-            obj.imdb.data.test = tempTest;
-        end
+%         function extractFeatures(obj, featFolder)
+%             % extractFeatures(obj, featFolder)
+%             
+%             % Init
+%             imageList = unique([obj.imdb.data.train; obj.imdb.data.val; obj.imdb.data.test]);
+%             imageCount = numel(imageList);
+%             
+%             % Update imdb's test set
+%             tempTest = obj.imdb.data.test;
+%             obj.imdb.data.test = imageList;
+%             
+%             % Set network to testing mode
+%             outputVarIdx = obj.prepareNetForTest();
+%             
+%             for imageIdx = 1 : imageCount
+%                 printProgress('Classifying images', imageIdx, imageCount, 10);
+%                 
+%                 % Get batch
+%                 inputs = obj.imdb.getBatch(imageIdx, obj.net);
+%                 
+%                 % Run forward pass
+%                 obj.net.eval(inputs);
+%                 
+%                 % Extract probs
+%                 curProbs = obj.net.vars(outputVarIdx).value;
+%                 curProbs = gather(reshape(curProbs, [size(curProbs, 3), size(curProbs, 4)]))';
+%                 
+%                 % Store
+%                 imageName = imageList{imageIdx};
+%                 featPath = fullfile(featFolder, [imageName, '.mat']);
+%                 features = double(curProbs); %#ok<NASGU>
+%                 save(featPath, 'features', '-v6');
+%             end
+%             
+%             % Reset test set
+%             obj.imdb.data.test = tempTest;
+%         end
         
         function[outputVarIdx] = prepareNetForTest(obj)
             % [outputVarIdx] = prepareNetForTest(obj)
@@ -181,8 +194,8 @@ classdef E2S2NN < CalvinNN
                 outputVarIdx = obj.net.layers(outputLayerIdx).outputIndexes;
             elseif strcmp(lossType, 'log')
                 % Only output the scores of the regiontopixel layer
+                outputVarIdx = obj.net.layers(lossIdx).inputIndexes(1);
                 obj.net.removeLayer(lossName);
-                outputVarIdx = obj.net.getVarIndex(obj.net.getOutputs{1});
             else
                 error('Error: Unknown loss function!');
             end
@@ -215,14 +228,18 @@ classdef E2S2NN < CalvinNN
                 assert(~doCache);
             end
             
+            if isfield(obj.nnOpts.misc, 'testOpts') && isfield(obj.nnOpts.misc.testOpts, 'testColorSpace') && ~isempty(obj.nnOpts.misc.testOpts.testColorSpace)
+                testAppendStr = sprintf('-%s', lower(obj.imdb.batchOpts.segments.colorTypes{obj.nnOpts.misc.testOpts.testColorSpace}));
+            else
+                testAppendStr = '';
+            end
             epoch = numel(obj.stats.train);
-            statsPath = fullfile(obj.nnOpts.expDir, sprintf('stats-%s-epoch%d.mat', subset, epoch));
-            labelingFolder = fullfile(obj.nnOpts.expDir, sprintf('labelings-%s-epoch-%d', subset, epoch));
-            outputFolder = fullfile(obj.nnOpts.expDir, sprintf('outputMaps-%s-epoch-%d', subset, epoch));
+            statsPath = fullfile(obj.nnOpts.expDir, sprintf('stats-%s-epoch%d%s.mat', subset, epoch, testAppendStr));
+            labelingFolder = fullfile(obj.nnOpts.expDir, sprintf('labelings-%s-epoch%d%s', subset, epoch, testAppendStr));
+            outputFolder = fullfile(obj.nnOpts.expDir, sprintf('outputMaps-%s-epoch%d%s', subset, epoch, testAppendStr));
             if exist(statsPath, 'file') && doCache
                 % Get stats from disk
-                statsStruct = load(statsPath, 'stats');
-                stats = statsStruct.stats;
+                stats = load(statsPath);
             else
                 % Create output folder
                 if ~exist(labelingFolder, 'dir')
@@ -321,7 +338,11 @@ classdef E2S2NN < CalvinNN
                     % Store outputMaps to disk
                     if storeOutputMaps
                         outputPath = fullfile(outputFolder, [imageName, '.mat']);
-                        save(outputPath, 'outputMap');
+                        if obj.imdb.numClasses > 70
+                            save(outputPath, 'outputMap');
+                        else
+                            save(outputPath, 'outputMap', 'scores');
+                        end
                     end
                     
                     % Print message
