@@ -356,7 +356,7 @@ classdef ImdbFCN < ImdbCalvin
             if ~testMode
                 %TODO: fix imageIdx relative to subset
                 if obj.dataset.annotation.hasPixelLabels || obj.batchOpts.images.isFullySupervised(imageIdx)
-                    inputs = [inputs, {'label', labels}];
+                    inputs = [inputs, {'label', double(labels)}];  % has to be double to avoid problems in loss
                 end
                 if nnOpts.misc.weaklySupervised
                     assert(~any(cellfun(@(x) isempty(x), labelsImageCell)));
