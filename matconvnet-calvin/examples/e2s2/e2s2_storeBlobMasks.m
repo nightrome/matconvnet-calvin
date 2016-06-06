@@ -33,7 +33,7 @@ segmentFolder = fullfile(glFeaturesFolder, projectName, dataset.name, 'segmentat
 masksName = sprintf('blobMasks%dx%d', roiPoolSize(1), roiPoolSize(2));
 
 % Get image list
-[imageList, imageCount] = dataset.getImageList(true);
+[imageList, imageCount] = dataset.getImageList();
 
 for imageIdx = 1 : imageCount,
     printProgress('Processing image', imageIdx, imageCount, 50);
