@@ -91,11 +91,19 @@ classdef ImdbE2S2 < ImdbCalvin
                 batchOptsCopy.imageFlipping = false;
                 batchOptsCopy.segments.switchColorTypesEpoch = false;
                 batchOptsCopy.segments.switchColorTypesBatch = false;
-                if batchOptsCopy.segments.colorTypeIdx == 1,
-                    batchOptsCopy.segments.colorTypeIdx = 1;
+                
+                if isfield(nnOpts.misc, 'testOpts') && isfield(nnOpts.misc.testOpts, 'testColorSpace')
+                    testColorSpace = nnOpts.misc.testOpts.testColorSpace;
+                else
+                    testColorSpace = 1;
+                end
+                if batchOptsCopy.segments.colorTypeIdx ~= testColorSpace,
+                    batchOptsCopy.segments.colorTypeIdx = testColorSpace;
                     obj.updateSegmentNames(batchOptsCopy);
                 end;
                 
+                % Illegal option that is only used as an upper bound for
+                % performance with better regions
                 if isfield(nnOpts.misc, 'testOpts'),
                     if isfield(nnOpts.misc.testOpts, 'subsamplePosRange'),
                         batchOptsCopy.subsample = true;
@@ -135,11 +143,15 @@ classdef ImdbE2S2 < ImdbCalvin
             
             % Get segmentation structure
             segmentPathRP = [obj.segmentFolderRP, filesep, imageName, '.mat'];
-            segmentStructRP = load(segmentPathRP, 'propBlobs', 'overlapList', 'superPixelInds');
+            segmentStructRP = load(segmentPathRP, 'propBlobs', 'overlapList');
             overlapListRP = segmentStructRP.overlapList;
-            spInds = segmentStructRP.superPixelInds;
             blobsRP = segmentStructRP.propBlobs(:);
             clearvars segmentStructRP;
+            
+            % Get SPs
+            segmentPathSP = [obj.segmentFolderSP, filesep, imageName, '.mat'];
+            segmentStructSP = load(segmentPathSP, 'propBlobs');
+            blobsSP = segmentStructSP.propBlobs;
             
             % Get blobMasks from file
             if roiPool.freeform.use
@@ -151,10 +163,6 @@ classdef ImdbE2S2 < ImdbCalvin
                 blobMasksRP = segmentStructRP.(blobMasksName);
                 clearvars segmentStructRP;
             end
-            
-            % Get superpixels
-            blobsSP = blobsRP(spInds);
-            clearvars spInds;
             
             if ~weaklySupervised.use
                 % Get GT structure
@@ -353,7 +361,7 @@ classdef ImdbE2S2 < ImdbCalvin
             end
             if ~testMode
                 % For the SuperPixelToPixelMap, SegmentationLoss* and SegmentationAccuracyFlexible layers
-                labels = double(obj.dataset.getImLabelMap(imageName));
+                labels = double(obj.dataset.getImLabelMap(imageName)); % has to be double to avoid problems in loss
                 inputs = [inputs, {'labels', labels}];
                 inputs = [inputs, {'classWeights', classWeights}];
             end
