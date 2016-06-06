@@ -14,6 +14,7 @@ addParameter(p, 'epoch', 50);
 addParameter(p, 'subset', 'test'); % train / test
 addParameter(p, 'expSubFolder', '');
 addParameter(p, 'findMapping', false); % Find the best possible label mapping from ILSVRC to target dataset
+addParameter(p, 'storeOutputMaps', true);
 parse(p, varargin{:});
 
 dataset = p.Results.dataset;
@@ -25,6 +26,7 @@ epoch = p.Results.epoch;
 subset = p.Results.subset;
 expSubFolder = p.Results.expSubFolder;
 findMapping = p.Results.findMapping;
+storeOutputMaps = p.Results.storeOutputMaps;
 callArgs = p.Results; %#ok<NASGU>
 
 % experiment and data paths
@@ -40,7 +42,7 @@ rng(randSeed);
 % Check if directory exists
 if ~exist(expDir, 'dir')
     error('Error: Experiment directory does not exist %s\n', expDir);
-end;
+end
 
 % Load imdb and nnOpts from file
 if exist(settingsPath, 'file')
@@ -72,8 +74,27 @@ nnOpts.gpus = gpus;
 nnOpts.convertToTrain = false;
 nnOpts.expDir = expDir;
 
+% Workaround: Adapt network
+if true
+    netIn = load(netPath);
+    
+    % SegmentationAccuracyFlexible
+    accLayerIdx = find(strcmp({netIn.net.layers.type}, 'SegmentationAccuracyFlexible'));
+    if ~isempty(accLayerIdx)
+        netIn.net.layers(accLayerIdx).type = 'dagnn.SegmentationAccuracyFlexible';
+        netPath = netIn;
+    end
+    
+    % SegmentationLossWeighted
+    lossLayerIdx = find(strcmp({netIn.net.layers.type}, 'dagnn.SegmentationLossWeighted'));
+    if ~isempty(lossLayerIdx)
+        netIn.net.layers(lossLayerIdx).type = 'dagnn.SegmentationLossPixel';
+        netPath = netIn;
+    end
+end
+
 % Create network
 nnClass = FCNNN(netPath, imdbFcn, nnOpts);
 
 % Test the network
-stats = nnClass.testOnSet('subset', subset, 'findMapping', findMapping);
+stats = nnClass.testOnSet('subset', subset, 'findMapping', findMapping, 'storeOutputMaps', storeOutputMaps);
