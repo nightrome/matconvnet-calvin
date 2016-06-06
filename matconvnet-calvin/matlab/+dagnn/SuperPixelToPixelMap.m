@@ -31,7 +31,8 @@ classdef SuperPixelToPixelMap < dagnn.Layer
             % Init (if we don't have scores for a pixel/superpixel, because it is not
             % included in any region, we just set all scores of that pixel to
             % the lowest score overall)
-            minScore = min(scoresSP(:)) - 1e-4;
+            minScore = min(scoresSP(:));
+            assert(~isnan(minScore));
             scoresMap = minScore * ones(oriImSize(1), oriImSize(2), labelCount, 1, 'like', scoresSP);
             obj.mask = cell(spCount, labelCount);
             
