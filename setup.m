@@ -1,7 +1,7 @@
-function vl_setupnn_all()
-% vl_setupnn_all()
+function setup()
+% setup()
 %
-% Add matconvnet, matconvnet-fcn and matconvnet-calvin to Matlab path.
+% Add Matconvnet, Matconvnet-FCN and Matconvnet-Calvin to Matlab path.
 %
 % Copyright by Holger Caesar, 2016
 

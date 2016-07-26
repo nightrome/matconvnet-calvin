@@ -32,7 +32,7 @@ Copyrights by Holger Caesar and Jasper Uijlings, 2015-2016.
   - vl_compilenn_calvin();
   - cd ../..;
 - Add files to Matlab path
-  - vl_setupnn_all();
+  - setup();
 - For missing files please contact Holger Caesar.
 
 **Dependencies:**
