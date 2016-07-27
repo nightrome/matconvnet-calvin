@@ -10,8 +10,8 @@
 % Settings
 global glFeaturesFolder;
 projectName = 'WeaklySupervisedLearning';
-run = 28;
-exp = 0;
+run = 1;
+exp = 1;
 netName = 'VGG16';
 dataset = SiftFlowDataset();
 gpus = 2;
@@ -20,10 +20,10 @@ roiPool.freeform.use = true;
 roiPool.freeform.combineFgBox = true;
 roiPool.freeform.shareWeights = true;
 regionToPixel.use = true;
-randSeed = 280;
+randSeed = 42;
 logFile = 'log.txt';
 batchSize = 10;
-numEpochs = 30; % makes sure we always do the same number of gradient steps
+numEpochs = 30;
 highLRNumEpochs = 20;
 lowLRNumEpochs  = numEpochs - highLRNumEpochs;
 highLR = repmat(1e-3, [1, highLRNumEpochs]);
@@ -48,9 +48,9 @@ end;
 
 % Create paths
 if strcmp(netName, 'AlexNet'),
-    netFileName = 'beta16/imagenet-caffe-alex';
+    netFileName = 'imagenet-caffe-alex';
 elseif strcmp(netName, 'VGG16'),
-    netFileName = 'beta16/imagenet-vgg-verydeep-16';
+    netFileName = 'imagenet-vgg-verydeep-16';
 else
     error('Error: Unknown netName!');
 end;
