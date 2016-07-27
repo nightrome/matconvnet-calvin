@@ -149,7 +149,7 @@ classdef (Abstract) Dataset < handle
             else
                 % Otherwise return the known result
                 imageCount = obj.imageCount;
-            end;
+            end
         end
         
         function[annotation] = getAnnotation(obj, annotationName)
@@ -165,7 +165,7 @@ classdef (Abstract) Dataset < handle
             else
                 % By name
                 annotation = obj.annotations(strcmp({obj.annotations.name}, annotationName));
-            end;
+            end
         end
         
         %%% Setters
@@ -181,7 +181,7 @@ classdef (Abstract) Dataset < handle
                 obj.imageCount = obj.annotation.imageCount;
             else
                 obj.imageCount = [];
-            end;
+            end
             
             % Set labelIdx
             obj.annotation.labelIdx = labelIdx;
@@ -206,14 +206,14 @@ classdef (Abstract) Dataset < handle
             sel = strcmp({obj.annotations.name}, annotationName);
             if ~any(sel),
                 error('Error: Unknown annotation: %s', annotationName);
-            end;
+            end
             obj.annotations(sel).active = true;
             obj.annotation = obj.annotations(sel);
             
             negInds = find(~sel);
             for i = 1 : numel(negInds),
                 obj.annotations(negInds(i)).active = false;
-            end;
+            end
             
             % Set new imageListFunc
             obj.imageListFunc = obj.annotation.imageListFunc;
@@ -221,7 +221,7 @@ classdef (Abstract) Dataset < handle
             % Set imageCount if all images are used (can be [])
             if isempty(obj.labelIdx),
                 obj.imageCount = obj.annotation.imageCount;
-            end;
+            end
         end
         
         function setSubset(obj, subset)
@@ -255,7 +255,7 @@ classdef (Abstract) Dataset < handle
                 thingLabelInds = setdiff((1:obj.labelCount)', stuffLabelInds);
                 labelNames = obj.getLabelNames();
                 thingLabels = labelNames(thingLabelInds);
-            end;
+            end
         end
         
         function[names, labelCount] = getLabelNames(obj)
@@ -267,7 +267,7 @@ classdef (Abstract) Dataset < handle
             namesFilePath = fullfile(obj.getMetaPath(), obj.namesFile);
             if ~exist(namesFilePath, 'file'),
                 error('Error: Names file does not exist! Please execute ds_extractLabelNames() on the current annotation!');
-            end;
+            end
             
             % Retrieve names and labelCount
             namesStruct = load(namesFilePath, 'names');
@@ -292,7 +292,7 @@ classdef (Abstract) Dataset < handle
             % Default arguments
             if ~exist('colorDim', 'var'),
                 colorDim = 3;
-            end;
+            end
             
             % Create path
             imagePath = fullfile(obj.getImagePath(), [imageName, obj.imageExt]);
@@ -313,8 +313,8 @@ classdef (Abstract) Dataset < handle
                     % After resize, make sure that the maximum value is 1
                     image(image > 1) = 1;
                     image(image < 0) = 0;
-                end;
-            end;
+                end
+            end
             
             if ~isempty(obj.fixSizeX),
                 % Resize image s.t. the width is fixed throughout the whole
@@ -326,8 +326,8 @@ classdef (Abstract) Dataset < handle
                     % After resize, make sure that the maximum value is 1
                     image(image > 1) = 1;
                     image(image < 0) = 0;
-                end;
-            end;
+                end
+            end
             
             % Correct color if necessary
             if size(image, 3) ~= colorDim,
@@ -337,8 +337,8 @@ classdef (Abstract) Dataset < handle
                     image = repmat(image, [1, 1, 3]);
                 else
                     error('Error: Invalid color dim!');
-                end;
-            end;
+                end
+            end
         end
         
         function[imageListTrn, imageCountTrn] = getImageListTrn(obj, varargin)
@@ -378,7 +378,7 @@ classdef (Abstract) Dataset < handle
             else
                 [imageList, imageCount] = obj.imageListFunc(obj, varargin{:});
                 save(imageListFilePath, 'imageList', '-v6');
-            end;
+            end
         end
         
         function[imageList, imageCount] = getImageListSubset(obj, subset, varargin)
@@ -395,7 +395,7 @@ classdef (Abstract) Dataset < handle
                 [imageList, imageCount] = obj.getImageList(varargin{:});
             else
                 error('Error: Unknown subset: %s', subset);
-            end;
+            end
         end
         
         function[imageList, imageCount] = getImageListAll(obj, removeExt)
@@ -406,7 +406,7 @@ classdef (Abstract) Dataset < handle
             % Set default arguments
             if ~exist('removeExt', 'var')
                 removeExt = true;
-            end;
+            end
             
             % Get a list of image names and rel. paths
             [imageList, imageCount] = dirSubfolders(obj.getImagePath(), obj.imageExt, removeExt);
@@ -414,12 +414,12 @@ classdef (Abstract) Dataset < handle
             % Check that the images were really there
             if imageCount == 0,
                 error('Error: Image input folder is empty!');
-            end;
+            end
             
             % Check if the number of images are as expected
             if ~isempty(obj.imageCount) && imageCount ~= obj.imageCount,
                 error('Error: Dataset is not consistent! This error is non-deterministic, try again!');
-            end;
+            end
             
             % Save imageCount for other purposes
             obj.imageCount = imageCount;
@@ -435,14 +435,14 @@ classdef (Abstract) Dataset < handle
             % Set default arguments
             if ~exist('removeExt', 'var')
                 removeExt = true;
-            end;
+            end
             
             [labelFileList, labelFileCount] = obj.getImageList(true);
             
             % Append extension
             if ~removeExt,
                 labelFileList = strcat(labelFileList, obj.labelExt);
-            end;
+            end
         end
         
         function[trainImages, testImages] = getTrainTestLists(obj)
@@ -479,8 +479,8 @@ classdef (Abstract) Dataset < handle
                         % labelMap
                         labelListNames = obj.getImLabelListDirectly(imageName);
                         return;
-                    end;
-                end;
+                    end
+                end
                 
                 % Load entire labelMap
                 labelMap = obj.getImLabelMap(imageName);
@@ -490,7 +490,7 @@ classdef (Abstract) Dataset < handle
                 labelListNames = labelNames(labelInds);
             else
                 error('Error: Cannot find suitable labels!');
-            end;
+            end
         end
         
         function[labelListNames] = getImLabelListDirectly(obj, imageName)
@@ -524,7 +524,7 @@ classdef (Abstract) Dataset < handle
                 labelListNames = xmlExtractField(fileContent, 'name');
             else
                 error('Unknown label format!');
-            end;
+            end
             
             % Convert to col format
             labelListNames = labelListNames(:);
@@ -559,10 +559,10 @@ classdef (Abstract) Dataset < handle
                     labelMap = imread(labelPixelPath);
                 else
                     error('Error: Unknown label format!');
-                end;
+                end
             else
                 error('Error: No labelMap available for image: %s', imageName);
-            end;
+            end
         end
         
         function[labelBoxes, labelList] = getImLabelBoxes(obj, imageName, filterCurLabel)
@@ -572,7 +572,7 @@ classdef (Abstract) Dataset < handle
             
             if ~exist('filterCurLabel', 'var'),
                 filterCurLabel = false;
-            end;
+            end
             
             if strcmp(obj.labelFormat, 'xml-ImageNet'),
                 % Get bounding box
@@ -585,8 +585,8 @@ classdef (Abstract) Dataset < handle
                     if any(imSize > obj.maxSize),
                         % Round up to avoid zeros
                         labelBoxes = ceil(labelBoxes ./ maxImSize .* obj.maxSize);
-                    end;
-                end;
+                    end
+                end
                 
                 % Get label indices for image and all boxes
                 hashPath = fullfile(obj.getMetaPath(), 'objectLabelNameToLabelInd_hash.mat');
@@ -603,10 +603,10 @@ classdef (Abstract) Dataset < handle
                     labelList = boxInds(boxMatches);
                 else
                     labelList = boxInds;
-                end;
+                end
             else
                 error('Error: Label format not supported yet!');
-            end;
+            end
         end
         
         function[mask] = getImLabelBoxesMask(obj, imageName)
@@ -642,7 +642,7 @@ classdef (Abstract) Dataset < handle
                 % Keep current idx
             else
                 ds_imageBrowser_idx = 1;
-            end;
+            end
             
             % Preload image list to avoid overhead on each update
             imageList = obj.getImageList(true);
@@ -653,22 +653,22 @@ classdef (Abstract) Dataset < handle
                     ds_imageBrowser_idx = ds_imageBrowser_idx - 1;
                     if ds_imageBrowser_idx < 1,
                         ds_imageBrowser_idx = dataset.imageCount;
-                    end;
+                    end
                     dataset.showWithAnnotation('imageIdx', ds_imageBrowser_idx, 'imageList', imageList, 'displayPlot', true);
                 elseif command == 'd',
                     ds_imageBrowser_idx = ds_imageBrowser_idx + 1;
                     if ds_imageBrowser_idx > dataset.imageCount,
                         ds_imageBrowser_idx = 1;
-                    end;
+                    end
                     dataset.showWithAnnotation('imageIdx', ds_imageBrowser_idx, 'imageList', imageList, 'displayPlot', true);
                 elseif command == 's',
                     labelNames = dataset.showWithAnnotation('imageIdx', ds_imageBrowser_idx, 'imageList', imageList, 'displayPlot', true);
                     for labelInd = 1 : numel(labelNames),
                         fprintf('%d: %s\n', labelIdx, labelNames{labelInd});
-                    end;
+                    end
                 else
                     % Do nothing
-                end;
+                end
             end
             
             % Open figure and install key listener
@@ -722,22 +722,22 @@ classdef (Abstract) Dataset < handle
             % Check arguments
             if ~xor(isempty(imageIdx), isempty(imageName)),
                 error('Error: Only imageIdx XOR imageName can be specified!');
-            end;
+            end
             
             % If necessary, lookup which image name this index corresponds to
             if ~isempty(imageIdx),
                 % Load imageList
                 if isempty(imageList),
                     [imageList, ~] = obj.getImageList(true);
-                end;
+                end
                 
                 % Select image
                 if imageIdx >= 1 && imageIdx <= obj.getImageCount(),
                     imageName = imageList{imageIdx};
                 else
                     error('Error: Invalid image index!');
-                end;
-            end;
+                end
+            end
             
             % Prepare image
             imagePath = fullfile(obj.getImagePath(), [imageName, obj.imageExt]);
@@ -754,10 +754,10 @@ classdef (Abstract) Dataset < handle
                         fprintf('Warning: Cannot load label file! Maybe it doesn''t exist?\n%s\n', e.message);
                         labelMapGT = [];
                         labelNames = [];
-                    end;
+                    end
                 else
                     error('Error: Cannot show labelMapGT as it does not exist!');
-                end;
+                end
                 
                 % Convert labelMapGT to a color image
                 if isempty(labelMapGT),
@@ -768,9 +768,9 @@ classdef (Abstract) Dataset < handle
                     % Add labelNames
                     if insertBlobLabelsGT && ~isempty(labelNames),
                         labelImageGT = imageInsertBlobLabels(labelImageGT, labelMapGT, labelNames);
-                    end;
-                end;
-            end;
+                    end
+                end
+            end
             
             % Prepare labelImage
             if showLabelMap && ~isempty(labelMap),
@@ -781,25 +781,25 @@ classdef (Abstract) Dataset < handle
                 if insertBlobLabels && ~isempty(labelNames),
                     % Fully supervised
                     labelImage = imageInsertBlobLabels(labelImage, labelMap, labelNames);
-                end;
-            end;
+                end
+            end
             
             % Insert image-level labels
             if ~isempty(labelNamesImage),
                 image = imageInsertText(image, labelNamesImage);
-            end;
+            end
             
             % Concatenate image and labelMap side by side
             tiling = ImageTile();
             if showImage,
                 tiling.addImage(image);
-            end;
+            end
             if showLabelMapGT,
                 tiling.addImage(labelImageGT);
-            end;
+            end
             if ~isempty(labelMap),
                 tiling.addImage(labelImage);
-            end;
+            end
             image = tiling.getTiling('totalX', tiling.getTotalX());
             
             % Show image
@@ -807,7 +807,7 @@ classdef (Abstract) Dataset < handle
                 fprintf('Showing image: %s\n', imageName);
                 imshow(image);
                 set(gcf, 'Name', imageName, 'NumberTitle', 'off')
-            end;
+            end
         end
         
         function[result] = hasLabelMap(obj, imageName)
@@ -824,7 +824,7 @@ classdef (Abstract) Dataset < handle
                 result = ismember(imageName, imageListTst);
             else
                 result = false;
-            end;
+            end
         end
         
         function[labelOrder, labelNames] = getLabelOrder(obj)
@@ -835,12 +835,12 @@ classdef (Abstract) Dataset < handle
             else
                 % Enumerate in default order
                 labelOrder = (1:obj.labelCount)';
-            end;
+            end
             
             if nargout > 1,
                 labelNames = obj.getLabelNames();
                 labelNames = labelNames(labelOrder);
-            end;
+            end
         end
         
         function[imageSizes] = getImageSizes(obj)
@@ -869,11 +869,11 @@ classdef (Abstract) Dataset < handle
                     imageName = imageList{imageIdx};
                     image = obj.getImage(imageName);
                     imageSizes(imageIdx, :) = [size(image, 1), size(image, 2)];
-                end;
+                end
                 
                 % Save to disk for next time
                 save(imageSizesPath, 'imageSizes', '-v6');
-            end;
+            end
         end
         
         function[imageSize] = getImageSize(obj, imageName)
@@ -932,7 +932,7 @@ classdef (Abstract) Dataset < handle
             % Default arguments
             if ~exist('subset', 'var'),
                 subset = 'train';
-            end;
+            end
             
             imPixelFreqPath = fullfile(obj.getMetaPath(), 'labelPixelFreqs.mat');
             if exist(imPixelFreqPath, 'file') && strcmp(subset, 'train'),
@@ -957,13 +957,13 @@ classdef (Abstract) Dataset < handle
                     
                     % Sum frequencies (label 0 is excluded)
                     freqs = freqs + histc(labelMap(:), 1:labelCount);
-                end;
+                end
                 
                 % Save to disk
                 if strcmp(subset, 'train'),
                     save(imPixelFreqPath, 'freqs', 'imageCount', '-v6');
-                end;
-            end;
+                end
+            end
         end
         
         function[freqs, imageCount] = getLabelImFreqs(obj, subset)
@@ -978,7 +978,7 @@ classdef (Abstract) Dataset < handle
             % Default arguments
             if ~exist('subset', 'var'),
                 subset = 'train';
-            end;
+            end
             
             imLabelFreqPath = fullfile(obj.getMetaPath(), 'labelImFreqs.mat');
             if exist(imLabelFreqPath, 'file') && strcmp(subset, 'train'),
@@ -1008,13 +1008,13 @@ classdef (Abstract) Dataset < handle
                     histo = histc(labelInds, 1:labelCount);
                     histo = histo(:);
                     freqs = freqs + histo;
-                end;
+                end
                 
                 % Save to disk
                 if strcmp(subset, 'train'),
                     save(imLabelFreqPath, 'freqs', 'imageCount', '-v6');
-                end;
-            end;
+                end
+            end
         end
         
         function[imLabelLists] = getImLabelLists(obj)
@@ -1042,11 +1042,11 @@ classdef (Abstract) Dataset < handle
                     imageName = imageList{imageIdx};
                     labelList = obj.getImLabelList(imageName);
                     imLabelLists{imageIdx} = labelList(:);
-                end;
+                end
                 
                 % Save to disk
                 save(imLabelListsPath, 'imLabelLists', '-v6');
-            end;
+            end
         end
         
         function[regionBlobSizes] = getRegionBlobSizes(obj, segmentFolder, subset)
@@ -1054,7 +1054,7 @@ classdef (Abstract) Dataset < handle
             
             if ~exist('subset', 'var'),
                 subset = 'all';
-            end;
+            end
             
             % Get images
             [imageList, curImageCount] = obj.getImageListSubset(subset);
@@ -1067,7 +1067,7 @@ classdef (Abstract) Dataset < handle
                 blobsPath = fullfile(segmentFolder, [imageName, '.mat']);
                 blobsStruct = load(blobsPath, 'propBlobs');
                 regionBlobSizes{imageIdx} = [blobsStruct.propBlobs.size]';
-            end;
+            end
         end
         
         function[labelList] = getImLabelInds(obj, imageName)
@@ -1106,14 +1106,14 @@ classdef (Abstract) Dataset < handle
                     
                     for c = 1 : 3,
                         rgbSum(c) = rgbSum(c) + mean2(image(:, :, c));
-                    end;
-                end;
+                    end
+                end
                 
                 rgbMean = rgbSum ./ imageCountTrn;
                 
                 % Store result
                 save(rgbMeanPath, 'rgbMean');
-            end;
+            end
         end
         
         
@@ -1138,13 +1138,13 @@ classdef (Abstract) Dataset < handle
                     labels = obj.getImLabelList(imageName);
                     if isempty(labels),
                         missingLabels(imageIdx) = true;
-                    end;
-                end;
+                    end
+                end
                 missingLabels = find(missingLabels);
                 
                 % Write to disk
                 save(missingLabelsPath, 'missingLabels');
-            end;
+            end
         end
     end
 end
