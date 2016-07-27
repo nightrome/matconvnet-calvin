@@ -143,7 +143,13 @@ classdef ImdbE2S2 < ImdbCalvin
             
             % Get segmentation structure
             segmentPathRP = [obj.segmentFolderRP, filesep, imageName, '.mat'];
+            if ~exist(segmentPathRP, 'file')
+                error('Error: Missing region proposal file %s. Please run rpExtract()!', segmentPathRP)
+            end
             segmentStructRP = load(segmentPathRP, 'propBlobs', 'overlapList');
+            if ~isfield(segmentStructRP, 'overlapList')
+                error('Error: Missing overlapList in file %s. Please run reconstructSelSearchHierarchyFromFz()!', segmentPathRP);
+            end
             overlapListRP = segmentStructRP.overlapList;
             blobsRP = segmentStructRP.propBlobs(:);
             clearvars segmentStructRP;

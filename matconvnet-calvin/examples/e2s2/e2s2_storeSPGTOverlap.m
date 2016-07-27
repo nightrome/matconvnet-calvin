@@ -27,7 +27,7 @@ segmentFolderGT = fullfile(glFeaturesFolder, projectName, dataset.name, 'segment
 [imageList, imageCount] = dataset.getImageList(true);
 
 for imageIdx = 1 : imageCount,
-    printProgress('Processing image', imageIdx, imageCount, 50);
+    printProgress(sprintf('Storing GT-SP (%s) overlap for image', spName), imageIdx, imageCount, 50);
     imageName = imageList{imageIdx};
     imageSize = dataset.getImageSize(imageName);
     

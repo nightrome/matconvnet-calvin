@@ -36,7 +36,7 @@ masksName = sprintf('blobMasks%dx%d', roiPoolSize(1), roiPoolSize(2));
 [imageList, imageCount] = dataset.getImageList();
 
 for imageIdx = 1 : imageCount,
-    printProgress('Processing image', imageIdx, imageCount, 50);
+    printProgress(sprintf('Storing blob mask (%s) for image', proposalName), imageIdx, imageCount, 50);
     
     % Get segmentation
     imageName = imageList{imageIdx};
