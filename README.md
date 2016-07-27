@@ -46,7 +46,7 @@ Copyrights by Holger Caesar and Jasper Uijlings, 2015-2016.
 
 **References:**
 - \[1\] http://arxiv.org/abs/1504.08083
-- \[2\] TBD
+- \[2\] http://arxiv.org/abs/1607.07671
 - \[3\] http://arxiv.org/abs/1411.4038
 - \[4\] http://arxiv.org/abs/1412.7144
 - \[5\] http://arxiv.org/abs/1506.02106
