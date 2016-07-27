@@ -3,13 +3,26 @@
 expNameAppend = 'testRelease';
 
 % Define global variables
-global glBaseFolder glDatasetFolder glFeaturesFolder; %#ok<NUSED>
-%glBaseFolder = '';
-glDatasetFolder = '/home/holger/Documents/Datasets';
-glFeaturesFolder = '/home/holger/Documents/Features';
+global glBaseFolder glDatasetFolder glFeaturesFolder;
+glBaseFolder = 'data';
+glDatasetFolder = fullfile(glBaseFolder, 'Datasets');
+glFeaturesFolder = fullfile(glBaseFolder, 'Features');
+labelingsFolder = fullfile(glFeaturesFolder, 'CNN-Models', 'FCN', 'SiftFlow', sprintf('fcn16s-%s', expNameAppend), 'labelings-test-epoch-50');
+
+% Download dataset
+downloadSiftFlow();
+
+% Download base network
+downloadNetwork();
 
 % Train network
 fcnTrainGeneric('expNameAppend', expNameAppend);
 
 % Test network
 fcnTestGeneric('expNameAppend', expNameAppend);
+
+% Show example segmentation
+fileList = dirSubfolders(labelingsFolder);
+image = imread(fullfile(labelingsFolder, fileList{1}));
+figure();
+imshow(image);
