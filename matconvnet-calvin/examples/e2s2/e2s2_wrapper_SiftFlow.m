@@ -1,5 +1,5 @@
- function e2s2_wrapper_SiftFlow()
-% e2s2_wrapper_SiftFlow()
+ function e2s2_wrapper_SiftFlow(varargin)
+% e2s2_wrapper_SiftFlow(varargin)
 %
 % A wrapper for Fast-RCNN with Matconvnet that allows to train and test a network.
 % Note: The network is prone to exploding gradients and therefore only
@@ -7,7 +7,7 @@
 %
 % Copyright by Holger Caesar, 2015
 
-% Settings
+% Default settings
 global glFeaturesFolder;
 projectName = 'WeaklySupervisedLearning';
 run = 1;
@@ -46,6 +46,27 @@ if ~isempty(randSeed);
     end;
 end;
 
+% Parse input
+p = inputParser;
+addParameter(p, 'dataset', dataset);
+addParameter(p, 'run', run);
+addParameter(p, 'exp', exp);
+addParameter(p, 'netName', netName);
+addParameter(p, 'gpus', gpus);
+addParameter(p, 'roiPool', segments);
+addParameter(p, 'segments', segments);
+addParameter(p, 'invFreqWeights', invFreqWeights);
+parse(p, varargin{:});
+
+dataset = p.Results.dataset;
+run = p.Results.run;
+exp = p.Results.exp;
+netName = p.Results.netName;
+gpus = p.Results.gpus;
+roiPool = p.Results.roiPool;
+segments = p.Results.segments;
+invFreqWeights = p.Results.invFreqWeights;
+
 % Create paths
 if strcmp(netName, 'AlexNet'),
     netFileName = 'imagenet-caffe-alex';
@@ -70,8 +91,8 @@ if ~isempty(logFile),
 end;
 
 % Get images
-imageListTrn = dataset.getImageListTrn(true);
-imageListTst = dataset.getImageListTst(true);
+imageListTrn = dataset.getImageListTrn();
+imageListTst = dataset.getImageListTst();
 
 % Store in imdb
 imdb = ImdbE2S2(dataset, segmentFolder);
