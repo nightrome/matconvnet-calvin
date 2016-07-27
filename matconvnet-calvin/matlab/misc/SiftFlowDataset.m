@@ -13,10 +13,13 @@ classdef SiftFlowDataset < Dataset
             % Dataset settings
             obj.name = 'SiftFlow';
             obj.path = fullfile(glDatasetFolder, obj.name);
+            obj.imageFolder = fullfile('Images', 'spatial_envelope_256x256_static_8outdoorcategories');
             
             % Annotation settings
             annotation = Annotation('semanticLabels');
             annotation.labelFormat = 'mat-labelMap';
+            annotation.annotationFolder = 'SemanticLabels';
+            annotation.labelFolder = 'spatial_envelope_256x256_static_8outdoorcategories';
             annotation.imageCount = 2688;
             annotation.labelCount = 33;
             annotation.hasStuffThingLabels = true;
