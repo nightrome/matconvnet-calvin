@@ -1,3 +1,6 @@
+% Trains and tests a Fully Convolutional Network on SIFT Flow.
+%
+% Copyright by Holger Caesar, 2016
 
 % Settings
 expNameAppend = 'testRelease';

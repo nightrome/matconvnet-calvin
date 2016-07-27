@@ -215,8 +215,7 @@ classdef FCNNN < CalvinNN
             mapOutputFolder = fullfile(obj.nnOpts.expDir, sprintf('outputMaps-%s-epoch-%d', subset, epoch));
             if exist(statsPath, 'file'),
                 % Get stats from disk
-                statsStruct = load(statsPath, 'stats');
-                stats = statsStruct.stats;
+                stats = load(statsPath);
             else
                 % Limit images if specified (for quicker evaluation)
                 if ~isinf(limitImageCount),
@@ -328,7 +327,7 @@ classdef FCNNN < CalvinNN
                             labelMapIm = imageInsertBlobLabels(labelMapIm, labelMap, labelNames, 'skipLabelInds', skipLabelInds);
                             tile.addImage(labelMapIm);
                             
-                            % Add prediction image
+                            % Add pstatsPathrediction image
                             outputMapNoBg = outputMap;
                             outputMapNoBg(labelMap == 0) = 0;
                             outputMapIm = ind2rgb(outputMapNoBg, colorMappingPred);
