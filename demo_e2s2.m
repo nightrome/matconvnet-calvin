@@ -10,8 +10,8 @@ global glBaseFolder glDatasetFolder glFeaturesFolder;
 glBaseFolder = 'data';
 glDatasetFolder = fullfile(glBaseFolder, 'Datasets');
 glFeaturesFolder = fullfile(glBaseFolder, 'Features');
-dataset = SiftFlowDataset();
-labelingsFolder = fullfile(glFeaturesFolder, 'CNN-Models', 'E2S2', dataset.name, sprintf('fcn16s-%s', expNameAppend), 'labelings-test-epoch-50');
+dataset = SiftFlowDataset(); % Requires global folders to be set first
+labelingsFolder = fullfile(glFeaturesFolder, 'CNN-Models', 'E2S2', dataset.name, 'Run1', sprintf('%s_e2s2_run1_exp1', dataset.name), 'labelings-test-epoch-30');
 
 % Download dataset
 downloadSiftFlow();
@@ -28,8 +28,8 @@ setupE2S2Regions('dataset', dataset);
 % Train and test network
 e2s2_wrapper_SiftFlow('dataset', dataset);
 
-% % Show example segmentation
-% fileList = dirSubfolders(labelingsFolder);
-% image = imread(fullfile(labelingsFolder, fileList{1}));
-% figure();
-% imshow(image);
+% Show example segmentation
+fileList = dirSubfolders(labelingsFolder);
+image = imread(fullfile(labelingsFolder, fileList{1}));
+figure();
+imshow(image);
