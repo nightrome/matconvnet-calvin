@@ -23,7 +23,6 @@ addParameter(p, 'semiSupervised', false);
 addParameter(p, 'semiSupervisedRate', 0.1);     % ratio of images with full supervision
 addParameter(p, 'semiSupervisedOnlyFS', false); % use only the x% fully supervised images
 addParameter(p, 'init', 'zeros'); % zeros, best-auto, best-manual, lincomb (all +-autobias)
-addParameter(p, 'enableCudnn', false);
 addParameter(p, 'maskThings', false);
 parse(p, varargin{:});
 
@@ -43,7 +42,6 @@ semiSupervised = p.Results.semiSupervised;
 semiSupervisedRate = p.Results.semiSupervisedRate;
 semiSupervisedOnlyFS = p.Results.semiSupervisedOnlyFS;
 init = p.Results.init;
-enableCudnn = p.Results.enableCudnn;
 maskThings = p.Results.maskThings;
 callArgs = p.Results; %#ok<NASGU>
 
@@ -76,7 +74,6 @@ nnOpts.misc.modelType = modelType;
 nnOpts.misc.netPath = netPath;
 nnOpts.misc.init = init;
 nnOpts.misc.initLinCombPath = initLinCombPath;
-nnOpts.misc.enableCudnn = enableCudnn;
 
 nnOpts.misc.init = init;
 nnOpts.misc.maskThings = maskThings;

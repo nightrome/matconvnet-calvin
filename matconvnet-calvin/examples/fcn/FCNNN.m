@@ -18,8 +18,7 @@ classdef FCNNN < CalvinNN
             
             % Get initial model from VGG-VD-16
             obj.net = fcnInitializeModelGeneric(obj.imdb, 'sourceModelPath', obj.nnOpts.misc.netPath, ...
-                'init', obj.nnOpts.misc.init, 'initLinCombPath', obj.nnOpts.misc.initLinCombPath, ...
-                'enableCudnn', obj.nnOpts.misc.enableCudnn);
+                'init', obj.nnOpts.misc.init, 'initLinCombPath', obj.nnOpts.misc.initLinCombPath);
             if any(strcmp(obj.nnOpts.misc.modelType, {'fcn16s', 'fcn8s'}))
                 % upgrade model to FCN16s
                 obj.net = fcnInitializeModel16sGeneric(obj.imdb.numClasses, obj.net);

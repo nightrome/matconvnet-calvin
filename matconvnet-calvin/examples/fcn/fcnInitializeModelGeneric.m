@@ -13,7 +13,6 @@ opts.sourceModelPath = 'data/models/imagenet-vgg-verydeep-16.mat';
 opts.adaptClassifier = true; % Changes number of classes to imdb.numClasses
 opts.init = 'zeros';
 opts.initLinCombPath = '';
-opts.enableCudnn = false;
 opts = vl_argparse(opts, varargin);
 
 % -------------------------------------------------------------------------
@@ -133,14 +132,6 @@ if opts.adaptClassifier
     
     % Adapt block to new parameter size
     net.layers(fc8Idx).block.size = fc8fSize;
-end
-
-% Enable Cudnn for conv layers
-if opts.enableCudnn
-    convLayerInds = find(cellfun(@(x) isa(x, 'dagnn.Conv'), {net.layers.block}));
-    for i = 1 : numel(convLayerInds)
-        net.layers(convLayerInds(i)).block.opts = {'cuDNN'};
-    end
 end
 
 % Remove the last loss layer

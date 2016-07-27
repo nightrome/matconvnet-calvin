@@ -7,7 +7,7 @@ function[stats] = fcnTestGeneric(varargin)
 p = inputParser;
 addParameter(p, 'dataset', SiftFlowDataset());
 addParameter(p, 'modelType', 'fcn16s');
-addParameter(p, 'gpus', 4);
+addParameter(p, 'gpus', 2);
 addParameter(p, 'randSeed', 42);
 addParameter(p, 'expNameAppend', 'test');
 addParameter(p, 'epoch', 50);
