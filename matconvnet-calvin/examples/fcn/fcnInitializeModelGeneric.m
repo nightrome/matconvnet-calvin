@@ -21,7 +21,7 @@ opts = vl_argparse(opts, varargin);
 if ~exist(opts.sourceModelPath, 'file')
     fprintf('%s: downloading %s\n', opts.sourceModelUrl);
     mkdir(fileparts(opts.sourceModelPath));
-    urlwrite('http://www.vlfeat.org/matconvnet/models/imagenet-vgg-verydeep-16.mat', opts.sourceModelPath);
+    urlwrite(opts.sourceModelUrl, opts.sourceModelPath);
 end
 net = load(opts.sourceModelPath);
 
