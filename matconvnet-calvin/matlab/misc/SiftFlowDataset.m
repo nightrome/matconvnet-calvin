@@ -19,7 +19,7 @@ classdef SiftFlowDataset < Dataset
             annotation = Annotation('semanticLabels');
             annotation.labelFormat = 'mat-labelMap';
             annotation.annotationFolder = 'SemanticLabels';
-            annotation.labelFolder = 'spatial_envelope_256x256_static_8outdoorcategories';
+            annotation.labelFolder = fullfile(annotation.annotationFolder, 'spatial_envelope_256x256_static_8outdoorcategories');
             annotation.imageCount = 2688;
             annotation.labelCount = 33;
             annotation.hasStuffThingLabels = true;
@@ -34,24 +34,51 @@ classdef SiftFlowDataset < Dataset
             end;
         end
         
-        function[labelOrder, labelNames] = getLabelOrder(obj)
-            % Overwrites parent function
-            labelOrderNames = {'bridge', 'building', 'fence', 'crosswalk', 'sidewalk', 'road', 'field', 'grass', 'plant', 'tree', 'mountain', 'rock', 'desert', 'sand', 'moon', 'sun', 'sky', 'sea', 'river', 'awning', 'balcony', 'door', 'staircase', 'window', 'bird', 'cow', 'person', 'boat', 'car', 'bus', 'pole', 'sign', 'streetlight'};
-            labelNames = obj.getLabelNames();
-            labelOrder = indicesOfAInB(labelOrderNames, labelNames);
-            
-            if nargout > 1,
-                labelNames = obj.getLabelNames();
-                labelNames = labelNames(labelOrder);
-            end;
+        function[names, labelCount] = getLabelNames(~)
+            names = {'bridge', 'building', 'fence', 'crosswalk', 'sidewalk', 'road', 'field', 'grass', 'plant', 'tree', 'mountain', 'rock', 'desert', 'sand', 'moon', 'sun', 'sky', 'sea', 'river', 'awning', 'balcony', 'door', 'staircase', 'window', 'bird', 'cow', 'person', 'boat', 'car', 'bus', 'pole', 'sign', 'streetlight'};
+            labelCount = numel(names);
         end
         
         function[imageSize] = getImageSize(~, ~)
             % [imageSize] = getImageSize(~, ~)
             %
-            % Return constant image size
+            % Return constant image size.
             
             imageSize = [256, 256];
+        end
+        
+        function[metaPath] = getMetaPath(obj)
+            % [metaPath] = getMetaPath(obj)
+            %
+            % Get path with additional meta data.
+            metaPath = [obj.path, filesep, 'Meta'];
+        end
+        
+        function[trainImages, testImages] = getTrainTestLists(obj)
+            % [trainImages, testImages] = getTrainTestLists(obj)
+            %
+            % Get lists of train and test images of this dataset.
+            splitFilePath = fullfile(obj.getMetaPath(), 'splits.mat');
+            if ~exist(splitFilePath, 'file')
+                % Create split file
+                imageListTst = readLinesToCell(fullfile(obj.path, 'TestSet1.txt'));
+                imageListTst = strrep(imageListTst, 'spatial_envelope_256x256_static_8outdoorcategories\', '');
+                imageListTst = strrep(imageListTst, '.jpg', '');
+                [imageList, imageCountAll] = obj.getImageList();
+                splits.test = find(ismember(imageList, imageListTst));
+                splits.train = setdiff((1:imageCountAll)', splits.test);
+                
+                % Save to disk
+                save(splitFilePath, 'splits');
+            end
+            splitStruct = load(splitFilePath);
+            splits = splitStruct.splits;
+            trainImages = splits.train;
+            testImages = splits.test;
+            
+            % Check consistency
+            assert(numel(trainImages) + numel(testImages) == obj.imageCount);
+            assert(numel(unique([trainImages; testImages])) == obj.imageCount)
         end
     end
 end
