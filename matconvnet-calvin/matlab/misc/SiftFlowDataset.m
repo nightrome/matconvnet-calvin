@@ -8,7 +8,9 @@ classdef SiftFlowDataset < Dataset
             % Call superclass constructor
             obj@Dataset();
             
+            % Check that global variable is set
             global glDatasetFolder;
+            assert(~isempty(glDatasetFolder));
             
             % Dataset settings
             obj.name = 'SiftFlow';
