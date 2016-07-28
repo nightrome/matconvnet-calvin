@@ -54,8 +54,7 @@ Copyrights by Holger Caesar and Jasper Uijlings, 2015-2016.
 - \[5\] http://arxiv.org/abs/1506.02106
 
 **Disclaimer:**
-Except for \[2\], none of the methods implemented in MatConvNet-Calvin is authorized by the original authors. These are (possibly simplified) reimplementations of parts of the described methods and they might vary in terms of performance.
+Except for \[2\], none of the methods implemented in MatConvNet-Calvin is authorized by the original authors. These are (possibly simplified) reimplementations of parts of the described methods and they might vary in terms of performance. This software is covered by the FreeBSD License. See LICENSE.MD for more details.
 
 **Contact:**
-If you run into any problems with this code, please submit a bug report on the Github site of the project. This software is covered by the FreeBSD License. See LICENSE.MD for more details.
-For other inquiries contact holger.caesar-at-ed.ac.uk.
+If you run into any problems with this code, please submit a bug report on the Github site of the project. For other inquiries contact holger.caesar-at-ed.ac.uk.
