@@ -32,3 +32,6 @@ if ~exist(checkFile, 'file')
         unzip(zipFile, codeFolder);
     end
 end
+
+% Add to path
+addpath(genpath(fullfile(codeFolder, 'SelectiveSearchCodeIJCV')));
