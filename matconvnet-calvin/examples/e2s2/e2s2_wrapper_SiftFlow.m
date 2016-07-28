@@ -53,7 +53,7 @@ addParameter(p, 'run', run);
 addParameter(p, 'exp', exp);
 addParameter(p, 'netName', netName);
 addParameter(p, 'gpus', gpus);
-addParameter(p, 'roiPool', segments);
+addParameter(p, 'roiPool', roiPool);
 addParameter(p, 'segments', segments);
 addParameter(p, 'invFreqWeights', invFreqWeights);
 parse(p, varargin{:});
