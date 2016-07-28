@@ -22,7 +22,7 @@ nnOpts.weightDecay = 5e-4;
 nnOpts.momentum = 0.9;
 nnOpts.numEpochs = 16;
 nnOpts.learningRate = [repmat(1e-3, 12, 1); repmat(1e-4, 4, 1)];
-nnOpts.misc.netPath = fullfile(MYDATADIR, '..', 'MatconvnetModels', 'imagenet-vgg-verydeep-16.mat');
+nnOpts.misc.netPath = fullfile(calvin_root(), 'data', 'Features', 'CNN-Models', 'matconvnet', 'imagenet-vgg-verydeep-16.mat');
 nnOpts.gpus = SelectIdleGpu();
 
 % Setup data opts
