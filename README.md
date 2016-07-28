@@ -21,12 +21,15 @@ Copyrights by Holger Caesar and Jasper Uijlings, 2015-2016.
 - **What's the point: Semantic segmentation with point supervision** by Bearman et al., ECCV 2016 \[5\] (only implemented the image-level supervision)
 
 **Dependencies:**
-- **MatConvNet**: beta19 (http://github.com/vlfeat/matconvnet).
+- **MatConvNet**: beta20 (http://github.com/vlfeat/matconvnet).
 - **MatConvNet-FCN**: (http://github.com/vlfeat/matconvnet-fcn)
 
 **Installation:**
 - Install Matlab
-- Clone the repository "git clone --recursive https://github.com/nightrome/matconvnet-calvin.git"
+- Clone the repository and its submodules
+  - git clone https://github.com/nightrome/matconvnet-calvin.git
+  - cd matconvnet-calvin
+  - git submodule update --init
 - Setup MatConvNet
   - cd matconvnet/matlab;
   - vl_compilenn('EnableGpu', true);
@@ -40,7 +43,7 @@ Copyrights by Holger Caesar and Jasper Uijlings, 2015-2016.
 - For missing files please contact Holger Caesar.
 
 **Usage:**
-- FCN: TBD
+- FCN: Run demo_fcn(). This trains an FCN-16s network based on VGG-16 for semantic segmentation on the SIFT Flow dataset. The performance varies a bit compared to the implementation of [Long CVPR 2015], as they first train FCN-32s and use it to finetune FCN-16s. Instead we directly train FCN-16s. The results should be around pixelAcc: 83.8%, meanAcc: 48.8%, meanIU: 36.7% 
 - Fast R-CNN: TBD
 - E2S2: TBD
 
