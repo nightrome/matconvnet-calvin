@@ -42,8 +42,8 @@ Copyrights by Holger Caesar and Jasper Uijlings, 2015-2016.
   - setup();
 
 **Usage:**
-- **E2S2**: Run demo_e2s2(). This trains a region-based end-to-end network based on VGG-16 for semantic segmentation on the SIFT Flow dataset. The script automatically extracts Selective Search region proposals from the dataset. To limit the high GPU memory requirements (~6GB), the default setting uses tied weights (Sect. 3.3 of \[2\]). The network is trained with an inverse-class frequency weighted loss (Sect. 3.3 of [2]). The results should be around TBD!!.
-- **FCN**: Run demo_fcn(). This trains an FCN-16s network based on VGG-16 for semantic segmentation on the SIFT Flow dataset. The performance varies a bit compared to the implementation of [3], as they first train FCN-32s and use it to finetune FCN-16s. Instead we directly train FCN-16s. The results should be around pixelAcc: 83.8%, meanAcc: 48.8%, meanIU: 36.7% 
+- **E2S2**: Run demo_e2s2(). This trains a region-based end-to-end network based on VGG-16 for semantic segmentation on the SIFT Flow dataset. The script automatically extracts Selective Search region proposals from the dataset. To limit the high GPU memory requirements (~6GB), the default setting uses tied weights (Sect. 3.3 of \[2\]). The network is trained with an inverse-class frequency weighted loss (Sect. 3.3 of \[2\]). The results should be around TBD!!.
+- **FCN**: Run demo_fcn(). This trains an FCN-16s network based on VGG-16 for semantic segmentation on the SIFT Flow dataset. The performance varies a bit compared to the implementation of [3], as they first train FCN-32s and use it to finetune FCN-16s. Instead we directly train FCN-16s. The results should be around pixelAcc: 83.8%, meanAcc: 48.8%, meanIU: 36.7%. For weakly and semi supervised training \[4,5\], see the options in fcnTrainGeneric().
 - **Fast R-CNN**: TBD
 
 **References:**
@@ -54,7 +54,7 @@ Copyrights by Holger Caesar and Jasper Uijlings, 2015-2016.
 - \[5\] http://arxiv.org/abs/1506.02106
 
 **Disclaimer:**
-Except for \[2\], none of these methods implemented in MatConvNet-Calvin is authorized by the original authors. These are (possibly simplified) reimplementations of parts of the described methods and they might vary in terms of performance.
+Except for \[2\], none of the methods implemented in MatConvNet-Calvin is authorized by the original authors. These are (possibly simplified) reimplementations of parts of the described methods and they might vary in terms of performance.
 
 **Contact:**
 If you run into any problems with this code, please submit a bug report on the Github site of the project.

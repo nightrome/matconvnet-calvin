@@ -16,14 +16,14 @@ addParameter(p, 'expNameAppend', 'test');
 addParameter(p, 'weaklySupervised', false);
 addParameter(p, 'numEpochs', 50);
 addParameter(p, 'useInvFreqWeights', false);
-addParameter(p, 'wsUseAbsent', false);      % helpful
+addParameter(p, 'wsUseAbsent', false);      % helpful: Major difference between papers of [Bearman ECCV 2016] and [Pathak ICLRw 2015]
 addParameter(p, 'wsUseScoreDiffs', false);  % not helpful
 addParameter(p, 'wsEqualWeight', false);    % not helpful
 addParameter(p, 'semiSupervised', false);
 addParameter(p, 'semiSupervisedRate', 0.1);     % ratio of images with full supervision
 addParameter(p, 'semiSupervisedOnlyFS', false); % use only the x% fully supervised images
-addParameter(p, 'init', 'zeros'); % zeros, best-auto, best-manual, lincomb (all +-autobias)
-addParameter(p, 'maskThings', false);
+addParameter(p, 'init', 'zeros'); % Network weight initialization of final classification layer. Options are zeros (default for fully supervised), best-auto, best-manual, lincomb (all +-autobias)
+addParameter(p, 'maskThings', false); % Use this to mask out 
 parse(p, varargin{:});
 
 dataset = p.Results.dataset;
