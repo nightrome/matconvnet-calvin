@@ -9,7 +9,7 @@ function downloadSiftFlow()
 dataset = SiftFlowDataset();
 zipName = 'SiftFlowDataset.zip';
 url = 'http://www.cs.unc.edu/~jtighe/Papers/ECCV10/siftflow/SiftFlowDataset.zip';
-rootFolder = fileparts(fileparts(fileparts(fileparts(mfilename('fullpath')))));
+rootFolder = calvin_root();
 datasetFolder = fullfile(rootFolder, 'data', 'Datasets', dataset.name);
 zipFile = fullfile(datasetFolder, zipName);
 semanticLabelFolder = fullfile(datasetFolder, 'SemanticLabels');

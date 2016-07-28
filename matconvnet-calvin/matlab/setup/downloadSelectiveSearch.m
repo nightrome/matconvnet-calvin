@@ -8,10 +8,10 @@ function downloadSelectiveSearch()
 % Settings
 zipName = 'SelectiveSearchCodeIJCV.zip';
 url = 'http://koen.me/research/downloads/SelectiveSearchCodeIJCV.zip';
-rootFolder = fileparts(fileparts(fileparts(fileparts(mfilename('fullpath')))));
-codeFolder = fullfile(rootFolder, 'data', 'Code', 'SelectiveSearch');
+rootFolder = calvin_root();
+codeFolder = fullfile(rootFolder, 'data', 'Code');
 zipFile = fullfile(codeFolder, zipName);
-checkFile = fullfile(codeFolder, 'Image2HierarchicalGrouping.m');
+checkFile = fullfile(codeFolder, 'SelectiveSearchCodeIJCV', 'Image2HierarchicalGrouping.m');
 
 % Download dataset
 if ~exist(checkFile, 'file')

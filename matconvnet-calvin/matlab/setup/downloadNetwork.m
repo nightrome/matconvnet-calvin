@@ -8,7 +8,7 @@ function downloadNetwork()
 % Settings
 modelName = 'imagenet-vgg-verydeep-16';
 url = sprintf('http://www.vlfeat.org/matconvnet/models/%s.mat', modelName);
-rootFolder = fileparts(fileparts(fileparts(fileparts(mfilename('fullpath')))));
+rootFolder = calvin_root();
 modelFolder = fullfile(rootFolder, 'data', 'Features', 'CNN-Models', 'matconvnet');
 modelPath = fullfile(modelFolder, [modelName, '.mat']);
 

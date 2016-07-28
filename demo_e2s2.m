@@ -4,10 +4,9 @@
 
 % Settings
 expNameAppend = 'testRelease';
-
-% Define global variables
-global glBaseFolder glDatasetFolder glFeaturesFolder;
-glBaseFolder = 'data';
+global glBaseFolder glDatasetFolder glFeaturesFolder; % Define global variables to be used in all scripts
+rootFolder = calvin_root();
+glBaseFolder = fullfile(rootFolder, 'data');
 glDatasetFolder = fullfile(glBaseFolder, 'Datasets');
 glFeaturesFolder = fullfile(glBaseFolder, 'Features');
 dataset = SiftFlowDataset(); % Requires global folders to be set first
