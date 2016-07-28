@@ -6,7 +6,7 @@ function vl_compilenn_calvin()
 %
 % Copyright by Holger Caesar, 2016
 
-root = fileparts(fileparts(mfilename('fullpath')));
+root = calvin_root();
 mexDir = fullfile(root, 'matlab', 'mex');
 mexOpts = {'-largeArrayDims', '-outdir', sprintf('"%s"', mexDir)};
 
@@ -18,3 +18,4 @@ mex(mexOpts{:}, fullfile(root, 'matlab', 'roipool', 'roiPooling_backward.cpp'));
 
 % Misc
 mex(mexOpts{:}, fullfile(root, 'matlab', 'misc', 'computeBlobOverlapAnyPair.cpp'));
+mex(mexOpts{:}, fullfile(root, 'matlab', 'misc', 'scoreBlobIoUs.cpp'));
