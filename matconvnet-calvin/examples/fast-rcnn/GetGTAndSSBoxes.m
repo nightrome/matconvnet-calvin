@@ -61,7 +61,7 @@ rec.overlap = zeros(num_gt_boxes+num_boxes, class_to_id.Count, 'single');
 % Get overlap wrt ground truth boxes
 for i = 1:num_gt_boxes
     rec.overlap(:, gt_classes(i)) = ...
-      max(rec.overlap(:, gt_classes(i)), boxoverlap(all_boxes, gt_boxes(i, :)));
+      max(rec.overlap(:, gt_classes(i)), BoxOverlap(all_boxes, gt_boxes(i, :)));
 end
 rec.boxes = single(all_boxes);
 rec.feat = [];
