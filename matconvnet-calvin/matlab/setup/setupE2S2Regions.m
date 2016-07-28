@@ -26,7 +26,10 @@ if ~exist(segmentationsFolder, 'dir')
     rpExtract('dataset', dataset, 'proposalName', 'GroundTruth');
     
     % Store GT labels for quick access
-    storeLabelListGT('dataset', dataset);
+    storeLabelListGT('dataset', dataset);    
+    
+    % Extract downsized copy of ground truth regions masks
+    e2s2_storeBlobMasks('dataset', dataset, 'proposalName', 'GroundTruth');
     
     % Perform the same operations on each color space
     for colorSpaceIdx = 1 : numel(colorSpaces)
