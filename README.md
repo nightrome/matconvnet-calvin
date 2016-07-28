@@ -40,12 +40,11 @@ Copyrights by Holger Caesar and Jasper Uijlings, 2015-2016.
   - cd ../..;
 - Add files to Matlab path
   - setup();
-- For missing files please contact Holger Caesar.
 
 **Usage:**
-- FCN: Run demo_fcn(). This trains an FCN-16s network based on VGG-16 for semantic segmentation on the SIFT Flow dataset. The performance varies a bit compared to the implementation of [Long CVPR 2015], as they first train FCN-32s and use it to finetune FCN-16s. Instead we directly train FCN-16s. The results should be around pixelAcc: 83.8%, meanAcc: 48.8%, meanIU: 36.7% 
-- Fast R-CNN: TBD
-- E2S2: TBD
+- **E2S2**: Run demo_e2s2(). This trains a region-based end-to-end network based on VGG-16 for semantic segmentation on the SIFT Flow dataset. The script automatically extracts Selective Search region proposals from the dataset. To limit the high GPU memory requirements (~6GB), the default setting uses tied weights (Sect. 3.3 of [2]). The network is trained with an inverse-class frequency weighted loss (Sect. 3.3 of [2]). The results should be around TBD!!.
+- **FCN**: Run demo_fcn(). This trains an FCN-16s network based on VGG-16 for semantic segmentation on the SIFT Flow dataset. The performance varies a bit compared to the implementation of [3], as they first train FCN-32s and use it to finetune FCN-16s. Instead we directly train FCN-16s. The results should be around pixelAcc: 83.8%, meanAcc: 48.8%, meanIU: 36.7% 
+- **Fast R-CNN**: TBD
 
 **References:**
 - \[1\] http://arxiv.org/abs/1504.08083
@@ -55,5 +54,5 @@ Copyrights by Holger Caesar and Jasper Uijlings, 2015-2016.
 - \[5\] http://arxiv.org/abs/1506.02106
 
 **Contact:**
-If you run into any problems with this code, please submit a an issue report on the Github site of the project.
+If you run into any problems with this code, please submit a bug report on the Github site of the project.
 For other inquiries contact holger.caesar-at-ed.ac.uk.
