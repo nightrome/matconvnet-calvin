@@ -11,7 +11,7 @@ if strStartsWith(segmentationName, 'GroundTruth'),
 elseif strcmp(segmentationName, 'Felzenszwalb2004') || strStartsWith(segmentationName, 'Uijlings2013'),
     % Add code to path
     global glBaseFolder;
-    codeFolder = fullfile(glBaseFolder, 'Code', 'SelectiveSearch');
+    codeFolder = fullfile(glBaseFolder, 'Code', 'SelectiveSearchCodeIJCV');
     assert(exist(codeFolder, 'dir') ~= 0)
     addpath(genpath(codeFolder));
 else
