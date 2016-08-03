@@ -45,9 +45,9 @@ if ~isempty(randSeed);
 end;
 % Create paths
 if strcmp(netName, 'AlexNet'),
-    netFileName = 'imagenet-caffe-alex';
+    netFileName = 'imagenet-caffe-alex_beta16';
 elseif strcmp(netName, 'VGG16'),
-    netFileName = 'imagenet-vgg-verydeep-16';
+    netFileName = 'imagenet-vgg-verydeep-16_beta16';
 else
     error('Error: Unknown netName!');
 end;
