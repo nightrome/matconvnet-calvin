@@ -1,4 +1,4 @@
-# MatConvNet-Calvin
+# MatConvNet-Calvin v0.1
 
 **MatConvNet-Calvin** is a wrapper around MatConvNet that (re-)implements
 several state of-the-art papers in object detection and semantic segmentation.
