@@ -28,7 +28,7 @@ regressionTarget(:,3) = log(gtR ./ trainR);
 regressionTarget(:,2) = (middleCGt - middleC) ./ trainC;
 regressionTarget(:,1) = (middleRGt - middleR) ./ trainR;
 
-% We want zero-mean regression targets. Emperically determined on Pascal VOC 2007
+% We want zero-mean regression targets. Empirically determined on Pascal VOC 2007
 % regressionTarget = regressionTarget - 1;
 regressionTarget = bsxfun(@rdivide, regressionTarget, [0.1131 0.1277 0.2173 0.2173]);
 

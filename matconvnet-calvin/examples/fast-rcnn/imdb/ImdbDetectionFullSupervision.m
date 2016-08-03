@@ -149,7 +149,7 @@ classdef ImdbDetectionFullSupervision < ImdbMatbox
                 for bI = 1:length(gtKeys)+length(posKeys)
                     % Get current box and corresponding GT box
                     currPosBox = boxes(bI,:);
-                    [~, gtI] = BoxBestOverlap(gtBoxes, currPosBox);
+                    [~, gtI] = BoxBestOverlapFastRcnn(gtBoxes, currPosBox);
                     currGtBox = gtBoxes(gtI,:);
                     
                     % Get range of regression target based on the label of the gt box
@@ -157,7 +157,7 @@ classdef ImdbDetectionFullSupervision < ImdbMatbox
                     targetRange = targetRangeBegin:(targetRangeBegin+3);
                     
                     % Set regression targets
-                    regressionTargets(bI,targetRange) = BoxRegressionTargetGirshick(currGtBox, currPosBox);
+                    regressionTargets(bI, targetRange) = BoxRegressionTargetGirshick(currGtBox, currPosBox);
                 end
             end 
         end
