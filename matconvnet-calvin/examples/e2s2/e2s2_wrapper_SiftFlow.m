@@ -119,15 +119,7 @@ nnOpts.fastRcnnParams = fastRcnnParams;
 
 % Save the current options
 netOptsPath = fullfile(outputFolder, 'net-opts.mat');
-if exist(netOptsPath, 'file'),
-    % Make sure the store options correspond to the current ones
-    netOptsOld = load(netOptsPath, 'nnOpts', 'imdb');
-    assert(isequal(netOptsOld.nnOpts.learningRate, nnOpts.learningRate(1:netOptsOld.nnOpts.numEpochs)));
-    assert(isEqualFuncs(netOptsOld.nnOpts, nnOpts, {'continue', 'gpus', 'learningRate', 'numEpochs', 'expDir'}));
-    assert(isEqualFuncs(netOptsOld.imdb, imdb, {}));
-else
-    save(netOptsPath, 'nnOpts', 'imdb', '-v6');
-end;
+save(netOptsPath, 'nnOpts', 'imdb', '-v6');
 
 % Create network
 nnClass = E2S2NN(netPath, imdb, nnOpts);

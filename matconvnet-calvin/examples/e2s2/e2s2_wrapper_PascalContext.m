@@ -45,9 +45,9 @@ if ~isempty(randSeed);
 end;
 % Create paths
 if strcmp(netName, 'AlexNet'),
-    netFileName = 'beta16/imagenet-caffe-alex';
+    netFileName = 'imagenet-caffe-alex';
 elseif strcmp(netName, 'VGG16'),
-    netFileName = 'beta16/imagenet-vgg-verydeep-16';
+    netFileName = 'imagenet-vgg-verydeep-16';
 else
     error('Error: Unknown netName!');
 end;
@@ -95,15 +95,7 @@ nnOpts.fastRcnnParams = fastRcnnParams;
 
 % Save the current options
 netOptsPath = fullfile(outputFolder, 'net-opts.mat');
-if exist(netOptsPath, 'file'),
-    % Make sure the store options correspond to the current ones
-    netOptsOld = load(netOptsPath, 'nnOpts', 'imdb');
-    assert(isequal(netOptsOld.nnOpts.learningRate, nnOpts.learningRate(1:netOptsOld.nnOpts.numEpochs)));
-    assert(isEqualFuncs(netOptsOld.nnOpts, nnOpts, {'continue', 'gpus', 'learningRate', 'numEpochs', 'expDir'}));
-    assert(isEqualFuncs(netOptsOld.imdb, imdb, {}));
-else
-    save(netOptsPath, 'nnOpts', 'imdb', '-v6');
-end;
+save(netOptsPath, 'nnOpts', 'imdb', '-v6');
 
 % Create network
 nnClass = E2S2NN(netPath, imdb, nnOpts);
