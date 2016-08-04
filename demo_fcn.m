@@ -2,6 +2,9 @@
 %
 % Copyright by Holger Caesar, 2016
 
+% Add folders to path
+setup();
+
 % Settings
 expNameAppend = 'testRelease';
 
@@ -22,7 +25,8 @@ downloadNetwork();
 fcnTrainGeneric('expNameAppend', expNameAppend);
 
 % Test network
-fcnTestGeneric('expNameAppend', expNameAppend);
+stats = fcnTestGeneric('expNameAppend', expNameAppend);
+disp(stats);
 
 % Show example segmentation
 fileList = dirSubfolders(labelingsFolder);
