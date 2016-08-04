@@ -21,8 +21,12 @@ Copyrights by Holger Caesar and Jasper Uijlings, 2015-2016.
 - **What's the point: Semantic segmentation with point supervision** by Bearman et al., ECCV 2016 \[5\] (only implemented the image-level supervision)
 
 **Dependencies:**
-- **MatConvNet**: beta20 (http://github.com/vlfeat/matconvnet)
-- **MatConvNet-FCN**: (http://github.com/vlfeat/matconvnet-fcn)
+- **MatConvNet:** beta20 (http://github.com/vlfeat/matconvnet)
+- **MatConvNet-FCN:** (http://github.com/vlfeat/matconvnet-fcn)
+- **Selective Search:** for Fast R-CNN and E2S2 (http://koen.me/research/selectivesearch/)
+- **Datasets:** 
+  - SIFT Flow (http://www.cs.unc.edu/~jtighe/Papers/ECCV10/)
+  - PASCAL VOC 2010 (http://host.robots.ox.ac.uk/pascal/VOC/voc2010/)
 
 **Installation:**
 - Install Matlab and Git
