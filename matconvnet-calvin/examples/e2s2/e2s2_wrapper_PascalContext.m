@@ -8,17 +8,17 @@
 % Settings
 global glFeaturesFolder;
 projectName = 'WeaklySupervisedLearning';
-run = 2;
-exp = 0;
+run = 1;
+exp = 1;
 netName = 'VGG16';
 dataset = PascalContextDataset();
-gpus = 4;
+gpus = 1;
 roiPool.use = true;
 roiPool.freeform.use = true;
 roiPool.freeform.combineFgBox = true;
 roiPool.freeform.shareWeights = true;
 regionToPixel.use = true;
-randSeed = 20;
+randSeed = 42;
 logFile = 'log.txt';
 batchSize = 10;
 numEpochs = 10;
