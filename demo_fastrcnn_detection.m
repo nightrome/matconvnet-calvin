@@ -12,7 +12,6 @@ rootFolder = calvin_root();
 glBaseFolder = fullfile(rootFolder, 'data');
 glDatasetFolder = fullfile(glBaseFolder, 'Datasets');
 glFeaturesFolder = fullfile(glBaseFolder, 'Features');
-% labelingsFolder = fullfile(glFeaturesFolder, 'CNN-Models', 'E2S2', dataset.name, 'Run1', sprintf('%s_e2s2_run1_exp1', dataset.name), 'labelings-test-epoch-30');
 
 global MYDATADIR;
 MYDATADIR = [fullfile(glBaseFolder, 'Datasets', 'VOC2010'), '/'];
@@ -31,9 +30,3 @@ setupFastRcnnRegions();
 
 % Train and test network
 calvinNNDetection();
-
-% % Show example segmentation
-% fileList = dirSubfolders(labelingsFolder);
-% image = imread(fullfile(labelingsFolder, fileList{1}));
-% figure();
-% imshow(image);
