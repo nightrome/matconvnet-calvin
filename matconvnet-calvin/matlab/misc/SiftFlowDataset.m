@@ -37,7 +37,7 @@ classdef SiftFlowDataset < Dataset
         end
         
         function[names, labelCount] = getLabelNames(~)
-            names = {'bridge', 'building', 'fence', 'crosswalk', 'sidewalk', 'road', 'field', 'grass', 'plant', 'tree', 'mountain', 'rock', 'desert', 'sand', 'moon', 'sun', 'sky', 'sea', 'river', 'awning', 'balcony', 'door', 'staircase', 'window', 'bird', 'cow', 'person', 'boat', 'car', 'bus', 'pole', 'sign', 'streetlight'};
+            names = {'awning', 'balcony', 'bird', 'boat', 'bridge', 'building', 'bus', 'car', 'cow', 'crosswalk', 'desert', 'door', 'fence', 'field', 'grass', 'moon', 'mountain', 'person', 'plant', 'pole', 'river', 'road', 'rock', 'sand', 'sea', 'sidewalk', 'sign', 'sky', 'staircase', 'streetlight', 'sun', 'tree', 'window'};
             labelCount = numel(names);
         end
         
