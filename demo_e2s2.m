@@ -13,7 +13,7 @@ rootFolder = calvin_root();
 glBaseFolder = fullfile(rootFolder, 'data');
 glDatasetFolder = fullfile(glBaseFolder, 'Datasets');
 glFeaturesFolder = fullfile(glBaseFolder, 'Features');
-labelingsFolder = fullfile(glFeaturesFolder, 'CNN-Models', 'E2S2', 'SiftFlow', 'Run1', sprintf('%s_e2s2_run1_exp1', 'SiftFlow'), 'labelings-test-epoch-30');
+labelingsFolder = fullfile(glFeaturesFolder, 'CNN-Models', 'E2S2', 'SiftFlow', 'Run1', sprintf('%s_e2s2_run1_exp1', 'SiftFlow'), 'labelings-test-epoch10');
 
 % Download dataset
 downloadSiftFlow();
