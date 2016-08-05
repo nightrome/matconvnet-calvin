@@ -36,20 +36,18 @@ several state of-the-art papers in object detection and semantic segmentation. T
 
 **Instructions:**
 
-**Fast R-CNN**
+1) **Fast R-CNN**
 - **Usage:** Run `demo_fastrcnn_detection()`
 - **What:** This trains and tests Fast R-CNN using VGG-16 for object detection on PASCAL VOC 2010. The parametrization of the regressed bounding boxes is slightly simplified, but we found this to make no difference in performance.
 - **Results:** If the program executes correctly, it will print the per-class results in average precision and their mean (mAP) for each of the 20 classes in PASCAL VOC. The example model achieves 63.5% mAP on the validation set using no external training data.
 
-**FCN**
-
+2) **FCN**
 - **Usage:** Run `demo_fcn()`
 - **What:** This trains an FCN-16s network based on VGG-16 for semantic segmentation on the SIFT Flow dataset. The performance varies a bit compared to the implementation of \[2\], as they first train FCN-32s and use it to finetune FCN-16s. Instead we directly train FCN-16s. This takes about 12h on an NVidia Titan X. For weakly\[3,4\] and semi supervised training, see the options in fcnTrainGeneric().
 - **Model:** You can find a trained model at TBD. Unzip it into your matconvnet-calvin folder and run the demo to see the test results.
 - **Results:** If the program executes correctly, it will print the semantic segmentation performance. It will also show an image from the SIFT Flow dataset, the ground-truth labels, the output labeling and an image that shows the different types of error. The example model achieves around 83.8% Pixel Acc., 48.8% Mean Acc. and 36.7% Mean IU. 
 
-**E2S2**
-
+3) **E2S2**
 - **Usage**: Run `demo_e2s2()`
 - **What:** This trains a region-based end-to-end network based on VGG-16 for semantic segmentation on the SIFT Flow dataset. The script automatically extracts Selective Search region proposals from the dataset. To limit the high GPU memory requirements (~6GB), the default setting uses tied weights (Sect. 3.3 of \[5\]). To speedup training we only train for 10 epochs. This takes about 20h on an NVidia Titan X. The network is trained with an inverse-class frequency weighted loss (Sect. 3.3 of \[5\]).
 - **Model:** You can find a trained model at TBD. Unzip it into your matconvnet-calvin folder and run the demo to see the test results.
