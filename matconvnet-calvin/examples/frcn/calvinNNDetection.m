@@ -1,4 +1,6 @@
-% function calvinNNDetection
+% function calvinNNDetection()
+%
+% Copyright by Holger Caesar, 2016
 
 % User inputs
 global MYDATADIR % Directory of datasets
@@ -9,8 +11,12 @@ assert(~isempty(MYDATADIR));
 vocYear = 2010;
 trainName = 'train';
 testName  = 'val';
+setupDataOpts(vocYear, testName);
+global DATAopts; % Database specific paths
+assert(~isempty(DATAopts), 'Error: Dataset not initialized properly!');
+nnOpts.expDir = [DATAopts.resdir, 'Matconvnet-Calvin', '/', 'det', '/'];
 
-% Task
+% Detection-specific
 nnOpts.testFn = @testDetection;
 nnOpts.misc.overlapNms = 0.3;
 nnOpts.derOutputs = {'objective', 1, 'regressObjective', 1};
@@ -24,11 +30,6 @@ nnOpts.numEpochs = 16;
 nnOpts.learningRate = [repmat(1e-3, 12, 1); repmat(1e-4, 4, 1)];
 nnOpts.misc.netPath = fullfile(calvin_root(), 'data', 'Features', 'CNN-Models', 'matconvnet', 'imagenet-vgg-verydeep-16.mat');
 nnOpts.gpus = SelectIdleGpu();
-
-% Setup data opts
-setupDataOpts(vocYear, testName);
-global DATAopts; % Database specific paths
-nnOpts.expDir = [DATAopts.resdir, 'Matconvnet-Calvin', '/', 'det', '/'];
 
 % Start from pretrained network
 net = load(nnOpts.misc.netPath);

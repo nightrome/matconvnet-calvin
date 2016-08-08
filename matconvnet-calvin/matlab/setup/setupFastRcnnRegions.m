@@ -7,12 +7,16 @@ function setupFastRcnnRegions(varargin)
 %
 % Copyright by Holger Caesar, 2016
 
-% Settings
+%%% Settings
+% Dataset
+vocYear = 2010;
 trainName = 'train';
-testName = 'val';
+testName  = 'val';
+setupDataOpts(vocYear, testName);
+global DATAopts; % Database specific paths
+assert(~isempty(DATAopts), 'Error: Dataset not initialized properly!');
 
 % Get image lists
-global DATAopts;
 trainIms = textread(sprintf(DATAopts.imgsetpath, trainName), '%s'); %#ok<DTXTRD>
 testIms  = textread(sprintf(DATAopts.imgsetpath, testName), '%s'); %#ok<DTXTRD>
 
