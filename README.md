@@ -19,40 +19,41 @@ several state of-the-art papers in object detection and semantic segmentation. T
 
 **Installation:**
 - Install Matlab and Git
-- Clone the repository and its submodules
-  - git clone https://github.com/nightrome/matconvnet-calvin.git
-  - cd matconvnet-calvin
-  - git submodule update --init
+- Clone the repository and its submodules from your shell
+  - `git clone https://github.com/nightrome/matconvnet-calvin.git`
+  - `cd matconvnet-calvin`
+  - `git submodule update --init`
+- Start Matlab
 - Setup MatConvNet
-  - cd matconvnet/matlab;
-  - vl_compilenn('EnableGpu', true);
-  - cd ../..;
+  - `cd matconvnet/matlab;`
+  - `vl_compilenn('EnableGpu', true);`
+  - `cd ../..;`
 - Setup MatConvNet-Calvin
-  - cd matconvnet-calvin/matlab;
-  - vl_compilenn_calvin();
-  - cd ../..;
+  - `cd matconvnet-calvin/matlab;`
+  - `vl_compilenn_calvin();`
+  - `cd ../..;`
 - Add files to Matlab path
-  - setup();
+  - `setup();`
 
 **Instructions:**
 
 1) **Fast R-CNN**
 - **Usage:** Run `demo_fastrcnn_detection()`
 - **What:** This trains and tests Fast R-CNN using VGG-16 for object detection on PASCAL VOC 2010. The parametrization of the regressed bounding boxes is slightly simplified, but we found this to make no difference in performance.
-- **Model:** You can find a trained model at http://groups.inf.ed.ac.uk/calvin/caesar16eccv/FRCN_VOC2010_model.zip . Unzip it into your matconvnet-calvin folder and run the demo to see the test results.
+- **Model:** Training this model takes about 8h on a Titan X GPU. If you just want to use it you can download a trained model from http://groups.inf.ed.ac.uk/calvin/caesar16eccv/FRCN_VOC2010_model.zip . Unzip it into your matconvnet-calvin folder and run the demo to see the test results.
 - **Results:** If the program executes correctly, it will print the per-class results in average precision and their mean (mAP) for each of the 20 classes in PASCAL VOC. The example model achieves 63.5% mAP on the validation set using no external training data.
 
 2) **FCN**
 - **Usage:** Run `demo_fcn()`
-- **What:** This trains and tests an FCN-16s network based on VGG-16 for semantic segmentation on the SIFT Flow dataset. The performance varies a bit compared to the implementation of \[2\], as they first train FCN-32s and use it to finetune FCN-16s. Instead we directly train FCN-16s. This takes about 12h on an NVidia Titan X. For weakly\[3,4\] and semi supervised training, see the options in fcnTrainGeneric().
-- **Model:** You can find a trained model at http://groups.inf.ed.ac.uk/calvin/caesar16eccv/FCN_SiftFlow_model.zip. Unzip it into your matconvnet-calvin folder and run the demo to see the test results.
-- **Results:** If the program executes correctly, it will print the semantic segmentation performance. It will also show an image from the SIFT Flow dataset, the ground-truth labels, the output labeling and an image that shows the different types of error. The example model achieves around 83.8% Pixel Acc., 48.8% Mean Acc. and 36.7% Mean IU. 
+- **What:** This trains and tests an FCN-16s network based on VGG-16 for semantic segmentation on the SIFT Flow dataset. The performance varies a bit compared to the implementation of \[2\], as they first train FCN-32s and use it to finetune FCN-16s. Instead we directly train FCN-16s. For weakly \[3,4\] and semi supervised training, see the options in fcnTrainGeneric().
+- **Model:** Training this model takes about 12h on a Titan X GPU. If you just want to use it you can download a trained model from http://groups.inf.ed.ac.uk/calvin/caesar16eccv/FCN_SiftFlow_model.zip. Unzip it into your matconvnet-calvin folder and run the demo to see the test results.
+- **Results:** If the program executes correctly, it will print the semantic segmentation performance. It will also show an image from the SIFT Flow dataset, the ground-truth labels, the output labeling and an image that shows the different types of error. The example model achieves 83.8% Pixel Acc., 48.8% Mean Acc. and 36.7% Mean IU. 
 
 3) **E2S2**
 - **Usage**: Run `demo_e2s2()`
-- **What:** This trains and tests a region-based end-to-end network based on VGG-16 for semantic segmentation on the SIFT Flow dataset. The script automatically extracts Selective Search region proposals from the dataset. To limit the high GPU memory requirements (~6GB), the default setting uses tied weights (Sect. 3.3 of \[5\]). To speedup training we only train for 10 epochs. This takes about 20h on an NVidia Titan X. The network is trained with an inverse-class frequency weighted loss (Sect. 3.4 of \[5\]).
-- **Model:** You can find a trained model at http://groups.inf.ed.ac.uk/calvin/caesar16eccv/E2S2_SiftFlow_model.zip . Unzip it into your matconvnet-calvin folder and run the demo to see the test results.
-- **Results:** If the program executes correctly, it will print the semantic segmentation performance. It will also show an image from the SIFT Flow dataset, the ground-truth labels, the output labeling and an image that shows the different types of error. The example model achieves around 62.5% Mean Acc.
+- **What:** This trains and tests a region-based end-to-end network based on VGG-16 for semantic segmentation on the SIFT Flow dataset. The script automatically extracts Selective Search region proposals from the dataset. To limit the high GPU memory requirements (~6GB), the default setting uses tied weights (Sect. 3.3 of \[5\]). To speedup training we only train for 10 epochs. The network is trained with an inverse-class frequency weighted loss (Sect. 3.4 of \[5\]).
+- **Model:** Training this model takes about 20h on a Titan X GPU. If you just want to use it you can download a trained model from http://groups.inf.ed.ac.uk/calvin/caesar16eccv/E2S2_SiftFlow_model.zip . Unzip it into your matconvnet-calvin folder and run the demo to see the test results.
+- **Results:** If the program executes correctly, it will print the semantic segmentation performance. It will also show an image from the SIFT Flow dataset, the ground-truth labels, the output labeling and an image that shows the different types of error. The example model achieves 62.5% Mean Acc.
 
 **References:**
 - \[1\] **Fast R-CNN** by Girshick et al., ICCV 2015, http://arxiv.org/abs/1504.08083
