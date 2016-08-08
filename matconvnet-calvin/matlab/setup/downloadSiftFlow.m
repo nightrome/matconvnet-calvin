@@ -6,14 +6,13 @@ function downloadSiftFlow()
 % Copyright by Holger Caesar, 2016
 
 % Settings
-dataset = SiftFlowDataset();
 zipName = 'SiftFlowDataset.zip';
 url = 'http://www.cs.unc.edu/~jtighe/Papers/ECCV10/siftflow/SiftFlowDataset.zip';
 rootFolder = calvin_root();
-datasetFolder = fullfile(rootFolder, 'data', 'Datasets', dataset.name);
+datasetFolder = fullfile(rootFolder, 'data', 'Datasets', 'SiftFlow');
 zipFile = fullfile(datasetFolder, zipName);
 semanticLabelFolder = fullfile(datasetFolder, 'SemanticLabels');
-metaFolder = dataset.getMetaPath();
+metaFolder = fullfile(datasetFolder, 'Meta');
 
 % Download dataset
 if ~exist(metaFolder, 'file')
@@ -24,7 +23,7 @@ if ~exist(metaFolder, 'file')
     
     % Download zip file
     if ~exist(zipFile, 'file')
-        fprintf('Downloading SIFT Flow dataset...\n');
+        fprintf('Downloading SIFT Flow dataset (140MB)...\n');
         urlwrite(url, zipFile);
     end
     
