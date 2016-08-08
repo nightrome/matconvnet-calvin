@@ -28,7 +28,7 @@ if ~exist(devkitFolder, 'dir')
     if ~exist(dataFolder, 'dir')
         % Download tar file
         if ~exist(zipFileData, 'file')
-            fprintf('Downloading VOC 2010 dataset...\n');
+            fprintf('Downloading VOC 2010 dataset (1.3GB)...\n');
             urlwrite(urlData, zipFileData);
         end
         
@@ -41,7 +41,7 @@ if ~exist(devkitFolder, 'dir')
     if ~exist(devkitFolder, 'dir')
         % Download tar file
         if ~exist(zipFileDevkit, 'file')
-            fprintf('Downloading VOC 2010 devkit...\n');
+            fprintf('Downloading VOC 2010 devkit (0.3MB)...\n');
             urlwrite(urlDevkit, zipFileDevkit);
         end
         

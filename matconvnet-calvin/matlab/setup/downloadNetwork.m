@@ -29,7 +29,7 @@ if ~exist(modelPath, 'file')
     
     % Download model
     if ~exist(modelPath, 'dir')
-        fprintf('Downloading model...\n');
+        fprintf('Downloading model (0.5GB)...\n');
         urlwrite(url, modelPath);
     end
 end
