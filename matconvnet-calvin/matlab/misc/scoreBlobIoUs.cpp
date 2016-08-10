@@ -151,16 +151,16 @@ void mexFunction(int nlhs, mxArray *plhs[],
             double* bRectData = (double*) mxGetData(bRectPtr);
             
             size_t aRect[4] = {
-                lround(aRectData[0]),
-                lround(aRectData[1]),
-                lround(aRectData[2]),
-                lround(aRectData[3])
+                (size_t) lround(aRectData[0]),
+                (size_t) lround(aRectData[1]),
+                (size_t) lround(aRectData[2]),
+                (size_t) lround(aRectData[3])
             };
             size_t bRect[4] = {
-                lround(bRectData[0]),
-                lround(bRectData[1]),
-                lround(bRectData[2]),
-                lround(bRectData[3])
+                (size_t) lround(bRectData[0]),
+                (size_t) lround(bRectData[1]),
+                (size_t) lround(bRectData[2]),
+                (size_t) lround(bRectData[3])
             };
             
             bool* aMask = (bool*) mxGetData(aMaskPtr);
