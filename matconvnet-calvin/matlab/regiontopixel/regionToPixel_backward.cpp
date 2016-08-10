@@ -1,5 +1,6 @@
 #include <cmath>
 #include "mex.h"
+#include "../compatibility/isScalar.h"
 
 /*
  * [dzdx] = regionToPixel_backward(boxCount, spMap, dzdy)
@@ -25,7 +26,7 @@ void mexFunction(int nlhs, mxArray *out[], int nrhs, const mxArray *input[])
     const mxArray* dzdyMx = input[2];
     
     // Check inputs
-    if (!mxIsDouble(boxCountMx) || !mxIsScalar(boxCountMx)) {
+    if (!mxIsDouble(boxCountMx) || !isScalar(boxCountMx)) {
         mexErrMsgTxt("Error: boxCount must be a scalar double!");
     }
     if (!mxIsDouble(spMapMx) || mxGetNumberOfDimensions(spMapMx) != 2) {

@@ -1,6 +1,7 @@
 #include <cmath>
 #include "mex.h"
 #include "matrix.h"
+#include "../compatibility/isScalar.h"
 
 /*
  * dzdx = roiPooling_backward(boxCount, convImSize, roiPoolSize, masks, dzdy);
@@ -27,7 +28,7 @@ void mexFunction(int nlhs, mxArray *out[], int nrhs, const mxArray *input[])
     const mxArray* dzdyMx = input[4];
     
     // Check inputs
-    if (!mxIsDouble(boxCountMx) || !mxIsScalar(boxCountMx)) {
+    if (!mxIsDouble(boxCountMx) || !isScalar(boxCountMx)) {
         mexErrMsgTxt("Error: boxCount must be a scalar double!");
     }
     if (!mxIsDouble(convImSizeMx) || mxGetNumberOfDimensions(convImSizeMx) != 2 || mxGetM(convImSizeMx) != 1 || mxGetN(convImSizeMx) != 3) {

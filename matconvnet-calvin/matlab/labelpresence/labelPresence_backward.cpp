@@ -1,5 +1,6 @@
 #include <cmath>
 #include "mex.h"
+#include "../compatibility/isScalar.h"
 
 /*
  * [dzdx] = labelPresence_backward(spCount, labelMap, dzdy)
@@ -11,8 +12,7 @@
  * Copyright by Holger Caesar, 2015
  */
 
-void mexFunction(int nlhs, mxArray *out[], int nrhs, const mxArray *input[])
-{
+void mexFunction(int nlhs, mxArray *out[], int nrhs, const mxArray *input[]) {
     if (nlhs == 0) {
         return;
     } else if (nlhs != 1 || nrhs != 3) {
@@ -26,7 +26,7 @@ void mexFunction(int nlhs, mxArray *out[], int nrhs, const mxArray *input[])
     const mxArray* dzdyMx     = input[2];
     
     // Check inputs
-    if (!mxIsDouble(spCountMx) || !mxIsScalar(spCountMx)) {
+    if (!mxIsDouble(spCountMx) || !isScalar(spCountMx)) {
         mexErrMsgTxt("Error: spCount must be a scalar double!");
     }
     if (!mxIsDouble(labelMapMx) || mxGetNumberOfDimensions(labelMapMx) != 2) {
