@@ -18,7 +18,7 @@ several state of-the-art papers in object detection and semantic segmentation. T
   - **PASCAL VOC 2010:** (http://host.robots.ox.ac.uk/pascal/VOC/voc2010/)
 
 **Installation:**
-- Install Matlab and Git
+- Install Matlab R2015a (or newer) and Git
 - Clone the repository and its submodules from your shell
   - `git clone https://github.com/nightrome/matconvnet-calvin.git`
   - `cd matconvnet-calvin`
