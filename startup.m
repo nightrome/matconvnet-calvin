@@ -1,5 +1,5 @@
-function setup()
-% setup()
+function startup()
+% startup()
 %
 % Add Matconvnet, Matconvnet-FCN and Matconvnet-Calvin to Matlab path.
 %

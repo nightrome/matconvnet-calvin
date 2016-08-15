@@ -7,7 +7,7 @@
 % Copyright by Holger Caesar, 2016
 
 % Add folders to path
-setup();
+startup();
 
 % Settings
 expNameAppend = 'testRelease';
