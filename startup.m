@@ -20,3 +20,9 @@ addpath(matconvnetFcnPath);
 
 % Add matconvnet-calvin
 addpath(genpath(matconvnetCalvinPath));
+
+% Define global variables
+global glBaseFolder glDatasetFolder glFeaturesFolder;
+glBaseFolder = fullfile(root, 'data');
+glDatasetFolder = fullfile(glBaseFolder, 'Datasets');
+glFeaturesFolder = fullfile(glBaseFolder, 'Features');
