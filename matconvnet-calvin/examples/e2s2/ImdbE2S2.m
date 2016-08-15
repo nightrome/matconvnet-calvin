@@ -25,7 +25,6 @@ classdef ImdbE2S2 < ImdbCalvin
             
             % Set default options
             obj.batchOpts.maxImageSize = 600;
-            obj.batchOpts.negRange = [0.0, 0.1];
             obj.batchOpts.posRange = [0.1, 1.0];
             obj.batchOpts.subsample = true;
             obj.batchOpts.removeGT = false;
@@ -208,7 +207,8 @@ classdef ImdbE2S2 < ImdbCalvin
                 [maxOverlap, ~] = max(overlapRPLabels, [], 2);
                 
                 % Find positives (negatives are rejected)
-                blobIndsRP = find(batchOptsCopy.posRange(1) <= maxOverlap & maxOverlap <= batchOptsCopy.posRange(2));
+                blobIndsRP = find(batchOptsCopy.posRange(1) <= maxOverlap & ...
+                                  maxOverlap <= batchOptsCopy.posRange(2));
             else
                 blobIndsRP = (1:numel(blobsRP))';
             end;
