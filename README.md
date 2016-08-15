@@ -35,7 +35,7 @@ several state of-the-art papers in object detection and semantic segmentation. T
     - `vl_compilenn_calvin();`
     - `cd ../..;`
   - Add files to Matlab path
-    - `startup();`
+    - `setup();`
 - (Optional) Download pretrained models from your shell
     - FRCN: `wget -N -P data/ http://groups.inf.ed.ac.uk/calvin/caesar16eccv/E2S2_SiftFlow_model.zip; unzip data/E2S2_SiftFlow_model.zip`
     - FCN: `wget -N -P data/ http://groups.inf.ed.ac.uk/calvin/caesar16eccv/FCN_SiftFlow_model.zip;  unzip data/FCN_SiftFlow_model.zip`

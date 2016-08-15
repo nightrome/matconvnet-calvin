@@ -1,7 +1,8 @@
-function startup()
-% startup()
+function setup()
+% setup()
 %
-% Add Matconvnet, Matconvnet-FCN and Matconvnet-Calvin to Matlab path.
+% Add Matconvnet, Matconvnet-FCN and Matconvnet-Calvin to Matlab path 
+% and initialize global variables used by the demos.
 %
 % Copyright by Holger Caesar, 2016
 
