@@ -122,44 +122,6 @@ classdef E2S2NN < CalvinNN
             end
         end
         
-%         function extractFeatures(obj, featFolder)
-%             % extractFeatures(obj, featFolder)
-%             
-%             % Init
-%             imageList = unique([obj.imdb.data.train; obj.imdb.data.val; obj.imdb.data.test]);
-%             imageCount = numel(imageList);
-%             
-%             % Update imdb's test set
-%             tempTest = obj.imdb.data.test;
-%             obj.imdb.data.test = imageList;
-%             
-%             % Set network to testing mode
-%             outputVarIdx = obj.prepareNetForTest();
-%             
-%             for imageIdx = 1 : imageCount
-%                 printProgress('Classifying images', imageIdx, imageCount, 10);
-%                 
-%                 % Get batch
-%                 inputs = obj.imdb.getBatch(imageIdx, obj.net);
-%                 
-%                 % Run forward pass
-%                 obj.net.eval(inputs);
-%                 
-%                 % Extract probs
-%                 curProbs = obj.net.vars(outputVarIdx).value;
-%                 curProbs = gather(reshape(curProbs, [size(curProbs, 3), size(curProbs, 4)]))';
-%                 
-%                 % Store
-%                 imageName = imageList{imageIdx};
-%                 featPath = fullfile(featFolder, [imageName, '.mat']);
-%                 features = double(curProbs); %#ok<NASGU>
-%                 save(featPath, 'features', '-v6');
-%             end
-%             
-%             % Reset test set
-%             obj.imdb.data.test = tempTest;
-%         end
-        
         function[outputVarIdx] = prepareNetForTest(obj)
             % [outputVarIdx] = prepareNetForTest(obj)
             
