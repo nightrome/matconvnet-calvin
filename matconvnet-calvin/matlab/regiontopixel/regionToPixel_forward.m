@@ -4,9 +4,6 @@ function[scoresSP, mapSP] = regionToPixel_forward(scoresAll, overlapListAll)
 % Go from a region level to a pixel level.
 % (to be able to compute a loss there)
 %
-% Note: The presence/absence of regionToPixelAux.spLabelHistos indicates
-% whether we are in train/val or test mode.
-%
 % Copyright by Holger Caesar, 2015
 
 % Move to CPU

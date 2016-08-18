@@ -1,6 +1,6 @@
 classdef SuperPixelToPixelMap < dagnn.Layer
-    % Convert pixel label scores to presence/absence scores for each class per batch.
-    % (to be able to compute an image-level loss there)
+    % Convert superpixel scores to pixel scores.
+    % (to be able to compute an pixel-level loss there)
     %
     % inputs are: scoresSP, blobsSP, oriImSize
     % outputs are: scoresImage
