@@ -1,6 +1,6 @@
 # MatConvNet-Calvin v0.4
 
-![Example output of our E2S2 method](http://groups.inf.ed.ac.uk/calvin/caesar16eccv/Examples/insidecity_art1277.png)
+![Example output of our E2S2 method](http://groups.inf.ed.ac.uk/calvin/caesar16eccv/Examples/street_hexp30.png)
 
 **MatConvNet-Calvin** is a wrapper around MatConvNet that (re-)implements
 several state of-the-art papers in object detection and semantic segmentation. This includes our own work "Region-based semantic segmentation with end-to-end training" \[5\]. Calvin is a Computer Vision research group at the University of Edinburgh (http://calvin.inf.ed.ac.uk/). Copyrights by Holger Caesar and Jasper Uijlings, 2015-2016.
