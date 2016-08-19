@@ -27,7 +27,9 @@ downloadSelectiveSearch();
 setupE2S2Regions();
 
 % Train and test network
-e2s2_wrapper_SiftFlow();
+% (replace this by e2s2_wrapper_SiftFlow_simple() for a network that can be
+% trained much faster, but performs slightly worse)
+e2s2_wrapper_SiftFlow_full();
 
 % Show example segmentation
 fileList = dirSubfolders(labelingsFolder);
