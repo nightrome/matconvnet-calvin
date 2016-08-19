@@ -5,13 +5,22 @@
 **MatConvNet-Calvin** is a wrapper around MatConvNet that (re-)implements
 several state of-the-art papers in object detection and semantic segmentation. This includes our own work "Region-based semantic segmentation with end-to-end training" \[5\]. Calvin is a Computer Vision research group at the University of Edinburgh (http://calvin.inf.ed.ac.uk/). Copyrights by Holger Caesar and Jasper Uijlings, 2015-2016.
 
-**Methods:**
+## Overview
+- [Methods](#methods)
+- [Dependencies](#dependencies)
+- [Installation](#installation)
+- [Instructions](#instructions)
+- [References](#references)
+- [Disclaimer](#disclaimer)
+- [Contact](#contact)
+
+## Methods
 - **Fast R-CNN (FRCN)** \[1\]: State-of-the-art object detection method. The original code was implemented for Caffe. This reimplementation ports it to MatConvNet and includes Region of Interest pooling and a simplified version of bounding box regression.
 - **Fully Convolutional Networks (FCN)** \[2\]: Very successful semantic segmentation method that builds the basis for most modern semantic segmentation methods. FCNs operate directly on image pixels, performing a series of convolutional, fully connected and deconvolutional filters. This implementation is based on MatConvNet-FCN and is modified to work with arbitrary datasets.
 - **Multi-Class Multipe Instance Learning** \[3\]: Extends FCNs for weakly supervised semantic segmentation. We also implement the improved loss function of "What's the point" \[4\], which takes into account label presence and absence.
 - **Region-based semantic segmentation with end-to-end training (E2S2)** \[5\]: State-of-the-art semantic segmentation method that brings together the advantages of region-based methods and end-to-end trainable FCNs. This implementation is based on our implementation of Fast R-CNN and includes the freeform Region of Interest pooling and region-to-pixel layers.
 
-**Dependencies:**
+## Dependencies
 - **MatConvNet:** beta20 (http://github.com/vlfeat/matconvnet)
 - **MatConvNet-FCN:** (http://github.com/vlfeat/matconvnet-fcn)
 - **Selective Search:** for Fast R-CNN and E2S2 (http://koen.me/research/selectivesearch/)
@@ -19,7 +28,7 @@ several state of-the-art papers in object detection and semantic segmentation. T
   - **SIFT Flow:** (http://www.cs.unc.edu/~jtighe/Papers/ECCV10/)
   - **PASCAL VOC 2010:** (http://host.robots.ox.ac.uk/pascal/VOC/voc2010/)
 
-**Installation:**
+## Installation
 - Install Matlab R2015a (or newer) and Git
 - Clone the repository and its submodules from your shell
   - `git clone https://github.com/nightrome/matconvnet-calvin.git`
@@ -42,9 +51,7 @@ several state of-the-art papers in object detection and semantic segmentation. T
     - E2S2 (Full): `wget -N -P data/ http://groups.inf.ed.ac.uk/calvin/caesar16eccv/E2S2_SiftFlow_model-full.zip; unzip data/E2S2_SiftFlow_model-full.zip`
     - E2S2 (Fast): `wget -N -P data/ http://groups.inf.ed.ac.uk/calvin/caesar16eccv/E2S2_SiftFlow_model-fast.zip; unzip data/E2S2_SiftFlow_model-fast.zip`
 
-
-**Instructions:**
-
+## Instructions
 1) **FRCN**
 - **Usage:** Run `demo_frcn()`
 - **What:** This trains and tests Fast R-CNN using VGG-16 for object detection on PASCAL VOC 2010. The parametrization of the regressed bounding boxes is slightly simplified, but we found this to make no difference in performance.
@@ -70,15 +77,15 @@ several state of-the-art papers in object detection and semantic segmentation. T
  | Full         | 66.0%         | 25              | 75h           | 7.5GB
  | Fast         | 62.5%         | 10              | 20h           | 6.0GB
 
-**References:**
+## References
 - \[1\] **Fast R-CNN (FRCN)** by Girshick et al., ICCV 2015, http://arxiv.org/abs/1504.08083
 - \[2\] **Fully Convolutional Networks for Semantic Segmentation (FCN)** by Long et al., CVPR 2015, http://arxiv.org/abs/1411.4038
 - \[3\] **Fully Convolutional Multi-Class Multipe Instance Learning** by Pathak et al., ICLR 2015 workshop, http://arxiv.org/abs/1412.7144
 - \[4\] **What's the point: Semantic segmentation with point supervision** by Bearman et al., ECCV 2016, http://arxiv.org/abs/1506.02106
 - \[5\] **Region-based semantic segmentation with end-to-end training** (E2S2) by Caesar et al., ECCV 2016, http://arxiv.org/abs/1607.07671
 
-**Disclaimer:**
+## Disclaimer
 Except for \[5\], none of the methods implemented in MatConvNet-Calvin is authorized by the original authors. These are (possibly simplified) reimplementations of parts of the described methods and they might vary in terms of performance. This software is covered by the FreeBSD License. See LICENSE.MD for more details.
 
-**Contact:**
+## Contact
 If you run into any problems with this code, please submit a bug report on the Github site of the project. For other inquiries contact holger.caesar-at-ed.ac.uk.
