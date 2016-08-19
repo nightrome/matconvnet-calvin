@@ -1,5 +1,5 @@
- function e2s2_wrapper_SiftFlow_simple(varargin)
-% e2s2_wrapper_SiftFlow_simple(varargin)
+ function e2s2_wrapper_SiftFlow_fast(varargin)
+% e2s2_wrapper_SiftFlow_fast(varargin)
 %
 % A wrapper for Fast-RCNN with Matconvnet that allows to train and test a network.
 % Note: The network is prone to exploding gradients and therefore only
