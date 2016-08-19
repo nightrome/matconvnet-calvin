@@ -77,6 +77,7 @@ classdef ImdbE2S2 < ImdbCalvin
             % (Changed this to included validation as we are not using a
             % val set and only looking to see the final result)
             testMode = ~strcmp(obj.datasetMode, 'train');
+            computeLoss = ~strcmp(obj.datasetMode, 'test');
             
             % Switch color type if specified
             % (this has to happen on batchOpts, not batchOptsCopy!)
@@ -321,7 +322,7 @@ classdef ImdbE2S2 < ImdbCalvin
                 end
             end
             
-            if nnOpts.misc.invFreqWeights && ~testMode
+            if nnOpts.misc.invFreqWeights && computeLoss
                 if weaklySupervised.use
                     classWeights = obj.dataset.getLabelImFreqs();
                 else
@@ -365,12 +366,12 @@ classdef ImdbE2S2 < ImdbCalvin
             end
             if weaklySupervised.use  ...
                     && weaklySupervised.labelPresence.use ...
-                    && ~testMode
+                    && computeLoss
                 % For the SegmentationLossImage layer
                 inputs = [inputs, {'labelsImage', {labelsImage}}];
                 inputs = [inputs, {'masksThingsCell', {}}];
             end
-            if ~testMode
+            if computeLoss
                 % For the SuperPixelToPixelMap, SegmentationLoss* and SegmentationAccuracyFlexible layers
                 labels = double(obj.dataset.getImLabelMap(imageName)); % has to be double to avoid problems in loss
                 inputs = [inputs, {'labels', labels}];
