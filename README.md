@@ -37,9 +37,11 @@ several state of-the-art papers in object detection and semantic segmentation. T
   - Add files to Matlab path
     - `setup();`
 - (Optional) Download pretrained models from your shell
-    - FRCN: `wget -N -P data/ http://groups.inf.ed.ac.uk/calvin/caesar16eccv/E2S2_SiftFlow_model.zip; unzip data/E2S2_SiftFlow_model.zip`
+    - FRCN: `wget -N -P data/ http://groups.inf.ed.ac.uk/calvin/caesar16eccv/FRCN_VOC2010_model.zip;  unzip data/FRCN_VOC2010_model.zip`
     - FCN: `wget -N -P data/ http://groups.inf.ed.ac.uk/calvin/caesar16eccv/FCN_SiftFlow_model.zip;  unzip data/FCN_SiftFlow_model.zip`
-    - E2S2: `wget -N -P data/ http://groups.inf.ed.ac.uk/calvin/caesar16eccv/FRCN_VOC2010_model.zip;  unzip data/FRCN_VOC2010_model.zip`
+    - E2S2 (Full): `wget -N -P data/ http://groups.inf.ed.ac.uk/calvin/caesar16eccv/E2S2_SiftFlow_model-full.zip; unzip data/E2S2_SiftFlow_model-full.zip`
+    - E2S2 (Fast): `wget -N -P data/ http://groups.inf.ed.ac.uk/calvin/caesar16eccv/E2S2_SiftFlow_model-fast.zip; unzip data/E2S2_SiftFlow_model-fast.zip`
+
 
 **Instructions:**
 
@@ -57,9 +59,16 @@ several state of-the-art papers in object detection and semantic segmentation. T
 
 3) **E2S2**
 - **Usage**: Run `demo_e2s2()`
-- **What:** This trains and tests a region-based end-to-end network based on VGG-16 for semantic segmentation on the SIFT Flow dataset. The script automatically extracts Selective Search region proposals from the dataset. To limit the high GPU memory requirements (~6GB), the default setting uses tied weights (Sect. 3.3 of \[5\]). To speedup training we only train for 10 epochs. The network is trained with an inverse-class frequency weighted loss (Sect. 3.4 of \[5\]).
-- **Model:** Training this model takes about 20h on a Titan X GPU. If you just want to use it you can download the pretrained model in the installation step above. Then run the demo to see the test results.
-- **Results:** If the program executes correctly, it will print the semantic segmentation performance. It will also show an image from the SIFT Flow dataset, the ground-truth labels, the output labeling and an image that shows the different types of error (similar to the figure above). The example model achieves 62.5% Mean Acc.
+- **What:** This trains and tests a region-based end-to-end network based on VGG-16 for semantic segmentation on the SIFT Flow dataset. The script automatically extracts Selective Search region proposals from the dataset. All networks are trained with an inverse-class frequency weighted loss (Sect. 3.4 of \[5\]).
+- **Model:** Training this model takes a lot of time. If you just want to use it you can download the pretrained model in the installation step above. Then run the demo to see the test results. There are two different models available:
+  - Full: Our best performing model refered to in \[5\] as "separate weights".
+  - Fast: A much faster model refered to in \[5\] as "tied weights".
+- **Results:** If the program executes correctly, it will print the semantic segmentation performance. It will also show an image from the SIFT Flow dataset, the ground-truth labels, the output labeling and an image that shows the different types of error (similar to the figure above). The results and timings for the two models can be seen in the table below. Both were trained on a Titan X GPU with 12GB of RAM.
+
+ | Model        | Mean accuracy | Training epochs | Training time | GPU RAM
+ | ---          | ---           | ---             | ---           | ---
+ | Full         | 66.0%         | 25              | 75h           | 7.5GB
+ | Fast         | 62.5%         | 10              | 20h           | 6.0GB
 
 **References:**
 - \[1\] **Fast R-CNN (FRCN)** by Girshick et al., ICCV 2015, http://arxiv.org/abs/1504.08083
