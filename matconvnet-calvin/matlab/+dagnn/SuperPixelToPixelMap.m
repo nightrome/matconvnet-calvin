@@ -37,7 +37,6 @@ classdef SuperPixelToPixelMap < dagnn.Layer
             obj.mask = cell(spCount, labelCount);
             
             for spIdx = 1 : spCount
-                blob = blobsSP(spIdx);
                 
                 % Skips SPs that don't have scores
                 if any(isnan(scoresSP(:, :, :, spIdx)))
@@ -45,6 +44,7 @@ classdef SuperPixelToPixelMap < dagnn.Layer
                 end
                 
                 % Get all pix. coords for the mask
+                blob = blobsSP(spIdx);
                 [blobSubY, blobSubX] = blobToImageSubs(blob);
                 
                 % Copy scores to all pixels in that superpixel

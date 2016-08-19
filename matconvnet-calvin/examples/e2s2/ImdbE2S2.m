@@ -10,14 +10,17 @@ classdef ImdbE2S2 < ImdbCalvin
         dataset
         segmentFolder
         
+        batchOpts = struct();
+        imageSample = struct();
+    end
+    
+    properties (Transient)
         % Automatically set
         segmentFolderRP
         segmentFolderSP
         segmentFolderGT
-        
-        batchOpts = struct();
-        imageSample = struct();
     end
+    
     methods
         function obj = ImdbE2S2(dataset, segmentFolder)
             % Call default constructor
@@ -70,8 +73,10 @@ classdef ImdbE2S2 < ImdbCalvin
             inputs = {};
             numElements = 0;
             
-            % Determine whether testing
-            testMode = strcmp(obj.datasetMode, 'test');
+            % During test/validation we don't use ground-truth regions etc.
+            % (Changed this to included validation as we are not using a
+            % val set and only looking to see the final result)
+            testMode = ~strcmp(obj.datasetMode, 'train');
             
             % Switch color type if specified
             % (this has to happen on batchOpts, not batchOptsCopy!)
