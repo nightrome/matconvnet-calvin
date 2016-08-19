@@ -21,11 +21,16 @@ classdef E2S2NN < CalvinNN
             obj.net.renameVar('instanceWeights', 'instanceWeightsSP');
             
             % Insert a regiontopixel layer before the loss
-            if obj.nnOpts.misc.regionToPixel.use
-                regionToPixelOpts = obj.nnOpts.misc.regionToPixel;
-                regionToPixelOpts = rmfield(regionToPixelOpts, 'use');
-                regionToPixelOpts = struct2Varargin(regionToPixelOpts);
-                regionToPixelBlock = dagnn.RegionToPixel(regionToPixelOpts{:});
+            if obj.nnOpts.misc.regionToPixel.use                
+                if isfield(obj.nnOpts.misc.regionToPixel, 'soft') && obj.nnOpts.misc.regionToPixel.soft.use
+                    % Special option where we use a softer function than
+                    % max (depends on weighted ranks)
+                    regionToPixelBlock = dagnn.RegionToPixelSoft('decay', obj.nnOpts.misc.regionToPixel.soft.decay);
+                else
+                    % Max
+                    regionToPixelBlock = dagnn.RegionToPixel();
+                end
+                
                 insertLayer(obj.net, 'fc8', 'softmaxloss', 'regiontopixel8', regionToPixelBlock, 'overlapListAll', {});
             end
             
@@ -112,9 +117,9 @@ classdef E2S2NN < CalvinNN
             
             % Run test
             stats = obj.test('subset', subset, 'doCache', doCache, 'limitImageCount', limitImageCount, 'storeOutputMaps', storeOutputMaps);
-            if ~strcmp(subset, 'test'),
+            if ~strcmp(subset, 'test')
                 stats.loss = [obj.stats.(subset)(end).objective]';
-            end;
+            end
             
             % Restore the original test set
             if ~isempty(temp)

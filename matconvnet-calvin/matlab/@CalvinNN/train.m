@@ -39,7 +39,7 @@ for epoch = start + 1 : obj.nnOpts.numEpochs
     
     % Do training and validation
     datasetModes = {'train', 'val'};
-    for datasetModeIdx = 1:numel(datasetModes)
+    for datasetModeIdx = 1 : numel(datasetModes)
         datasetMode = datasetModes{datasetModeIdx};
         
         % Set train/val mode (disable Dropout etc.)

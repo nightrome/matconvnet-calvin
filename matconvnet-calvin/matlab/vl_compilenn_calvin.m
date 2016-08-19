@@ -14,6 +14,7 @@ mexOpts = {'-largeArrayDims', '-outdir', sprintf('"%s"', mexDir)};
 % E2S2-related
 mex(mexOpts{:}, fullfile(codeDir, 'labelpresence', 'labelPresence_backward.cpp'));
 mex(mexOpts{:}, fullfile(codeDir, 'regiontopixel', 'regionToPixel_backward.cpp'));
+mex(mexOpts{:}, fullfile(codeDir, 'regiontopixel', 'regionToPixelSoft_backward.cpp'));
 mex(mexOpts{:}, fullfile(codeDir, 'roipool', 'roiPooling_forward.cpp'));
 mex(mexOpts{:}, fullfile(codeDir, 'roipool', 'roiPooling_backward.cpp'));
 
