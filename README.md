@@ -62,7 +62,7 @@ several state of-the-art papers in object detection and semantic segmentation. T
 - **Usage:** Run `demo_fcn()`
 - **What:** This trains and tests an FCN-16s network based on VGG-16 for semantic segmentation on the SIFT Flow dataset. The performance varies a bit compared to the implementation of \[2\], as they first train FCN-32s and use it to finetune FCN-16s. Instead we directly train FCN-16s. For weakly \[3,4\] and semi supervised training, see the options in fcnTrainGeneric().
 - **Model:** Training this model takes about 12h on a Titan X GPU. If you just want to use it you can download the pretrained model in the installation step above. Then run the demo to see the test results.
-- **Results:** If the program executes correctly, it will print the semantic segmentation performance. It will also show an image from the SIFT Flow dataset, the ground-truth labels, the output labeling and an image that shows the different types of error (similar to the figure above). The example model achieves 83.8% Pixel Acc., 48.8% Mean Acc. and 36.7% Mean IU. 
+- **Results:** If the program executes correctly, it will print the semantic segmentation performance. It will also show an image from the SIFT Flow dataset, the ground-truth labels, the output labeling and an image that shows the different types of error (similar to the figure above). The example model achieves 83.8% Global Accuracy, 48.8% Class Accuracy and 36.7% Mean IOU. 
 
 3) **E2S2**
 - **Usage**: Run `demo_e2s2()`
@@ -72,10 +72,10 @@ several state of-the-art papers in object detection and semantic segmentation. T
   - Fast: A much faster model refered to in \[5\] as "tied weights".
 - **Results:** If the program executes correctly, it will print the semantic segmentation performance. It will also show an image from the SIFT Flow dataset, the ground-truth labels, the output labeling and an image that shows the different types of error (similar to the figure above). The results and timings for the two models can be seen in the table below. Both were trained on a Titan X GPU with 12GB of RAM.
 
- | Model        | Mean accuracy | Training epochs | Training time | GPU RAM
- | ---          | ---           | ---             | ---           | ---
- | Full         | 66.0%         | 25              | 75h           | 8.5GB
- | Fast         | 62.5%         | 10              | 20h           | 6.0GB
+ | Model        | Class accuracy | Training epochs | Training time | GPU RAM
+ | ---          | ---            | ---             | ---           | ---
+ | Full         | 66.0%          | 25              | 75h           | 8.5GB
+ | Fast         | 62.5%          | 10              | 20h           | 6.0GB
 
 ## References
 - \[1\] **Fast R-CNN (FRCN)** by Girshick et al., ICCV 2015, http://arxiv.org/abs/1504.08083
