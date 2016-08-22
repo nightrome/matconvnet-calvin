@@ -10,7 +10,6 @@
 setup();
 
 % Settings
-expNameAppend = 'testRelease';
 global glFeaturesFolder; % Define global variables to be used in all scripts
 labelingsFolder = fullfile(glFeaturesFolder, 'CNN-Models', 'E2S2', 'SiftFlow', 'Run1', sprintf('%s_e2s2_run1_exp1', 'SiftFlow'), 'labelings-test-epoch10');
 
@@ -27,7 +26,7 @@ downloadSelectiveSearch();
 setupE2S2Regions();
 
 % Train and test network
-% (replace this by e2s2_wrapper_SiftFlow_simple() for a network that can be
+% (replace this by e2s2_wrapper_SiftFlow_fast() for a network that can be
 % trained much faster, but performs slightly worse)
 e2s2_wrapper_SiftFlow_full();
 
