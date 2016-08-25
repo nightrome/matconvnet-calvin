@@ -74,7 +74,7 @@ several state of-the-art papers in object detection and semantic segmentation. T
 
  | Model        | Class accuracy | Training epochs | Training time | GPU RAM
  | ---          | ---            | ---             | ---           | ---
- | Full         | 66.0%          | 25              | 75h           | 8.5GB
+ | Full         | 66.1%          | 25              | 75h           | 8.5GB
  | Fast         | 62.5%          | 10              | 20h           | 6.0GB
 
 ## References
