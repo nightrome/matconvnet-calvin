@@ -54,13 +54,13 @@ if isa(dataset, 'VOC2011Dataset')
 end;
 
 % experiment and data paths
-global glBaseFolder glFeaturesFolder;
-dataRootDir = fullfile(glBaseFolder, 'CodeForeign', 'CNN', 'matconvnet-fcn', 'data');
+global glFeaturesFolder;
+datasetDir = dataset.path;
 expName = [modelType, prependNotEmpty(expNameAppend, '-')];
 expDir = fullfile(glFeaturesFolder, 'CNN-Models', 'FCN', dataset.name, expName);
 netPath = fullfile(glFeaturesFolder, 'CNN-Models', 'matconvnet', modelFile);
-logFilePath = fullfile(expDir, 'log.txt');
 initLinCombPath = fullfile(glFeaturesFolder, 'CNN-Models', 'FCN', dataset.name, 'notrain', 'fcn16s-notrain-ilsvrc-lincomb-trn', 'linearCombination-trn.mat');
+logFilePath = fullfile(expDir, 'log.txt');
 
 % training options (SGD)
 nnOpts.expDir = expDir;
@@ -97,7 +97,7 @@ end;
 diary(logFilePath);
 
 % Create imdb
-imdbFcn = ImdbFCN(dataset, dataRootDir, nnOpts);
+imdbFcn = ImdbFCN(dataset, datasetDir, nnOpts);
 imdbFcn.batchOpts.useInvFreqWeights = useInvFreqWeights;
 
 % Save important settings
