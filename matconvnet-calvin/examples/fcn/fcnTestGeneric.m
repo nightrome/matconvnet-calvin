@@ -54,44 +54,18 @@ else
     error('Error: Cannot find settings path: %s', settingsPath);
 end
 
-%%% Compatibility stuff
-if ~iscell(imdbFcn.data.train)
-    imdbFcn.data.train = imdbFcn.imdb.images.name(imdbFcn.data.train);
-    imdbFcn.data.val   = imdbFcn.imdb.images.name(imdbFcn.data.val);
-end
-
-% Workaround set val as test
+% If there is no validation set specified, use val as test set
 if ~isfield(imdbFcn.data, 'test')
     imdbFcn.data.test = imdbFcn.data.val;
     imdbFcn.data = rmfield(imdbFcn.data, 'val');
 end
 
 imdbFcn.numClasses = imdbFcn.dataset.labelCount;
-%%%
 
 % Overwrite some settings
 nnOpts.gpus = gpus;
 nnOpts.convertToTrain = false;
 nnOpts.expDir = expDir;
-
-% Workaround: Adapt network
-if true
-    netIn = load(netPath);
-    
-    % SegmentationAccuracyFlexible
-    accLayerIdx = find(strcmp({netIn.net.layers.type}, 'SegmentationAccuracyFlexible'));
-    if ~isempty(accLayerIdx)
-        netIn.net.layers(accLayerIdx).type = 'dagnn.SegmentationAccuracyFlexible';
-        netPath = netIn;
-    end
-    
-    % SegmentationLossWeighted
-    lossLayerIdx = find(strcmp({netIn.net.layers.type}, 'dagnn.SegmentationLossWeighted'));
-    if ~isempty(lossLayerIdx)
-        netIn.net.layers(lossLayerIdx).type = 'dagnn.SegmentationLossPixel';
-        netPath = netIn;
-    end
-end
 
 % Create network
 nnClass = FCNNN(netPath, imdbFcn, nnOpts);
