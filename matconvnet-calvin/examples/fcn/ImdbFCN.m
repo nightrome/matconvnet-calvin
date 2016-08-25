@@ -12,7 +12,7 @@ classdef ImdbFCN < ImdbCalvin
         batchOpts = struct();
     end
     methods
-        function obj = ImdbFCN(dataset, dataRootDir, nnOpts)
+        function obj = ImdbFCN(dataset, dataDir, nnOpts)
             % Call default constructor
             obj = obj@ImdbCalvin();
             obj.dataset = dataset;
@@ -33,7 +33,7 @@ classdef ImdbFCN < ImdbCalvin
             % Dataset-specific
             obj.batchOpts.vocAdditionalSegmentations = true;
             obj.batchOpts.vocEdition = '11';
-            obj.batchOpts.dataDir = fullfile(dataRootDir, obj.dataset.name);
+            obj.batchOpts.dataDir = dataDir;
             
             % Load VOC-style IMDB
             obj.loadImdb(nnOpts);
