@@ -196,7 +196,6 @@ classdef FCNNN < CalvinNN
             addParameter(p, 'findMapping', false);
             addParameter(p, 'plotFreq', 15);
             addParameter(p, 'printFreq', 30);
-            addParameter(p, 'showPlot', false);
             addParameter(p, 'storeOutputMaps', false);
             parse(p, varargin{:});
             
@@ -206,7 +205,6 @@ classdef FCNNN < CalvinNN
             findMapping = p.Results.findMapping;
             plotFreq = p.Results.plotFreq;
             printFreq = p.Results.printFreq;
-            showPlot = p.Results.showPlot;
             storeOutputMaps = p.Results.storeOutputMaps;
             
             epoch = numel(obj.stats.train);
@@ -236,7 +234,7 @@ classdef FCNNN < CalvinNN
                 
                 % Prepare colors for visualization
                 labelNames = obj.imdb.dataset.getLabelNames();
-                colorMapping = FCNNN.labelColors(obj.imdb.numClasses);
+                colorMapping = obj.imdb.dataset.cmap(obj.imdb.numClasses);
                 colorMappingError = [0, 0, 0; ...    % background
                     1, 0, 0; ...    % too much
                     1, 1, 0; ...    % too few
@@ -248,8 +246,7 @@ classdef FCNNN < CalvinNN
                     labelNamesPred = getIlsvrcClsClassDescriptions()';
                     labelNamesPred = lower(labelNamesPred);
                     labelNamesPred = cellfun(@(x) x(1:min(10, numel(x))), labelNamesPred, 'UniformOutput', false);
-                    colorMappingPred = FCNNN.labelColors(numel(labelNamesPred));
-                    %                     assert(obj.imdb.numClasses == obj.imdb.dataset.labelCount); %obj.imdb.labelCount should correspond to the target dataset
+                    colorMappingPred = pascalColors(numel(labelNamesPred));
                 else
                     % Normal test mode
                     labelNamesPred = labelNames;
@@ -261,14 +258,14 @@ classdef FCNNN < CalvinNN
                 imageCount = numel(obj.imdb.data.test); % even if we test on train it must say "test" here
                 confusion = zeros(obj.imdb.numClasses, numel(labelNamesPred));
                 
-                for imageIdx = 1 : imageCount,                    
+                for imageIdx = 1 : imageCount
                     % Get batch
                     inputs = obj.imdb.getBatch(imageIdx, obj.net, obj.nnOpts);
                     
                     % Get labelMap
                     imageName = obj.imdb.data.(obj.imdb.datasetMode){imageIdx};
                     labelMap = uint16(obj.imdb.batchOpts.imageNameToLabelMap(imageName));
-                    if obj.imdb.batchOpts.translateLabels,
+                    if obj.imdb.batchOpts.translateLabels
                         % Before: 255 = ignore, 0 = bkg, 1:n = classes
                         % After : 0 = ignore, 1 = bkg, 2:n+1 = classes
                         labelMap = mod(labelMap + 1, 256);
@@ -300,69 +297,67 @@ classdef FCNNN < CalvinNN
                     
                     % Plot example images
                     if mod(imageIdx - 1, plotFreq) == 0 || imageIdx == imageCount
-                        
-                        % Print segmentation
-                        if showPlot,
-                            figure(100);
-                            clf;
-                            FCNNN.displayImage(obj.imdb.numClasses, rgb / 255, labelMap, outputMap);
-                            drawnow;
+                        % Create tiled image with image+gt+outputMap
+                        if obj.imdb.dataset.annotation.labelOneIsBg
+                            skipLabelInds = 1;
+                        else
+                            skipLabelInds = [];
                         end;
                         
-                        % Create tiled image with image+gt+outputMap
-                        if true
+                        % Create tiling
+                        tile = ImageTile();
+                        
+                        % Add GT image
+                        image = obj.imdb.dataset.getImage(imageName) * 255;
+                        tile.addImage(image / 255);
+                        labelMapIm = ind2rgb(uint16(labelMap), colorMapping);
+                        labelMapIm = imageInsertBlobLabels(labelMapIm, labelMap, labelNames, 'skipLabelInds', skipLabelInds);
+                        tile.addImage(labelMapIm);
+                        
+                        % Add prediction image
+                        outputMapNoBg = outputMap;
+                        outputMapNoBg(labelMap == 0) = 0;
+                        outputMapIm = ind2rgb(uint16(outputMapNoBg), colorMappingPred);
+                        outputMapIm = imageInsertBlobLabels(outputMapIm, outputMapNoBg, labelNamesPred, 'skipLabelInds', skipLabelInds);
+                        tile.addImage(outputMapIm);
+                        
+                        % Highlight differences between GT and outputMap
+                        if ~findMapping
+                            errorMap = ones(size(labelMap));
                             if obj.imdb.dataset.annotation.labelOneIsBg
-                                skipLabelInds = 1;
+                                % Datasets where bg is 1 and void is 0 (i.e. VOC)
+                                tooMuch = labelMap ~= outputMap & labelMap == 1 & outputMap >= 2;
+                                tooFew  = labelMap ~= outputMap & labelMap >= 2 & outputMap == 1;
+                                rightClass = labelMap == outputMap & labelMap >= 2 & outputMap >= 2;
+                                wrongClass = labelMap ~= outputMap & labelMap >= 2 & outputMap >= 2;
+                                errorMap(tooMuch) = 2;
+                                errorMap(tooFew) = 3;
+                                errorMap(rightClass) = 4;
+                                errorMap(wrongClass) = 5;
                             else
-                                skipLabelInds = [];
-                            end;
-                            
-                            % Create tiling
-                            tile = ImageTile();
-                            
-                            % Add GT image
-                            image = obj.imdb.dataset.getImage(imageName) * 255;
-                            tile.addImage(image / 255);
-                            labelMapIm = ind2rgb(double(labelMap), colorMapping);
-                            labelMapIm = imageInsertBlobLabels(labelMapIm, labelMap, labelNames, 'skipLabelInds', skipLabelInds);
-                            tile.addImage(labelMapIm);
-                            
-                            % Add pstatsPathrediction image
-                            outputMapNoBg = outputMap;
-                            outputMapNoBg(labelMap == 0) = 0;
-                            outputMapIm = ind2rgb(outputMapNoBg, colorMappingPred);
-                            outputMapIm = imageInsertBlobLabels(outputMapIm, outputMapNoBg, labelNamesPred, 'skipLabelInds', skipLabelInds);
-                            tile.addImage(outputMapIm);
-                            
-                            % Highlight differences between GT and outputMap
-                            if ~findMapping
-                                errorMap = ones(size(labelMap));
-                                if obj.imdb.dataset.annotation.labelOneIsBg
-                                    % Datasets where bg is 1 and void is 0 (i.e. VOC)
-                                    tooMuch = labelMap ~= outputMap & labelMap == 1 & outputMap >= 2;
-                                    tooFew  = labelMap ~= outputMap & labelMap >= 2 & outputMap == 1;
-                                    rightClass = labelMap == outputMap & labelMap >= 2 & outputMap >= 2;
-                                    wrongClass = labelMap ~= outputMap & labelMap >= 2 & outputMap >= 2;
-                                    errorMap(tooMuch) = 2;
-                                    errorMap(tooFew) = 3;
-                                    errorMap(rightClass) = 4;
-                                    errorMap(wrongClass) = 5;
-                                else
-                                    % For datasets without bg
-                                    rightClass = labelMap == outputMap & labelMap >= 1;
-                                    wrongClass = labelMap ~= outputMap & labelMap >= 1;
-                                    errorMap(rightClass) = 4;
-                                    errorMap(wrongClass) = 5;
-                                end
-                                errorIm = ind2rgb(double(errorMap), colorMappingError);
-                                tile.addImage(errorIm);
+                                % For datasets without bg
+                                rightClass = labelMap == outputMap & labelMap >= 1;
+                                wrongClass = labelMap ~= outputMap & labelMap >= 1;
+                                errorMap(rightClass) = 4;
+                                errorMap(wrongClass) = 5;
                             end
-                            
-                            % Save segmentation
-                            image = tile.getTiling('totalX', numel(tile.images), 'delimiterPixels', 1, 'backgroundBlack', false);
-                            imPath = fullfile(labelingDir, [imageName, '.png']);
-                            imwrite(image, imPath);
+                            errorIm = ind2rgb(double(errorMap), colorMappingError);
+                            tile.addImage(errorIm);
                         end
+                        
+                        % Add a map to show the maximum scores
+                        % (~confidence)
+                        heatMapBinCount = 255;
+                        scoresMap = gather(max(scores, [], 3));
+                        scoresThreshs = [prctile(scoresMap(:), linspace(0, 100, heatMapBinCount))'; Inf];
+                        [~, ~, scoresInds] = histcounts(scoresMap, scoresThreshs);
+                        scoresMapIm = ind2rgb(scoresInds, hot(heatMapBinCount));
+                        tile.addImage(scoresMapIm);
+                        
+                        % Save segmentation
+                        image = tile.getTiling('totalX', 3, 'delimiterPixels', 1, 'backgroundBlack', false);
+                        imPath = fullfile(labelingDir, [imageName, '.png']);
+                        imwrite(image, imPath);
                     end
                     
                     % Print message
@@ -392,48 +387,6 @@ classdef FCNNN < CalvinNN
                     end
                 end
             end
-        end
-    end
-    
-    methods (Static)   
-        function displayImage(colorCount, im, lb, outputMap)
-            subplot(2, 2, 1);
-            image(im);
-            axis image;
-            title('source image');
-            
-            subplot(2, 2, 2);
-            image(uint8(lb - 1));
-            axis image;
-            title('ground truth')
-            
-            cmap = FCNNN.labelColors(colorCount);
-            subplot(2, 2, 3);
-            image(uint8(outputMap - 1));
-            axis image;
-            title('predicted');
-            
-            colormap(cmap);
-        end
-        
-        function cmap = labelColors(colorCount)
-            cmap = zeros(colorCount, 3);
-            for i = 1 : colorCount
-                id = i-1;
-                r = 0;
-                g = 0;
-                b = 0;
-                for j=0:7
-                    r = bitor(r, bitshift(bitget(id, 1), 7 - j));
-                    g = bitor(g, bitshift(bitget(id, 2), 7 - j));
-                    b = bitor(b, bitshift(bitget(id, 3), 7 - j));
-                    id = bitshift(id, -3);
-                end
-                cmap(i, 1) = r;
-                cmap(i, 2) = g;
-                cmap(i,3) = b;
-            end
-            cmap = cmap / 255;
         end
     end
 end

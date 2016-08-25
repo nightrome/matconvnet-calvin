@@ -229,7 +229,7 @@ classdef E2S2NN < CalvinNN
                 
                 % Prepare colors for visualization
                 labelNames = obj.imdb.dataset.getLabelNames();
-                colorMapping = FCNNN.labelColors(obj.imdb.numClasses);
+                colorMapping = pascalColors(obj.imdb.numClasses);
                 colorMappingError = [0, 0, 0; ...    % background
                     1, 0, 0; ...    % too much
                     1, 1, 0; ...    % too few
