@@ -234,7 +234,8 @@ classdef FCNNN < CalvinNN
                 
                 % Prepare colors for visualization
                 labelNames = obj.imdb.dataset.getLabelNames();
-                colorMapping = obj.imdb.dataset.cmap(obj.imdb.numClasses);
+                cmap = obj.imdb.dataset.cmap;
+                colorMapping = cmap(obj.imdb.numClasses);
                 colorMappingError = [0, 0, 0; ...    % background
                     1, 0, 0; ...    % too much
                     1, 1, 0; ...    % too few
@@ -307,17 +308,24 @@ classdef FCNNN < CalvinNN
                         % Create tiling
                         tile = ImageTile();
                         
+                        
+                        if obj.imdb.dataset.annotation.labelOneIsBg
+                            mapFormatter = @double;
+                        else
+                            mapFormatter = @uin16;
+                        end
+                        
                         % Add GT image
                         image = obj.imdb.dataset.getImage(imageName) * 255;
                         tile.addImage(image / 255);
-                        labelMapIm = ind2rgb(uint16(labelMap), colorMapping);
+                        labelMapIm = ind2rgb(mapFormatter(labelMap), colorMapping);
                         labelMapIm = imageInsertBlobLabels(labelMapIm, labelMap, labelNames, 'skipLabelInds', skipLabelInds);
                         tile.addImage(labelMapIm);
                         
                         % Add prediction image
                         outputMapNoBg = outputMap;
                         outputMapNoBg(labelMap == 0) = 0;
-                        outputMapIm = ind2rgb(uint16(outputMapNoBg), colorMappingPred);
+                        outputMapIm = ind2rgb(mapFormatter(outputMapNoBg), colorMappingPred);
                         outputMapIm = imageInsertBlobLabels(outputMapIm, outputMapNoBg, labelNamesPred, 'skipLabelInds', skipLabelInds);
                         tile.addImage(outputMapIm);
                         
