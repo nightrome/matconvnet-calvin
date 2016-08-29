@@ -237,10 +237,10 @@ classdef FCNNN < CalvinNN
                 cmap = obj.imdb.dataset.cmap;
                 colorMapping = cmap(obj.imdb.numClasses);
                 colorMappingError = [0, 0, 0; ...    % background
-                    1, 0, 0; ...    % too much
+                    0, 0, 1; ...    % too much
                     1, 1, 0; ...    % too few
                     0, 1, 0; ...    % rightClass
-                    0, 0, 1];       % wrongClass
+                    1, 0, 0];       % wrongClass
                 
                 if findMapping
                     % Special mode where we use a net from a different dataset
@@ -386,8 +386,7 @@ classdef FCNNN < CalvinNN
                     [stats.pacc, stats.macc, stats.miu] = confMatToAccuracies(confusion);
                     stats.confusion = confusion;
                     fprintf('Results:\n');
-                    fprintf('pixelAcc: %5.2f, meanAcc: %5.2f, meanIU: %5.2f \n', ...
-                        100 * stats.pacc, 100 * stats.macc, 100 * stats.miu);
+                    fprintf('pixelAcc: %5.2f, meanAcc: %5.2f, meanIU: %5.2f \n', 100 * stats.pacc, 100 * stats.macc, 100 * stats.miu);
                     
                     % Save results
                     if doCache
