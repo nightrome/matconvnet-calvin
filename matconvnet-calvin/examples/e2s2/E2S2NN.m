@@ -156,7 +156,7 @@ classdef E2S2NN < CalvinNN
             if strcmp(lossType, 'softmaxlog')
                 obj.net.removeLayer(lossName);
                 outputLayerName = 'softmax';
-                obj.net.addLayer(outputLayerName, dagnn.SoftMax(), lossInputs{1}, 'scores', {});
+                obj.net.addLayer(outputLayerName, dagnn.SoftMax(), lossInputs{1}, 'scores', {}); % Should not be necessary
                 outputLayerIdx = obj.net.getLayerIndex(outputLayerName);
                 outputVarIdx = obj.net.layers(outputLayerIdx).outputIndexes;
             elseif strcmp(lossType, 'log')

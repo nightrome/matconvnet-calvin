@@ -49,16 +49,13 @@ classdef RegionToPixelSoft < dagnn.Layer
             end
             
             % Map SP gradients to RP+GT gradients
-%             dzdx = regionToPixelSoft_backward(rpCount, obj.mask, dzdy);
             labelCount = size(obj.mask, 1);
             dzdx = zeros(1, 1, labelCount, rpCount, 'single');
-%             dzdx2 = dzdx;
             dzdyS = reshape(dzdy, [size(dzdy, 3), size(dzdy, 4)]);
             for rpIdx = 1 : rpCount
                 for labelIdx = 1 : labelCount
                     dzdx(1, 1, labelIdx, rpIdx) = dzdyS(labelIdx, :) * obj.mask(labelIdx, :, rpIdx)';
                 end
-%                 dzdx2(1, 1, :, rpIdx) = sum(dzdyS * obj.mask(:, :, rpIdx)', 1);
             end
             
             % Move outputs to GPU if necessary
