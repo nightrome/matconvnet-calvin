@@ -75,16 +75,18 @@ classdef FCNNN < CalvinNN
             if isfield(obj.nnOpts.misc, 'useSimilarityLoss') && obj.nnOpts.misc.useSimilarityLoss
                 % Get class similarities from hierarchy
                 similarities = obj.imdb.dataset.hierarchyDistances;
-                similarities = 1 - similarities ./ max(similarities(:));
-                similarities = bsxfun(@rdivide, similarities, sum(similarities, 2));
                 
-                % Consider a similarity function that punishes
-                % distances more non-linearly
+                % Use a similarity function that scales distances more non-linearly
+                % and attributes ~80% of contributions to the true class
+                % (afterwards mean(diag(similarities)) ~ 0.8)
                 if obj.nnOpts.misc.similarityLossNonLinear
-                    similarities = max(similarities(:)) - similarities;
-                    similarities = 0.4 .^ (similarities);
-                    similarities = bsxfun(@rdivide, similarities, sum(similarities, 2));
+                    similarities = 0.17 .^ (similarities);
+                else
+                    similarities = 1 - similarities ./ max(similarities(:));
                 end
+                
+                % Renormalize similarities to sum to 1 per class
+                similarities = bsxfun(@rdivide, similarities, sum(similarities, 2));
                 
                 % Add similarity mapping layer
                 block = dagnn.SimilarityMap('similarities', similarities);
