@@ -64,6 +64,11 @@ several state of-the-art papers in object detection and semantic segmentation. T
 - **Model:** Training this model takes about 12h on a Titan X GPU. If you just want to use it you can download the pretrained model in the installation step above. Then run the demo to see the test results.
 - **Results:** If the program executes correctly, it will print the semantic segmentation performance. It will also show an image from the SIFT Flow dataset, the ground-truth labels, the output labeling and an image that shows the different types of error (similar to the figure above). The example model achieves 83.8% Global Accuracy, 48.8% Class Accuracy and 36.7% Mean IOU. 
 
+ | Method | Model   | Class accuracy | Global accuracy | Mean IOU | Training epochs | Training time
+ | ---    | ---     | ---            | ---             | ---      | ---             | ---
+ | This   | FCN-16s | 48.8%          | 83.8%           | 36.7%    | 50              | 12h          
+ | \[2\]  | FCN-16s | 51.7%          | 85.2%           | 39.5%    | 175?            | -            
+
 3) **E2S2**
 - **Usage**: Run `demo_e2s2()`
 - **What:** This trains and tests a region-based end-to-end network based on VGG-16 for semantic segmentation on the SIFT Flow dataset. The script automatically extracts Selective Search region proposals from the dataset. All networks are trained with an inverse-class frequency weighted loss (Sect. 3.4 of \[5\]).
@@ -77,6 +82,7 @@ several state of-the-art papers in object detection and semantic segmentation. T
  | ---          | ---            | ---             | ---           | ---
  | Full         | 66.1%          | 25              | 75h           | 8.5GB
  | Fast         | 62.5%          | 10              | 20h           | 6.0GB
+ | \[5\]        | 64.0%          | 30              | -             | -
 
 ## References
 - \[1\] **Fast R-CNN (FRCN)** by Girshick et al., ICCV 2015, http://arxiv.org/abs/1504.08083
