@@ -18,7 +18,7 @@ classdef SiftFlowDatasetMC < DatasetMC
             obj.imageFolder = fullfile('Images', 'spatial_envelope_256x256_static_8outdoorcategories');
             
             % Annotation settings
-            annotation = DatasetMC('semanticLabels');
+            annotation = AnnotationMC('semanticLabels');
             annotation.labelFormat = 'mat-labelMap';
             annotation.annotationFolder = 'SemanticLabels';
             annotation.labelFolder = fullfile(annotation.annotationFolder, 'spatial_envelope_256x256_static_8outdoorcategories');

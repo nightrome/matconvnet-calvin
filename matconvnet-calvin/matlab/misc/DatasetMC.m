@@ -22,8 +22,8 @@ classdef (Abstract) DatasetMC < handle
         imageListFunc = @getImageListAll;
         
         % Label settings
-        annotations = [];   % All available annotations
-        annotation;         % The currently active annotation
+        annotations    % All available annotations
+        annotation     % The currently active annotation
         
         % Subset settings
         subset = 'train';
@@ -194,7 +194,7 @@ classdef (Abstract) DatasetMC < handle
             % so that new datasets need not do manually, if  they choose to
             % stay with the default parameters.
             
-            obj.annotations = Annotation();
+            obj.annotations = AnnotationMC();
             obj.setActiveAnnotation('Original');
         end
         
