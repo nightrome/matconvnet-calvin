@@ -1,7 +1,9 @@
 function[scoresImageSoftmax, mask] = segmentationLossImage_extractMaxScores(obj, labelCount, sampleCount, imageCount, masksThingsCell)
 % [scoresImageSoftmax, mask] = segmentationLossImage_extractMaxScores(obj, labelCount, sampleCount, imageCount, [masksThingsCell])
 %
-% TODO: Mex this file
+% Inner loop of the SegmentationLossImage layer.
+%
+% Copyright by Holger Caesar, 2016
 
 % Init
 scoresImageSoftmax = nan(1, 1, labelCount, sampleCount, 'like', obj.scoresMapSoftmax);
@@ -32,16 +34,6 @@ for imageIdx = 1 : imageCount
         % Remove things such that the highest score lies on stuff
         if ~isempty(masksThingsCell) && ~isempty(masksThingsCell{imageIdx})
             s = bsxfun(@times, s, ~maskThings);
-            
-            % DEBUG
-%             if labelIdx == 50
-%                 figure(1);
-%                 minS = min(s(s(:) > 0));
-%                 sDraw = s;
-%                 sDraw(sDraw(:) == 0) = minS;
-%                 imagesc(sDraw);
-%                 drawnow;
-%             end
         end
         
         [~, ind] = max(s(:)); % always take first pix with max score

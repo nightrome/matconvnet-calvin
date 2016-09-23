@@ -64,7 +64,7 @@ classdef SegmentationLossImage < dagnn.Loss
             % Get the scores of the pixel with the highest score per GT label
             [scoresImageSoftmax, obj.mask] = segmentationLossImage_extractMaxScores(obj, labelCount, sampleCount, imageCount, masksThingsCell);
             
-            %%% Loss function from vl_nnloss
+            %%% Loss function adapted from vl_nnloss
             if true,
                 % Get presence/absence info
                 presentInds = cell(imageCount, 1);
@@ -122,9 +122,6 @@ classdef SegmentationLossImage < dagnn.Loss
                 
                 % Apply weights
                 loss = sum(t .* obj.instanceWeights);
-                %                 presentLoss = sum(t( obj.isPresent) .* obj.instanceWeights( obj.isPresent));
-                %                 absentLoss  = sum(t(~obj.isPresent) .* obj.instanceWeights(~obj.isPresent));
-                %                 assert(abs(imageCount - sum(obj.instanceWeights(:))) < 1e-4);
             end;
             
             % Debug: how many labels are really present?
