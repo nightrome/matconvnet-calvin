@@ -73,18 +73,22 @@ classdef FCNNN < CalvinNN
             
             % Add similarity mapping layer
             if isfield(obj.nnOpts.misc, 'useSimilarityLoss') && obj.nnOpts.misc.useSimilarityLoss
-                % Add similarity mapping layer
+                % Get class similarities from hierarchy
                 similarities = obj.imdb.dataset.hierarchyDistances;
                 similarities = 1 - similarities ./ max(similarities(:));
                 similarities = bsxfun(@rdivide, similarities, sum(similarities, 2));
+                
+                % Consider a similarity function that punishes
+                % distances more non-linearly
+                if obj.nnOpts.misc.similarityLossNonLinear
+                    similarities = max(similarities(:)) - similarities;
+                    similarities = 0.4 .^ (similarities);
+                    similarities = bsxfun(@rdivide, similarities, sum(similarities, 2));
+                end
+                
+                % Add similarity mapping layer
                 block = dagnn.SimilarityMap('similarities', similarities);
                 obj.net.addLayer('similaritymap', block, {'prediction', 'label'}, {'predictionmixed'});
-                
-                %TODO: Consider a similarity function that punishes
-                % distance more non-linearly
-                % similarities = max(similarities(:)) - similarities;
-                % similarities = 0.4 .^ (similarities);
-                % similarities = bsxfun(@rdivide, similarities, sum(similarities, 2));
                 
                 % Rename loss input
                 lossName = 'objective';
