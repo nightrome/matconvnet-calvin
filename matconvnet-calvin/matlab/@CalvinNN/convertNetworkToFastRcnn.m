@@ -11,15 +11,13 @@ function convertNetworkToFastRcnn(obj, varargin)
 % Initial settings
 p = inputParser;
 addParameter(p, 'lastConvPoolName', 'pool5');
-addParameter(p, 'firstFCName', 'fc6');
 addParameter(p, 'finalFCName', 'fc8');
 parse(p, varargin{:});
 
 lastConvPoolName = p.Results.lastConvPoolName;
-firstFCName = p.Results.firstFCName;
 finalFCName = p.Results.finalFCName;
 
-fprintf('Converting normal network to Fast R-CNN network (ROI pooling, box regression, etc.)...\n');
+fprintf('Converting object classification network to Fast R-CNN network (ROI pooling, box regression, etc.)...\n');
 
 %%% Add weights to loss layer. Note that this field remains empty when not
 % given as input. So the loss layers should ignore empty weights.
@@ -77,43 +75,4 @@ if obj.nnOpts.fastRcnnParams
     end
     obj.net.params(obj.net.layers(conv1I).paramIndexes(1)).learningRate = 0;
     obj.net.params(obj.net.layers(conv1I).paramIndexes(2)).learningRate = 0;
-end
-
-%%% If required, insert freeform pooling layer after roipool
-if isfield(obj.nnOpts.misc, 'roiPool')
-    roiPool = obj.nnOpts.misc.roiPool;
-    if isfield(roiPool, 'freeform') && roiPool.freeform.use
-        % Compute activations for foreground and entire box separately
-        % (by default off)
-        roiPoolFreeformBlock = dagnn.RoiPoolingFreeform('combineFgBox', roiPool.freeform.combineFgBox);
-        insertLayer(obj.net, roiPoolName, firstFCName, 'roipoolfreeform5', roiPoolFreeformBlock, 'blobMasks');
-        
-        % Share fully connected layer weights for foreground and entire box
-        if isfield(roiPool.freeform, 'shareWeights') && ~roiPool.freeform.shareWeights
-            fcLayers = {obj.net.layers(~cellfun(@isempty, regexp({obj.net.layers.name}, 'fc.*'))).name};
-            for relIdx = 1 : numel(fcLayers)
-                relLayer = fcLayers{relIdx};
-                relLayerIdx = obj.net.getLayerIndex(relLayer);
-                paramIndexes = obj.net.layers(relLayerIdx).paramIndexes;
-                
-                % Duplicate input size for all but the first fc layer
-                if relIdx > 1
-                    obj.net.layers(relLayerIdx).block.size(3) = obj.net.layers(relLayerIdx).block.size(3) * 2;
-                    obj.net.params(paramIndexes(1)).value = cat(3, ...
-                        obj.net.params(paramIndexes(1)).value, ...
-                        obj.net.params(paramIndexes(1)).value);
-                end
-                % Duplicate output size for all but the last fc layers
-                if relIdx < numel(fcLayers)
-                    obj.net.layers(relLayerIdx).block.size(4) = obj.net.layers(relLayerIdx).block.size(4) * 2;
-                    obj.net.params(paramIndexes(1)).value = cat(4, ...
-                        obj.net.params(paramIndexes(1)).value, ...
-                        obj.net.params(paramIndexes(1)).value);
-                    obj.net.params(paramIndexes(2)).value = cat(2, ...
-                        obj.net.params(paramIndexes(2)).value, ...
-                        obj.net.params(paramIndexes(2)).value);
-                end
-            end
-        end
-    end
 end
