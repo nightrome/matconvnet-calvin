@@ -17,6 +17,7 @@ vocName = sprintf('VOC%d', vocYear);
 datasetDir = [fullfile(glDatasetFolder, vocName), '/'];
 outputFolder = fullfile(glFeaturesFolder, 'CNN-Models', 'FRCN', vocName, sprintf('%s-testRelease', vocName));
 netPath = fullfile(glFeaturesFolder, 'CNN-Models', 'matconvnet', 'imagenet-vgg-verydeep-16.mat');
+logFilePath = fullfile(expDir, 'log.txt');
 
 % Setup dataset specific options and check validity
 setupDataOpts(vocYear, testName, datasetDir);
@@ -40,8 +41,7 @@ nnOpts.expDir = expDir;
 nnOpts.gpus = SelectIdleGpu();
 
 % Start logging
-logFile = 'log.txt';
-diary(fullfile(outputFolder, logFile));
+diary(logFilePath);
 
 %%% Setup
 % Start from pretrained network
