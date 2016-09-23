@@ -8,7 +8,7 @@ function e2s2_storeBlobMasks(varargin)
 
 % Parse input
 p = inputParser;
-addParameter(p, 'dataset', SiftFlowDataset());
+addParameter(p, 'dataset', SiftFlowDatasetMC());
 addParameter(p, 'projectName', 'WeaklySupervisedLearning');
 addParameter(p, 'proposalName', 'Uijlings2013-ks100-sigma0.8-colorTypesRgb');
 addParameter(p, 'roiPoolFreeformDilateSize', []); % Don't change this!

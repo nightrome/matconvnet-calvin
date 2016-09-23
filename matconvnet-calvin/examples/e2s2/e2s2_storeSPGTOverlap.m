@@ -7,7 +7,7 @@ function e2s2_storeSPGTOverlap(varargin)
 
 % Parse input
 p = inputParser;
-addParameter(p, 'dataset', SiftFlowDataset());
+addParameter(p, 'dataset', SiftFlowDatasetMC());
 addParameter(p, 'projectName', 'WeaklySupervisedLearning');
 addParameter(p, 'spName', 'Felzenszwalb2004-k100-sigma0.8-colorTypesRgb');
 addParameter(p, 'gtName', 'GroundTruth');

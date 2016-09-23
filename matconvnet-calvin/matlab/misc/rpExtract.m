@@ -10,7 +10,7 @@ function rpExtract(varargin)
 
 % Initial settings
 p = inputParser;
-addParameter(p, 'dataset', SiftFlowDataset);
+addParameter(p, 'dataset', SiftFlowDatasetMC);
 addParameter(p, 'projectName', 'WeaklySupervisedLearning');
 addParameter(p, 'proposalName', 'Uijlings2013');
 addParameter(p, 'proposalsVars', {});

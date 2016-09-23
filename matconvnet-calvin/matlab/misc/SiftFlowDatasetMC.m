@@ -1,12 +1,12 @@
-classdef SiftFlowDataset < Dataset
+classdef SiftFlowDatasetMC < DatasetMC
     % SiftFlow dataset
     % Missing labels in test are 10, 12, 17
     % Copyright by Holger Caesar, 2014
     
     methods
-        function[obj] = SiftFlowDataset()
+        function[obj] = SiftFlowDatasetMC()
             % Call superclass constructor
-            obj@Dataset();
+            obj@DatasetMC();
             
             % Check that global variable is set
             global glDatasetFolder;
@@ -18,7 +18,7 @@ classdef SiftFlowDataset < Dataset
             obj.imageFolder = fullfile('Images', 'spatial_envelope_256x256_static_8outdoorcategories');
             
             % Annotation settings
-            annotation = Annotation('semanticLabels');
+            annotation = DatasetMC('semanticLabels');
             annotation.labelFormat = 'mat-labelMap';
             annotation.annotationFolder = 'SemanticLabels';
             annotation.labelFolder = fullfile(annotation.annotationFolder, 'spatial_envelope_256x256_static_8outdoorcategories');

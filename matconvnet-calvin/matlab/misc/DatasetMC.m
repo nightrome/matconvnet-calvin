@@ -1,4 +1,4 @@
-classdef (Abstract) Dataset < handle
+classdef (Abstract) DatasetMC < handle
     %DATASET Abstract class that each dataset must inherit from.
     %
     %   For each new dataset, a new class must be created that inherits
@@ -37,7 +37,7 @@ classdef (Abstract) Dataset < handle
     
     methods
         % Constructor
-        function[obj] = Dataset()
+        function[obj] = DatasetMC()
             % Set default annotation
             obj.setDefaultAnnotation();
         end

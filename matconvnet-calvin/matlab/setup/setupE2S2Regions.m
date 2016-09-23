@@ -10,7 +10,7 @@ function setupE2S2Regions(varargin)
 
 % Parse input
 p = inputParser;
-addParameter(p, 'dataset', SiftFlowDataset());
+addParameter(p, 'dataset', SiftFlowDatasetMC());
 addParameter(p, 'colorSpaces', {'Rgb', 'Hsv', 'Lab'});
 parse(p, varargin{:});
 

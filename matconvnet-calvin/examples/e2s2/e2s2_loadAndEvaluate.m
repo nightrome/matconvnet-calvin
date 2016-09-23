@@ -7,7 +7,7 @@ function e2s2_loadAndEvaluate(varargin)
 
 % Initial settings
 p = inputParser;
-addParameter(p, 'dataset', SiftFlowDataset());
+addParameter(p, 'dataset', SiftFlowDatasetMC());
 addParameter(p, 'weaklySupervised', false);
 addParameter(p, 'run', 28);
 addParameter(p, 'exp', 25);

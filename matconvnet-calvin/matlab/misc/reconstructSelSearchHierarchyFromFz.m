@@ -9,7 +9,7 @@ function reconstructSelSearchHierarchyFromFz(varargin)
 
 % Parse input
 p = inputParser;
-addParameter(p, 'dataset', SiftFlowDataset);
+addParameter(p, 'dataset', SiftFlowDatasetMC);
 addParameter(p, 'projectName', 'WeaklySupervisedLearning');
 addParameter(p, 'segmentationNameSS', 'Uijlings2013-ks100-sigma0.8-colorTypesRgb'); %can also be used for Felzen regions (but then has to be equal to segmentationNameFz)
 addParameter(p, 'segmentationNameFz', 'Felzenszwalb2004-k100-sigma0.8-colorTypesRgb');

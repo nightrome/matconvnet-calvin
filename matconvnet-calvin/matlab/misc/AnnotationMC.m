@@ -1,5 +1,5 @@
-classdef Annotation
-    %ANNOTATION
+classdef AnnotationMC
+    % ANNOTATIOMC
     %  Annotation class used by all Datasets
     %  Stores information about the labels etc.
     %
@@ -34,8 +34,8 @@ classdef Annotation
     
     methods
         % Constructor
-        function[obj] = Annotation(name)
-            % [obj] = Annotation(name)
+        function[obj] = AnnotationMC(name)
+            % [obj] = AnnotationMC(name)
             %
             % Annotation constructor
             
