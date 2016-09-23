@@ -8,7 +8,7 @@ function storeLabelListGT(varargin)
 % Parse input
 p = inputParser;
 addParameter(p, 'projectName', 'WeaklySupervisedLearning');
-addParameter(p, 'dataset', SiftFlowDataset());
+addParameter(p, 'dataset', SiftFlowDatasetMC());
 addParameter(p, 'proposalNameGT', 'GroundTruth');
 addParameter(p, 'subset', 'all');
 parse(p, varargin{:});
