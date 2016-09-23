@@ -71,6 +71,7 @@ several state of-the-art papers in object detection and semantic segmentation. T
   - Full: Our best performing model refered to in \[5\] as "separate weights".
   - Fast: A much faster model refered to in \[5\] as "tied weights".
 - **Results:** If the program executes correctly, it will print the semantic segmentation performance. It will also show an image from the SIFT Flow dataset, the ground-truth labels, the output labeling and an image that shows the different types of error (similar to the figure above). The results and timings for the two models can be seen in the table below. Both were trained on a Titan X GPU with 12GB of RAM.
+- **Note:** The results can vary due to the random order of images presented during training. The mean performance is 64.9% +- 0.7% Class accuracy. To reproduce our experiments we fix the initial seed of the random number generator.
 
  | Model        | Class accuracy | Training epochs | Training time | GPU RAM
  | ---          | ---            | ---             | ---           | ---
