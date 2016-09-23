@@ -11,10 +11,50 @@ classdef E2S2NN < CalvinNN
         function convertNetwork(obj)
             % convertNetwork(obj)
             
-            % Run default conversion method
+            % Convert image classification model to Fast R-CNN object
+            % detection model
             convertNetwork@CalvinNN(obj);
             
             fprintf('Converting Fast R-CNN network to End-to-end region based network (region-to-pixel layer, etc.)...\n');
+            
+            % If required, insert freeform pooling layer after roipool
+            if isfield(obj.nnOpts.misc, 'roiPool')
+                roiPool = obj.nnOpts.misc.roiPool;
+                if isfield(roiPool, 'freeform') && roiPool.freeform.use
+                    % Compute activations for foreground and entire box separately
+                    % (by default off)
+                    roiPoolFreeformBlock = dagnn.RoiPoolingFreeform('combineFgBox', roiPool.freeform.combineFgBox);
+                    insertLayer(obj.net, roiPoolName, firstFCName, 'roipoolfreeform5', roiPoolFreeformBlock, 'blobMasks');
+                    
+                    % Share fully connected layer weights for foreground and entire box
+                    if isfield(roiPool.freeform, 'shareWeights') && ~roiPool.freeform.shareWeights
+                        fcLayers = {obj.net.layers(~cellfun(@isempty, regexp({obj.net.layers.name}, 'fc.*'))).name};
+                        for relIdx = 1 : numel(fcLayers)
+                            relLayer = fcLayers{relIdx};
+                            relLayerIdx = obj.net.getLayerIndex(relLayer);
+                            paramIndexes = obj.net.layers(relLayerIdx).paramIndexes;
+                            
+                            % Duplicate input size for all but the first fc layer
+                            if relIdx > 1
+                                obj.net.layers(relLayerIdx).block.size(3) = obj.net.layers(relLayerIdx).block.size(3) * 2;
+                                obj.net.params(paramIndexes(1)).value = cat(3, ...
+                                    obj.net.params(paramIndexes(1)).value, ...
+                                    obj.net.params(paramIndexes(1)).value);
+                            end
+                            % Duplicate output size for all but the last fc layers
+                            if relIdx < numel(fcLayers)
+                                obj.net.layers(relLayerIdx).block.size(4) = obj.net.layers(relLayerIdx).block.size(4) * 2;
+                                obj.net.params(paramIndexes(1)).value = cat(4, ...
+                                    obj.net.params(paramIndexes(1)).value, ...
+                                    obj.net.params(paramIndexes(1)).value);
+                                obj.net.params(paramIndexes(2)).value = cat(2, ...
+                                    obj.net.params(paramIndexes(2)).value, ...
+                                    obj.net.params(paramIndexes(2)).value);
+                            end
+                        end
+                    end
+                end
+            end
             
             % Rename variables for use on superpixel level (not pixel-level)
             obj.net.renameVar('label', 'labelsSP');
@@ -62,8 +102,8 @@ classdef E2S2NN < CalvinNN
                 end
             end
             
+            % Weakly supervised loss
             if weaklySupervised.use
-                % WS loss
                 if isfield(weaklySupervised, 'labelPresence') && weaklySupervised.labelPresence.use,
                     assert(obj.nnOpts.misc.regionToPixel.use);
                     
@@ -74,17 +114,6 @@ classdef E2S2NN < CalvinNN
                     layerWS = dagnn.SegmentationLossImage('useAbsent', obj.nnOpts.misc.weaklySupervised.useAbsent);
                     replaceLayer(obj.net, 'softmaxloss', 'softmaxloss', layerWS, {scoresVar, 'labelsImage', 'classWeights', 'masksThingsCell'}, {}, {}, true);
                 end
-            end
-            
-            if isfield(obj.nnOpts.misc, 'softmaxBeforeRegionToPixel') && obj.nnOpts.misc.softmaxBeforeRegionToPixel
-                % Change softmaxloss to just log loss
-                % Keep name for compatibility reasons
-                lossIdx = obj.net.getLayerIndex('softmaxloss');
-                obj.net.layers(lossIdx).block.loss = 'log';
-                
-                % Insert softmax before regiontopixel8
-                softmaxBlock = dagnn.SoftMax();
-                insertLayer(obj.net, 'fc8', 'regiontopixel8', 'softmax', softmaxBlock);
             end
             
             % Sort layers by their first occurrence

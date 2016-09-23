@@ -71,6 +71,28 @@ classdef FCNNN < CalvinNN
                 obj.net.removeLayer('accuracy');
             end
             
+            % Add similarity mapping layer
+            if isfield(obj.nnOpts.misc, 'useSimilarityLoss') && obj.nnOpts.misc.useSimilarityLoss
+                % Add similarity mapping layer
+                similarities = obj.imdb.dataset.hierarchyDistances;
+                similarities = 1 - similarities ./ max(similarities(:));
+                similarities = bsxfun(@rdivide, similarities, sum(similarities, 2));
+                block = dagnn.SimilarityMap('similarities', similarities);
+                obj.net.addLayer('similaritymap', block, {'prediction', 'label'}, {'predictionmixed'});
+                
+                %TODO: Consider a similarity function that punishes
+                % distance more non-linearly
+                % similarities = max(similarities(:)) - similarities;
+                % similarities = 0.4 .^ (similarities);
+                % similarities = bsxfun(@rdivide, similarities, sum(similarities, 2));
+                
+                % Rename loss input
+                lossName = 'objective';
+                lossIdx = obj.net.getLayerIndex(lossName);
+                obj.net.layers(lossIdx).inputs{1} = 'predictionmixed';
+                obj.net.rebuild();
+            end
+            
             % Sort layers by their first occurrence
             sortLayers(obj.net);
         end
@@ -163,6 +185,19 @@ classdef FCNNN < CalvinNN
             if ~isnan(accuracyIdx),
                 obj.net.removeLayer('accuracy');
             end;
+            
+            % Remove SimilarityMap layer
+            simMapName = 'similaritymap';
+            simMapIdx = obj.net.getLayerIndex(simMapName);
+            if ~isnan(simMapIdx)
+                % Change loss input
+                lossIdx = obj.net.getLayerIndex('objective');
+                obj.net.layers(lossIdx).inputs{1} = 'prediction';
+
+                % Remove layer
+                obj.net.removeLayer(simMapName);
+                
+            end
             
             % Remove loss or replace by normal softmax
             lossIdx = find(cellfun(@(x) isa(x, 'dagnn.Loss'), {obj.net.layers.block}));
@@ -307,7 +342,6 @@ classdef FCNNN < CalvinNN
                         
                         % Create tiling
                         tile = ImageTile();
-                        
                         
                         if obj.imdb.dataset.annotation.labelOneIsBg
                             mapFormatter = @double;
