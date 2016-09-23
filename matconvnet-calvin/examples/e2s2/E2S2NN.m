@@ -24,7 +24,7 @@ classdef E2S2NN < CalvinNN
                     % Compute activations for foreground and entire box separately
                     % (by default off)
                     roiPoolFreeformBlock = dagnn.RoiPoolingFreeform('combineFgBox', roiPool.freeform.combineFgBox);
-                    insertLayer(obj.net, roiPoolName, firstFCName, 'roipoolfreeform5', roiPoolFreeformBlock, 'blobMasks');
+                    insertLayer(obj.net, 'roipool5', 'fc6', 'roipoolfreeform5', roiPoolFreeformBlock, 'blobMasks');
                     
                     % Share fully connected layer weights for foreground and entire box
                     if isfield(roiPool.freeform, 'shareWeights') && ~roiPool.freeform.shareWeights
