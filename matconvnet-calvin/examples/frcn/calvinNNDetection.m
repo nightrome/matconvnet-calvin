@@ -36,7 +36,7 @@ nnOpts.momentum = 0.9;
 nnOpts.numEpochs = 16;
 nnOpts.learningRate = [repmat(1e-3, 12, 1); repmat(1e-4, 4, 1)];
 nnOpts.misc.netPath = netPath;
-nnOpts.expDir = [expDir, '/'];
+nnOpts.expDir = expDir;
 nnOpts.gpus = SelectIdleGpu();
 
 % Start logging

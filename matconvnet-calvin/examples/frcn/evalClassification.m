@@ -39,4 +39,4 @@ map
 
 % Save results to disk
 epoch = nnOpts.numEpochs; %#ok<NASGU>
-save([nnOpts.expDir, 'resultsEpochFinalTest.mat'], 'nnOpts', 'stats', 'ap', 'map', 'epoch');
+save([nnOpts.expDir, '/', 'resultsEpochFinalTest.mat'], 'nnOpts', 'stats', 'ap', 'map', 'epoch');

@@ -44,7 +44,7 @@ nnOpts.numEpochs = 16;
 nnOpts.learningRate = [repmat(1e-3, 12, 1); repmat(1e-4, 4, 1)];
 nnOpts.misc.netPath = netPath;
 nnOpts.gpus = SelectIdleGpu();
-nnOpts.expDir = [outputFolder, '/'];
+nnOpts.expDir = outputFolder;
 
 % Start logging
 logFile = 'log.txt';

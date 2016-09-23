@@ -90,4 +90,4 @@ else
 end
 
 % Save results to disk
-save([nnOpts.expDir 'resultsEpochFinalTest.mat'], 'nnOpts', 'stats', 'ap', 'apRegressed');
+save([nnOpts.expDir, '/', 'resultsEpochFinalTest.mat'], 'nnOpts', 'stats', 'ap', 'apRegressed');
