@@ -23,7 +23,8 @@ addParameter(p, 'semiSupervised', false);
 addParameter(p, 'semiSupervisedRate', 0.1);     % ratio of images with full supervision
 addParameter(p, 'semiSupervisedOnlyFS', false); % use only the x% fully supervised images
 addParameter(p, 'init', 'zeros'); % Network weight initialization of final classification layer. Options are zeros (default for fully supervised), best-auto, best-manual, lincomb (all +-autobias)
-addParameter(p, 'maskThings', false); % Use this to mask out 
+addParameter(p, 'maskThings', false); % Use this to mask out
+addParameter(p, 'useSimilarityLoss', false);
 parse(p, varargin{:});
 
 dataset = p.Results.dataset;
@@ -43,6 +44,7 @@ semiSupervisedRate = p.Results.semiSupervisedRate;
 semiSupervisedOnlyFS = p.Results.semiSupervisedOnlyFS;
 init = p.Results.init;
 maskThings = p.Results.maskThings;
+useSimilarityLoss = p.Results.useSimilarityLoss;
 callArgs = p.Results; %#ok<NASGU>
 
 % Check settings for consistency
@@ -84,6 +86,7 @@ nnOpts.misc.wsEqualWeight = wsEqualWeight;
 nnOpts.misc.semiSupervised = semiSupervised;
 nnOpts.misc.semiSupervisedRate = semiSupervisedRate;
 nnOpts.misc.semiSupervisedOnlyFS = semiSupervisedOnlyFS;
+nnOpts.misc.useSimilarityLoss = useSimilarityLoss;
 
 % Fix randomness
 rng(randSeed);
