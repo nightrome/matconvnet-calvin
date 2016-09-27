@@ -59,9 +59,7 @@ classdef ImdbE2S2 < ImdbCalvin
         function[inputs, numElements] = getBatch(obj, batchIdx, net, nnOpts)
             % [inputs, numElements] = getBatch(obj, batchIdx, net, nnOpts)
             %
-            % Returns a batch consisting of positive and negative samples for one
-            % image. The labels are empty, as the regiontopixel layer will replace
-            % them.
+            % Returns a single image, its labels and boxes to be used as a sub-batch in training, validation or testing.
             %
             % Copyright by Holger Caesar, 2015
             
@@ -83,7 +81,7 @@ classdef ImdbE2S2 < ImdbCalvin
             % (this has to happen on batchOpts, not batchOptsCopy!)
             if obj.batchOpts.segments.switchColorTypesBatch && ~testMode,
                 obj.switchColorType();
-            end;
+            end
             
             % Create a copy of batchOpts to avoid changes to the entire imdb
             batchOptsCopy = obj.batchOpts;
@@ -105,7 +103,7 @@ classdef ImdbE2S2 < ImdbCalvin
                 if batchOptsCopy.segments.colorTypeIdx ~= testColorSpace,
                     batchOptsCopy.segments.colorTypeIdx = testColorSpace;
                     obj.updateSegmentNames(batchOptsCopy);
-                end;
+                end
                 
                 % Illegal option that is only used as an upper bound for
                 % performance with better regions
@@ -114,8 +112,8 @@ classdef ImdbE2S2 < ImdbCalvin
                         batchOptsCopy.subsample = true;
                         batchOptsCopy.posRange = nnOpts.misc.testOpts.subsamplePosRange;
                     end
-                end;
-            end;
+                end
+            end
             
             % Get params from layers and nnOpts
             roiPool = nnOpts.misc.roiPool;
@@ -128,10 +126,10 @@ classdef ImdbE2S2 < ImdbCalvin
                     assert(weaklySupervised.labelPresence.use);
                     batchOptsCopy.subsample = false;
                     batchOptsCopy.removeGT = true;
-                end;
+                end
             else
                 weaklySupervised.use = false;
-            end;
+            end
             
             % Load image
             imageIdx = batchIdx;
@@ -170,7 +168,7 @@ classdef ImdbE2S2 < ImdbCalvin
                 segmentStructRP = load(segmentPathRP, blobMasksName);
                 if ~isfield(segmentStructRP, blobMasksName),
                     error('Error: Missing blob masks, please run e2s2_storeBlobMasks()!');
-                end;
+                end
                 blobMasksRP = segmentStructRP.(blobMasksName);
                 clearvars segmentStructRP;
             end
@@ -217,7 +215,7 @@ classdef ImdbE2S2 < ImdbCalvin
                                   maxOverlap <= batchOptsCopy.posRange(2));
             else
                 blobIndsRP = (1:numel(blobsRP))';
-            end;
+            end
             
             % Remove very big blobs
             if isfield(batchOptsCopy, 'blobMaxSize') && ~isempty(batchOptsCopy.blobMaxSize) && batchOptsCopy.blobMaxSize ~= 1
@@ -246,7 +244,7 @@ classdef ImdbE2S2 < ImdbCalvin
                 pixelSizesRP = [blobsRP.size]';
                 regionSel = pixelSizesRP >= minSize & pixelSizesRP / imagePixelSize <= maxSizeRel;
                 blobIndsRP = intersect(blobIndsRP, find(regionSel));
-            end;
+            end
             
             % At test time, make sure the whole image is included
             % (otherwise superpixels might be unlabeled!)
@@ -351,7 +349,7 @@ classdef ImdbE2S2 < ImdbCalvin
                     return;
                 end
                 labelsImage = find(ismember(labelNames, imLabelNames));
-            end;
+            end
             
             % Convert boxes to transposed Girshick format
             boxesAll = boxesAll(:, [2, 1, 4, 3])';

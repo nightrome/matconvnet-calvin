@@ -46,7 +46,7 @@ stats = cell(numel(epochs), 1);
 if ~isempty(minSize) || ~isempty(maxSizeRel) || ~isinf(limitImageCount),
     fprintf('Warning: Cannot cache results due to custom (blob size or limitImageCount) settings!\n');
     doCache = false;
-end;
+end
 
 % Create paths
 global glFeaturesFolder;
@@ -54,7 +54,7 @@ if weaklySupervised,
     wsStr = 'ws';
 else
     wsStr = '';
-end;
+end
 outputName = sprintf('%s_e2s2%s_run%d_exp%d', dataset.name, wsStr, run, exp);
 netFolder = fullfile(glFeaturesFolder, 'CNN-Models', 'E2S2', dataset.name, sprintf('Run%d', run), outputName);
 
@@ -73,13 +73,13 @@ netOptsStruct.imdb.dataset = dataset;
 % Set testing options to restrict regions by size
 if ~isempty(maxSizeRel),
     netOptsStruct.nnOpts.misc.testOpts.maxSizeRel = maxSizeRel;
-end;
+end
 if ~isempty(minSize),
     netOptsStruct.nnOpts.misc.testOpts.minSize = minSize;
-end;
+end
 if ~isempty(subsamplePosRange),
     netOptsStruct.nnOpts.misc.testOpts.subsamplePosRange = subsamplePosRange;
-end;
+end
 if ~isempty(testColorSpace)
     netOptsStruct.nnOpts.misc.testOpts.testColorSpace = testColorSpace;
 end
@@ -98,7 +98,7 @@ for epochIdx = 1 : numel(epochs),
     stats{epochIdx} = nnClass.testOnSet('subset', subset, 'doCache', doCache, 'limitImageCount', limitImageCount, 'storeOutputMaps', storeOutputMaps);
     fprintf('Displaying stats for epoch %d of exp %s...\n', epoch, outputName);
     disp(stats{epochIdx});
-end;
+end
 
 % Create a plot of the above stats
 if plotStats,
@@ -136,6 +136,6 @@ if plotStats,
     plotPath = fullfile(netFolder, 'net-test.pdf');
     if exist(plotPath, 'file'),
         error('Error: plotPath already exists: %s', plotPath);
-    end;
+    end
     print(1, plotPath, '-dpdf'); %#ok<MCPRT>
 end
