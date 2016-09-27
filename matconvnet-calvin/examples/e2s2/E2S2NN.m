@@ -156,6 +156,62 @@ classdef E2S2NN < CalvinNN
             end
         end
         
+        function extractFeatures(obj, varargin)
+            % extractFeatures(obj, varargin)
+            
+            % Initial settings
+            p = inputParser;
+            addParameter(p, 'subset', 'test');
+            addParameter(p, 'outputVarName', '');
+            parse(p, varargin{:});
+            
+            subset = p.Results.subset;
+            outputVarName = p.Results.outputVarName;
+            
+            % Init
+            imageList = obj.imdb.data.(subset);
+            imageCount = numel(imageList);
+            
+            % Update imdb's test set
+            tempTest = obj.imdb.data.test;
+            obj.imdb.data.test = imageList;
+            
+            % Set network to testing mode
+            outputVarIdx = obj.prepareNetForTest();
+            if exist('outputVarName', 'var') && ~isempty(outputVarName)
+                outputVarIdx = obj.net.getVarIndex(outputVarName);
+            else
+                outputVarName = obj.net.vars(outputVarIdx).name;
+            end
+            
+            % Create output folder
+            epoch = numel(obj.stats.train);
+            featFolder = fullfile(obj.nnOpts.expDir, sprintf('features-%s-%s-epoch-%d', outputVarName, subset, epoch));
+            
+            for imageIdx = 1 : imageCount,
+                printProgress('Classifying images', imageIdx, imageCount, 10);
+                
+                % Get batch
+                inputs = obj.imdb.getBatch(imageIdx, obj.net);
+                
+                % Run forward pass
+                obj.net.eval(inputs);
+                
+                % Extract probs
+                curProbs = obj.net.vars(outputVarIdx).value;
+                curProbs = gather(reshape(curProbs, [size(curProbs, 3), size(curProbs, 4)]))';
+                
+                % Store
+                imageName = imageList{imageIdx};
+                featPath = fullfile(featFolder, [imageName, '.mat']);
+                features = double(curProbs); %#ok<NASGU>
+                save(featPath, 'features', '-v6');
+            end;
+            
+            % Reset test set
+            obj.imdb.data.test = tempTest;
+        end
+        
         function[outputVarIdx] = prepareNetForTest(obj)
             % [outputVarIdx] = prepareNetForTest(obj)
             
@@ -287,7 +343,7 @@ classdef E2S2NN < CalvinNN
                     [~, outputMap] = max(scores, [], 3);
                     outputMap = gather(outputMap);
                     
-                    % Accumulate errors
+                    % Update confusion matrix
                     ok = labelMap > 0;
                     confusion = confusion + accumarray([labelMap(ok), outputMap(ok)], 1, size(confusion));
                     

@@ -9,12 +9,13 @@ addParameter(p, 'dataset', SiftFlowDatasetMC());
 addParameter(p, 'modelType', 'fcn16s');
 addParameter(p, 'gpus', 2);
 addParameter(p, 'randSeed', 42);
-addParameter(p, 'expNameAppend', 'test');
+addParameter(p, 'expNameAppend', 'testRelease');
 addParameter(p, 'epoch', 50);
 addParameter(p, 'subset', 'test'); % train / test
 addParameter(p, 'expSubFolder', '');
 addParameter(p, 'findMapping', false); % Find the best possible label mapping from ILSVRC to target dataset
 addParameter(p, 'storeOutputMaps', true);
+addParameter(p, 'extractFeatsVarName', ''); % If used we don't measure performance
 parse(p, varargin{:});
 
 dataset = p.Results.dataset;
@@ -27,9 +28,10 @@ subset = p.Results.subset;
 expSubFolder = p.Results.expSubFolder;
 findMapping = p.Results.findMapping;
 storeOutputMaps = p.Results.storeOutputMaps;
+extractFeatsVarName = p.Results.extractFeatsVarName;
 callArgs = p.Results; %#ok<NASGU>
 
-% experiment and data paths
+% Experiment and data paths
 global glFeaturesFolder;
 expName = [modelType, prependNotEmpty(expNameAppend, '-')];
 expDir = fullfile(glFeaturesFolder, 'CNN-Models', 'FCN', dataset.name, expSubFolder, expName);
@@ -70,5 +72,10 @@ nnOpts.expDir = expDir;
 % Create network
 nnClass = FCNNN(netPath, imdbFcn, nnOpts);
 
-% Test the network
-stats = nnClass.testOnSet('subset', subset, 'findMapping', findMapping, 'storeOutputMaps', storeOutputMaps);
+if isempty(extractFeatsVarName)
+    % Test the network performance
+    stats = nnClass.testOnSet('subset', subset, 'findMapping', findMapping, 'storeOutputMaps', storeOutputMaps);
+else
+    % Extract the specified features
+    nnClass.extractFeatures('outputVarName', extractFeatsVarName);
+end
