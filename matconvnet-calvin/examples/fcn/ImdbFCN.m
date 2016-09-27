@@ -106,13 +106,13 @@ classdef ImdbFCN < ImdbCalvin
             
             % Specify level of supervision for each train image
             if ~nnOpts.misc.weaklySupervised
-                % FS
+                % Full supervision
                 obj.batchOpts.images.isFullySupervised = true(numel(obj.batchOpts.images.name), 1);
             elseif ~semiSupervised
-                % WS
+                % Weak supervision
                 obj.batchOpts.images.isFullySupervised = false(numel(obj.batchOpts.images.name), 1);
             else
-                % SS: Set x% of train and all val to true
+                % Semi supervision: Set x% of train and all val to true
                 obj.batchOpts.images.isFullySupervised = true(numel(obj.batchOpts.images.name), 1);
                 if isa(obj.dataset, 'EdiStuffDataset')
                     selWS = find(~ismember(obj.batchOpts.images.name, obj.dataset.datasetFS.getImageListTrn()));
@@ -143,13 +143,13 @@ classdef ImdbFCN < ImdbCalvin
             % Make sure val images are always fully supervised
             obj.batchOpts.images.isFullySupervised(obj.batchOpts.images.set == 2) = true;
             
-            % Print overview of the fully and weakly supervised number of training
-            % images
-            fsCount = sum( obj.batchOpts.images.isFullySupervised(:) & obj.batchOpts.images.set(:) == 1);
-            wsCount = sum(~obj.batchOpts.images.isFullySupervised(:) & obj.batchOpts.images.set(:) == 1);
-            fsRatio = fsCount / (fsCount+wsCount);
-            wsRatio = 1 - fsRatio;
-            fprintf('Images in train: %d FS (%.1f%%), %d WS (%.1f%%)...\n', fsCount, fsRatio * 100, wsCount, wsRatio * 100);
+%             % Print overview of the fully and weakly supervised number of training
+%             % images
+%             fsCount = sum( obj.batchOpts.images.isFullySupervised(:) & obj.batchOpts.images.set(:) == 1);
+%             wsCount = sum(~obj.batchOpts.images.isFullySupervised(:) & obj.batchOpts.images.set(:) == 1);
+%             fsRatio = fsCount / (fsCount+wsCount);
+%             wsRatio = 1 - fsRatio;
+%             fprintf('Images in train: %d FS (%.1f%%), %d WS (%.1f%%)...\n', fsCount, fsRatio * 100, wsCount, wsRatio * 100);
             
             % Get training and test/validation subsets
             % We always validate and test on val
@@ -167,7 +167,7 @@ classdef ImdbFCN < ImdbCalvin
         function[inputs, numElements] = getBatch(obj, batchIdx, net, nnOpts)
             % [inputs, numElements] = getBatch(obj, batchIdx, net, nnOpts)
             %
-            % Returns a batch ...
+            % Returns a single image, its labels and boxes to be used as a sub-batch in training, validation or testing.
             % Note: Currently train and val batches are treated the same.
             %
             % Copyright by Holger Caesar, 2015
