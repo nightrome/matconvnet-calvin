@@ -17,7 +17,11 @@ vocName = sprintf('VOC%d', vocYear);
 datasetDir = [fullfile(glDatasetFolder, vocName), '/'];
 outputFolder = fullfile(glFeaturesFolder, 'CNN-Models', 'FRCN', vocName, sprintf('%s-testRelease', vocName));
 netPath = fullfile(glFeaturesFolder, 'CNN-Models', 'matconvnet', 'imagenet-vgg-verydeep-16.mat');
-logFilePath = fullfile(expDir, 'log.txt');
+logFilePath = fullfile(outputFolder, 'log.txt');
+
+% Fix randomness
+randSeed = 42;
+rng(randSeed);
 
 % Setup dataset specific options and check validity
 setupDataOpts(vocYear, testName, datasetDir);
@@ -37,8 +41,13 @@ nnOpts.momentum = 0.9;
 nnOpts.numEpochs = 16;
 nnOpts.learningRate = [repmat(1e-3, 12, 1); repmat(1e-4, 4, 1)];
 nnOpts.misc.netPath = netPath;
-nnOpts.expDir = expDir;
+nnOpts.expDir = outputFolder;
 nnOpts.gpus = SelectIdleGpu();
+
+% Create outputFolder
+if ~exist(outputFolder, 'dir')
+    mkdir(outputFolder);
+end
 
 % Start logging
 diary(logFilePath);
