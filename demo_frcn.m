@@ -7,13 +7,6 @@
 % Add folders to path
 setup();
 
-% Settings
-expNameAppend = 'testRelease';
-global glBaseFolder;
-
-global MYDATADIR;
-MYDATADIR = [fullfile(glBaseFolder, 'Datasets', 'VOC2010'), '/'];
-
 % Download dataset
 downloadVOC2010();
 

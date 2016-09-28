@@ -1,9 +1,9 @@
-function[] = setupDataOpts(vocYear, testName)
+function setupDataOpts(vocYear, testName, datasetDir)
 
-global MYDATADIR DATAopts;
+global DATAopts;
 
 % Setup VOC data
-devkitroot = [MYDATADIR, 'VOCdevkit', '/'];
+devkitroot = [datasetDir, 'VOCdevkit', '/'];
 DATAopts.year = vocYear;
 DATAopts.dataset = sprintf('VOC%d', DATAopts.year);
 DATAopts.datadir        = [devkitroot, DATAopts.dataset, '/'];

@@ -12,7 +12,10 @@ function setupFastRcnnRegions(varargin)
 vocYear = 2010;
 trainName = 'train';
 testName  = 'val';
-setupDataOpts(vocYear, testName);
+vocName = sprintf('VOC%d', vocYear);
+global glDatasetFolder;
+datasetDir = [fullfile(glDatasetFolder, vocName), '/'];
+setupDataOpts(vocYear, testName, datasetDir);
 global DATAopts; % Database specific paths
 assert(~isempty(DATAopts), 'Error: Dataset not initialized properly!');
 

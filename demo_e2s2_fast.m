@@ -2,7 +2,7 @@
 %
 % Trains and tests a Region-based semantic segmentation with end-to-end training on SIFT Flow.
 % Requires the version of VGG-16 pretrained with MatConvNet's beta16, and does not
-% work with beta20. This is most likely due to exploding gradients, although the architecture is identical.
+% work with newer versions. This is most likely due to exploding gradients, although the architecture is identical.
 %
 % Copyright by Holger Caesar, 2016
 

@@ -12,7 +12,7 @@ addParameter(p, 'modelType', 'fcn16s');
 addParameter(p, 'modelFile', 'imagenet-vgg-verydeep-16.mat');
 addParameter(p, 'gpus', 2);
 addParameter(p, 'randSeed', 42);
-addParameter(p, 'expNameAppend', 'test');
+addParameter(p, 'expNameAppend', 'testRelease');
 addParameter(p, 'weaklySupervised', false);
 addParameter(p, 'numEpochs', 50);
 addParameter(p, 'useInvFreqWeights', false);
@@ -55,7 +55,7 @@ if semiSupervised
 end
 if isa(dataset, 'VOC2011Dataset')
     assert(~useInvFreqWeights);
-end;
+end
 
 % experiment and data paths
 global glFeaturesFolder;
@@ -97,7 +97,7 @@ rng(randSeed);
 % Create folders
 if ~exist(nnOpts.expDir, 'dir'),
     mkdir(nnOpts.expDir);
-end;
+end
 
 % Setup logfile
 diary(logFilePath);
