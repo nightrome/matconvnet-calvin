@@ -70,13 +70,13 @@ several state of-the-art papers in object detection and semantic segmentation. T
  | \[2\]  | FCN-16s | 51.7%          | 85.2%           | 39.5%    | 175?            | -            
 
 3) **E2S2**
-- **Usage**: Run `demo_e2s2()`
+- **Usage**: Run `demo_e2s2_full()` or `demo_e2s2_fast()`
 - **What:** This trains and tests a region-based end-to-end network based on VGG-16 for semantic segmentation on the SIFT Flow dataset. The script automatically extracts Selective Search region proposals from the dataset. All networks are trained with an inverse-class frequency weighted loss (Sect. 3.4 of \[5\]).
 - **Model:** Training this model takes a lot of time. If you just want to use it you can download the pretrained model in the installation step above. Then run the demo to see the test results. There are two different models available:
   - Full: Our best performing model refered to in \[5\] as "separate weights".
   - Fast: A much faster model refered to in \[5\] as "tied weights".
 - **Results:** If the program executes correctly, it will print the semantic segmentation performance. It will also show an image from the SIFT Flow dataset, the ground-truth labels, the output labeling and an image that shows the different types of error (similar to the figure above). The results and timings for the different models can be seen in the table below. We used a Titan X GPU with 12GB of RAM.
-- **Note:** The results can vary due to the random order of images presented during training. The mean performance is 64.9% +- 0.7% Class accuracy. To reproduce our experiments we fix the initial seed of the random number generator.
+- **Note:** The results can vary due to the random order of images presented during training. The mean performance of the full model is 64.9% +- 0.7% Class accuracy. To reproduce our experiments we fix the initial seed of the random number generator.
 
  | Model        | Class accuracy | Training epochs | Training time | GPU RAM
  | ---          | ---            | ---             | ---           | ---
