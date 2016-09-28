@@ -1,4 +1,4 @@
-% demo_e2s2()
+% demo_e2s2_full()
 %
 % Trains and tests a Region-based semantic segmentation with end-to-end training on SIFT Flow.
 % Requires the version of VGG-16 pretrained with MatConvNet's beta16, and does not
@@ -11,7 +11,7 @@ setup();
 
 % Settings
 global glFeaturesFolder; % Define global variables to be used in all scripts
-labelingsFolder = fullfile(glFeaturesFolder, 'CNN-Models', 'E2S2', 'SiftFlow', 'Run1', sprintf('%s_e2s2_run1_exp1', 'SiftFlow'), 'labelings-test-epoch10');
+labelingsFolder = fullfile(glFeaturesFolder, 'CNN-Models', 'E2S2', 'SiftFlow', 'Run1', sprintf('%s_e2s2_run1_exp2', 'SiftFlow'), 'labelings-test-epoch25');
 
 % Download dataset
 downloadSiftFlow();
@@ -26,8 +26,6 @@ downloadSelectiveSearch();
 setupE2S2Regions();
 
 % Train and test network
-% (replace this by e2s2_wrapper_SiftFlow_fast() for a network that can be
-% trained much faster, but performs slightly worse)
 e2s2_wrapper_SiftFlow_full();
 
 % Show example segmentation
