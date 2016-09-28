@@ -1,6 +1,5 @@
-# MatConvNet-Calvin v0.4
-
-![Example output of our E2S2 method](http://groups.inf.ed.ac.uk/calvin/caesar16eccv/Examples/street_hexp30.png)
+# MatConvNet-Calvin v1.0
+![Example output of our E2S2 method](http://groups.inf.ed.ac.uk/calvin/caesar16eccv/Examples/street_hexp30-captions.png)
 
 **MatConvNet-Calvin** is a wrapper around MatConvNet that (re-)implements
 several state of-the-art papers in object detection and semantic segmentation. This includes our own work "Region-based semantic segmentation with end-to-end training" \[5\]. Calvin is a Computer Vision research group at the University of Edinburgh (http://calvin.inf.ed.ac.uk/). Copyrights by Holger Caesar and Jasper Uijlings, 2015-2016.
@@ -15,10 +14,10 @@ several state of-the-art papers in object detection and semantic segmentation. T
 - [Contact](#contact)
 
 ## Methods
-- **Fast R-CNN (FRCN)** \[1\]: State-of-the-art object detection method. The original code was implemented for Caffe. This reimplementation ports it to MatConvNet and includes Region of Interest pooling and a simplified version of bounding box regression.
-- **Fully Convolutional Networks (FCN)** \[2\]: Very successful semantic segmentation method that builds the basis for most modern semantic segmentation methods. FCNs operate directly on image pixels, performing a series of convolutional, fully connected and deconvolutional filters. This implementation is based on MatConvNet-FCN and is modified to work with arbitrary datasets.
+- **Fast R-CNN (FRCN)** \[1\]: State-of-the-art object detection method. The original code was implemented for Caffe. This reimplementation ports it to MatConvNet by adding region of interest pooling and a simplified version of bounding box regression.
+- **Fully Convolutional Networks (FCN)** \[2\]: Very successful semantic segmentation method that builds the basis for many modern semantic segmentation methods. FCNs operate directly on image pixels, performing a series of convolutional, fully connected and deconvolutional filters. This implementation is based on MatConvNet-FCN and is modified to work with arbitrary datasets.
 - **Multi-Class Multipe Instance Learning** \[3\]: Extends FCNs for weakly supervised semantic segmentation. We also implement the improved loss function of "What's the point" \[4\], which takes into account label presence and absence.
-- **Region-based semantic segmentation with end-to-end training (E2S2)** \[5\]: State-of-the-art semantic segmentation method that brings together the advantages of region-based methods and end-to-end trainable FCNs. This implementation is based on our implementation of Fast R-CNN and includes the freeform Region of Interest pooling and region-to-pixel layers.
+- **Region-based semantic segmentation with end-to-end training (E2S2)** \[5\]: State-of-the-art semantic segmentation method that brings together the advantages of region-based methods and end-to-end trainable FCNs. This implementation is based on our implementation of Fast R-CNN and adds the free-form region of interest pooling and region-to-pixel layers.
 
 ## Dependencies
 - **MatConvNet:** beta20 (http://github.com/vlfeat/matconvnet)
@@ -54,15 +53,17 @@ several state of-the-art papers in object detection and semantic segmentation. T
 ## Instructions
 1) **FRCN**
 - **Usage:** Run `demo_frcn()`
-- **What:** This trains and tests Fast R-CNN using VGG-16 for object detection on PASCAL VOC 2010. The parametrization of the regressed bounding boxes is slightly simplified, but we found this to make no difference in performance.
+- **What:** This script trains and tests Fast R-CNN using VGG-16 for object detection on PASCAL VOC 2010. The parametrization of the regressed bounding boxes is slightly simplified, but we found this to make no difference in performance.
 - **Model:** Training this model takes about 8h on a Titan X GPU. If you just want to use it you can download the pretrained model in the installation step above. Then run the demo to see the test results.
 - **Results:** If the program executes correctly, it will print the per-class results in average precision and their mean (mAP) for each of the 20 classes in PASCAL VOC. The example model achieves 63.5% mAP on the validation set using no external training data.
+- **Note:** The results vary due to the random order of images presented during training. To reproduce the above results we fix the initial seed of the random number generator.
 
 2) **FCN**
 - **Usage:** Run `demo_fcn()`
-- **What:** This trains and tests an FCN-16s network based on VGG-16 for semantic segmentation on the SIFT Flow dataset. The performance varies a bit compared to the implementation of \[2\], as they first train FCN-32s and use it to finetune FCN-16s. Instead we directly train FCN-16s. For weakly \[3,4\] and semi supervised training, see the options in fcnTrainGeneric().
+- **What:** This script trains and tests an FCN-16s network based on VGG-16 for semantic segmentation on the SIFT Flow dataset. The performance varies a bit compared to the implementation of \[2\], as they first train FCN-32s and use it to finetune FCN-16s. Instead we directly train FCN-16s. For weakly \[3,4\] and semi supervised training, see the options in fcnTrainGeneric().
 - **Model:** Training this model takes a lot of time.  If you just want to use it you can download the pretrained model in the installation step above. Then run the demo to see the test results.
-- **Results:** If the program executes correctly, it will print the semantic segmentation performance. It will also show an image from the SIFT Flow dataset, the ground-truth labels, the output labeling and an image that shows the different types of error (similar to the figure above). The results and timings for the different models can be seen in the table below. We used a Titan X GPU with 12GB of RAM.
+- **Results:** If the program executes correctly, it will print the semantic segmentation performance. It will also show an image from the SIFT Flow dataset, the ground-truth labels, the output labeling and an image that shows the different types of error. The results and timings for the different models can be seen in the table below. We used a Titan X GPU with 12GB of RAM.
+- **Note:** The results vary due to the random order of images presented during training. To reproduce the results in the table below we fix the initial seed of the random number generator.
 
  | Method | Model   | Class accuracy | Global accuracy | Mean IOU | Training epochs | Training time
  | ---    | ---     | ---            | ---             | ---      | ---             | ---
@@ -71,12 +72,12 @@ several state of-the-art papers in object detection and semantic segmentation. T
 
 3) **E2S2**
 - **Usage**: Run `demo_e2s2_full()` or `demo_e2s2_fast()`
-- **What:** This trains and tests a region-based end-to-end network based on VGG-16 for semantic segmentation on the SIFT Flow dataset. The script automatically extracts Selective Search region proposals from the dataset. All networks are trained with an inverse-class frequency weighted loss (Sect. 3.4 of \[5\]).
+- **What:** These scripts train and test a region-based end-to-end network based on VGG-16 for semantic segmentation on the SIFT Flow dataset. The scripts automatically extract Selective Search region proposals from the dataset. All networks are trained with an inverse-class frequency weighted loss (Sect. 3.4 of \[5\]).
 - **Model:** Training this model takes a lot of time. If you just want to use it you can download the pretrained model in the installation step above. Then run the demo to see the test results. There are two different models available:
   - Full: Our best performing model refered to in \[5\] as "separate weights".
-  - Fast: A much faster model refered to in \[5\] as "tied weights".
-- **Results:** If the program executes correctly, it will print the semantic segmentation performance. It will also show an image from the SIFT Flow dataset, the ground-truth labels, the output labeling and an image that shows the different types of error (similar to the figure above). The results and timings for the different models can be seen in the table below. We used a Titan X GPU with 12GB of RAM.
-- **Note:** The results can vary due to the random order of images presented during training. The mean performance of the full model is 64.9% +- 0.7% Class accuracy. To reproduce our experiments we fix the initial seed of the random number generator.
+  - Fast: A much faster model refered to in \[5\] as "tied weights". Additionally we set the number of training epochs to 10 instead of 25 to speedup training.
+- **Results:** If the program executes correctly, it will print the semantic segmentation performance. It will also show an image from the SIFT Flow dataset, the ground-truth labels, the output labeling and an image that shows the different types of error. The results and timings for the different models can be seen in the table below. We used a Titan X GPU with 12GB of RAM.
+- **Note:** The results vary due to the random order of images presented during training. The mean performance of the full model is 65.2% +- 0.7% Class accuracy. To reproduce the results in the table below we fix the initial seed of the random number generator.
 
  | Model        | Class accuracy | Training epochs | Training time | GPU RAM
  | ---          | ---            | ---             | ---           | ---
