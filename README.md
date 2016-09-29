@@ -90,7 +90,7 @@ several state of-the-art papers in object detection and semantic segmentation. T
 - \[2\] **Fully Convolutional Networks for Semantic Segmentation (FCN)** by Long et al., CVPR 2015, http://arxiv.org/abs/1411.4038
 - \[3\] **Fully Convolutional Multi-Class Multipe Instance Learning** by Pathak et al., ICLR 2015 workshop, http://arxiv.org/abs/1412.7144
 - \[4\] **What's the point: Semantic segmentation with point supervision** by Bearman et al., ECCV 2016, http://arxiv.org/abs/1506.02106
-- \[5\] **Region-based semantic segmentation with end-to-end training** (E2S2) by Caesar et al., ECCV 2016, http://arxiv.org/abs/1607.07671
+- \[5\] **Region-based semantic segmentation with end-to-end training (E2S2)** by Caesar et al., ECCV 2016, http://arxiv.org/abs/1607.07671
 
 ## Disclaimer
 Except for \[5\], none of the methods implemented in MatConvNet-Calvin is authorized by the original authors. These are (possibly simplified) reimplementations of parts of the described methods and they might vary in terms of performance. This software is covered by the FreeBSD License. See LICENSE.MD for more details.
