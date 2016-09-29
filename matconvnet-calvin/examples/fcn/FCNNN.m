@@ -372,7 +372,7 @@ classdef FCNNN < CalvinNN
                         if obj.imdb.dataset.annotation.labelOneIsBg
                             mapFormatter = @double;
                         else
-                            mapFormatter = @uin16;
+                            mapFormatter = @uint16;
                         end
                         
                         % Add GT image
