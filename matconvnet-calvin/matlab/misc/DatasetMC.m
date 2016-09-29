@@ -64,6 +64,9 @@ classdef (Abstract) DatasetMC < handle
         function[namesFile] = namesFile(obj)
             namesFile = obj.annotation.namesFile;
         end
+        function[cmap] = cmap(obj)
+            cmap = obj.annotation.cmap;
+        end
         
         %%% Getters
         function[imagePath] = getImagePath(obj)

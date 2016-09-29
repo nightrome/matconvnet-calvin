@@ -1,5 +1,5 @@
 classdef AnnotationMC
-    % ANNOTATIOMC
+    % ANNOTATIONMC
     %  Annotation class used by all Datasets
     %  Stores information about the labels etc.
     %
@@ -30,6 +30,8 @@ classdef AnnotationMC
         active = false;
         hasStuffThingLabels = false;
         labelOneIsBg = false;
+
+        cmap = @jet;
     end
     
     methods
