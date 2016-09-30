@@ -13,7 +13,7 @@ if strcmp(modelName, 'frcn')
     exportFilesPrefix = fullfile(glBaseFolder, 'Features', 'CNN-Models', 'FRCN', 'VOC2010', 'VOC2010-testRelease');
 elseif strcmp(modelName, 'fcn')
     exportName = 'FCN_SiftFlow_model';
-    exportFiles = {fullfile('labelings-test-epoch50', '*'), 'net-epoch-50.mat', 'net-opts.mat', 'net-train.pdf', 'log.txt', 'stats-test-epoch10.mat'};
+    exportFiles = {fullfile('labelings-test-epoch50', '*'), 'net-epoch-50.mat', 'net-opts.mat', 'net-train.pdf', 'log.txt', 'stats-test-epoch50.mat'};
     exportFilesPrefix = fullfile(glBaseFolder, 'Features', 'CNN-Models', 'FCN', 'SiftFlow', 'fcn16s-testRelease');
 elseif strcmp(modelName, 'e2s2_fast')
     exportName = 'E2S2_SiftFlow_model_fast';
