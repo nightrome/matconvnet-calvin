@@ -47,8 +47,8 @@ several state of-the-art papers in object detection and semantic segmentation. T
 - (Optional) Download pretrained models from your shell
     - FRCN: `wget -N -P data/ http://groups.inf.ed.ac.uk/calvin/caesar16eccv/FRCN_VOC2010_model.zip;  unzip data/FRCN_VOC2010_model.zip`
     - FCN: `wget -N -P data/ http://groups.inf.ed.ac.uk/calvin/caesar16eccv/FCN_SiftFlow_model.zip;  unzip data/FCN_SiftFlow_model.zip`
-    - E2S2 (Full): `wget -N -P data/ http://groups.inf.ed.ac.uk/calvin/caesar16eccv/E2S2_SiftFlow_model-full.zip; unzip data/E2S2_SiftFlow_model-full.zip`
-    - E2S2 (Fast): `wget -N -P data/ http://groups.inf.ed.ac.uk/calvin/caesar16eccv/E2S2_SiftFlow_model-fast.zip; unzip data/E2S2_SiftFlow_model-fast.zip`
+    - E2S2 (Full): `wget -N -P data/ http://groups.inf.ed.ac.uk/calvin/caesar16eccv/E2S2_SiftFlow_model_full.zip; unzip data/E2S2_SiftFlow_model_full.zip`
+    - E2S2 (Fast): `wget -N -P data/ http://groups.inf.ed.ac.uk/calvin/caesar16eccv/E2S2_SiftFlow_model_fast.zip; unzip data/E2S2_SiftFlow_model_fast.zip`
 
 ## Instructions
 1) **FRCN**
