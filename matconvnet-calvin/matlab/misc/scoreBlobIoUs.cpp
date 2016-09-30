@@ -3,27 +3,24 @@
 // Computes the pairwise IoU scores between two sets of blobs.
 // Mex-version is about 6 times faster than Matlab implementation (200*200 blob pairs).
 //
+// Use the following test example to verify that it works correctly:
+// blobA.rect = [1, 1, 3, 3];
+// blobA.mask = false(3, 3); blobA.mask(1:2, 2) = true;
+// blobA.size = sum(blobA.mask(:));
+// 
+// blobB.rect = [2, 2, 4, 4];
+// blobB.mask = false(4, 4); blobB.mask(1:2, 1) = true;
+// blobB.size = sum(blobB.mask(:));
+// 
+// iou = scoreBlobIoUs(blobA, blobB);
+// assert(iou == 1/3);
+//
 // Copyright by Holger Caesar, 2015
 
 #include "mex.h"
 #include "matrix.h" // for structs
 #include <algorithm> // for max,min
 #include <math.h> // for round
-
-// // Print the coordinates of a rectangle
-// void printRect(size_t* rect, char* name) {
-//     mexPrintf("%s = [%zu %zu %zu %zu]\n", name, rect[0], rect[1], rect[2], rect[3]);
-// }
-//
-// // Print a matrix row by row
-// void printMatrix(bool* mat, size_t sizeY, size_t sizeX) {
-//     for (size_t y = 0; y < sizeY; y++) {
-//         for (size_t x = 0; x < sizeX; x++) {
-//             mexPrintf("%d ", mat[x * sizeY + y]);
-//         }
-//         mexPrintf("\n");
-//     }
-// }
 
 // Check whether two rectangles intersect
 bool isBoxIntersect(size_t* aRect, size_t* bRect) {
@@ -63,7 +60,7 @@ double scoreBlobIoU(size_t* aRect, bool* aMask, size_t aSize, size_t* bRect, boo
         size_t aMaskSizeX = aRect[3] - aRect[1] + 1;
         size_t aMaskCutSizeY = aMaskCutRect[2] - aMaskCutRect[0] + 1;
         size_t aMaskCutSizeX = aMaskCutRect[3] - aMaskCutRect[1] + 1;
-        bool aMaskCut[aMaskCutSizeX * aMaskCutSizeY];
+        bool* aMaskCut = (bool*) mxCalloc(aMaskCutSizeX * aMaskCutSizeY, sizeof(bool));
         for (size_t x = 0; x < aMaskCutSizeX; x++) {
             for (size_t y = 0; y < aMaskCutSizeY; y++) {
                 aMaskCut[y + x * aMaskCutSizeY] = aMask[(aMaskCutRect[0]-1+y) + (aMaskCutRect[1]-1+x) * aMaskSizeY];
@@ -75,12 +72,16 @@ double scoreBlobIoU(size_t* aRect, bool* aMask, size_t aSize, size_t* bRect, boo
         size_t bMaskSizeX = bRect[3] - bRect[1] + 1;
         size_t bMaskCutSizeY = bMaskCutRect[2] - bMaskCutRect[0] + 1;
         size_t bMaskCutSizeX = bMaskCutRect[3] - bMaskCutRect[1] + 1;
-        bool bMaskCut[bMaskCutSizeX * bMaskCutSizeY];
+        bool* bMaskCut = (bool*) mxCalloc(bMaskCutSizeX * bMaskCutSizeY, sizeof(bool));
         for (size_t x = 0; x < bMaskCutSizeX; x++) {
             for (size_t y = 0; y < bMaskCutSizeY; y++) {
                 bMaskCut[y + x * bMaskCutSizeY] = bMask[(bMaskCutRect[0]-1+y) + (bMaskCutRect[1]-1+x) * bMaskSizeY];
             }
         }
+        
+        // free memory
+        mxFree((void*) aMaskCut);
+        mxFree((void*) bMaskCut);
         
         // intersection = sum(aMaskCut(:) & bMaskCut(:));
         size_t intersection = 0;
