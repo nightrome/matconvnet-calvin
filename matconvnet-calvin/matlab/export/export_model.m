@@ -17,11 +17,11 @@ elseif strcmp(modelName, 'fcn')
     exportFilesPrefix = fullfile(glBaseFolder, 'Features', 'CNN-Models', 'FCN', 'SiftFlow', 'fcn16s-testRelease');
 elseif strcmp(modelName, 'e2s2_fast')
     exportName = 'E2S2_SiftFlow_model_fast';
-    exportFiles = {fullfile('labelings-test-epoch10', '*'), 'net-epoch-10.mat', 'net-opts.mat', 'net-test.pdf', 'net-train.pdf', 'log.txt', 'stats-test-epoch10.mat'};
+    exportFiles = {fullfile('labelings-test-epoch10', '*'), 'net-epoch-10.mat', 'net-opts.mat', 'net-train.pdf', 'log.txt', 'stats-test-epoch10.mat'};
     exportFilesPrefix = fullfile(glBaseFolder, 'Features', 'CNN-Models', 'E2S2', 'SiftFlow', 'Run1', 'SiftFlow_e2s2_run1_exp1');
 elseif strcmp(modelName, 'e2s2_full')
     exportName = 'E2S2_SiftFlow_model_full';
-    exportFiles = {fullfile('labelings-test-epoch25', '*'), 'net-epoch-25.mat', 'net-opts.mat', 'net-test.pdf', 'net-train.pdf', 'log.txt', 'stats-test-epoch25.mat'};
+    exportFiles = {fullfile('labelings-test-epoch25', '*'), 'net-epoch-25.mat', 'net-opts.mat', 'net-train.pdf', 'log.txt', 'stats-test-epoch25.mat'};
     exportFilesPrefix = fullfile(glBaseFolder, 'Features', 'CNN-Models', 'E2S2', 'SiftFlow', 'Run1', 'SiftFlow_e2s2_run1_exp2');
 else
     error('Error: Unknown model: %s', modelName);
