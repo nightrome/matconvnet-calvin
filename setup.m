@@ -8,19 +8,19 @@ function setup()
 
 % Define paths
 root = fileparts(mfilename('fullpath'));
-matconvnetPath = fullfile(root, 'matconvnet', 'matlab');
-matconvnetFcnPath = fullfile(root, 'matconvnet-fcn');
-matconvnetCalvinPath = fullfile(root, 'matconvnet-calvin');
+matconvnetFolder = fullfile(root, 'matconvnet', 'matlab');
+matconvnetFcnFolder = fullfile(root, 'matconvnet-fcn');
+matconvnetCalvinFolder = fullfile(root, 'matconvnet-calvin');
 
 % Add matconvnet
-addpath(matconvnetPath);
+addpath(matconvnetFolder);
 vl_setupnn();
 
 % Add matconvnet-fcn
-addpath(matconvnetFcnPath);
+addpath(matconvnetFcnFolder);
 
 % Add matconvnet-calvin
-addpath(genpath(matconvnetCalvinPath));
+addpath(genpath(matconvnetCalvinFolder));
 
 % Define global variables
 global glBaseFolder glDatasetFolder glFeaturesFolder;
