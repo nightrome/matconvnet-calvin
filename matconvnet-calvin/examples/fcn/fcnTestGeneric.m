@@ -36,7 +36,7 @@ global glFeaturesFolder;
 expName = [modelType, prependNotEmpty(expNameAppend, '-')];
 expDir = fullfile(glFeaturesFolder, 'CNN-Models', 'FCN', dataset.name, expSubFolder, expName);
 netPath = fullfile(expDir, sprintf('net-epoch-%d.mat', epoch));
-settingsPath = fullfile(expDir, 'settings.mat');
+netOptsPath = fullfile(expDir, 'net-opts.mat');
 
 % Fix randomness
 rng(randSeed);
@@ -47,13 +47,13 @@ if ~exist(expDir, 'dir')
 end
 
 % Load imdb and nnOpts from file
-if exist(settingsPath, 'file')
-    settingsStruct = load(settingsPath, 'callArgs', 'nnOpts', 'imdbFcn');
-    nnOpts = settingsStruct.nnOpts;
-    imdbFcn = settingsStruct.imdbFcn;
+if exist(netOptsPath, 'file')
+    netOptsStruct = load(netOptsPath, 'callArgs', 'nnOpts', 'imdbFcn');
+    nnOpts = netOptsStruct.nnOpts;
+    imdbFcn = netOptsStruct.imdbFcn;
     assert(isequal(dataset.name, imdbFcn.dataset.name));
 else
-    error('Error: Cannot find settings path: %s', settingsPath);
+    error('Error: Cannot find netOpts path: %s', netOptsPath);
 end
 
 % If there is no validation set specified, use val as test set

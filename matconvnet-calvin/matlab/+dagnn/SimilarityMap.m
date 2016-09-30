@@ -24,25 +24,55 @@ classdef SimilarityMap < dagnn.Layer
             
             % Get inputs
             assert(numel(inputs) == 2);
-            scoresClass = inputs{1};
+            scoresClass = inputs{1}; % don't move to CPU!
             labels = inputs{2};
-            
-            % TODO: move to CPU?
             
             %%% Compute softmax of scores
             X = scoresClass;
             ex = exp(X);
-            z = sum(ex, 3); % TODO: we can probably remove z everywhere
+            z = sum(ex, 3);
             obj.scoresSoftMax = bsxfun(@rdivide, ex, z);
             
-            %%% Replace exponents by linearcombination of exponent            
+            %%% Replace probabilities by linear combination of probabilities
+            % TODO: We can also just change the score for the GT class,
+            % because that's the only one which the log-loss looks at
             % Semi-vectorized (offset time and RAM usage) ~0.5s
-            [m, n] = size(obj.similarities);
-            similaritiesR = reshape(obj.similarities, 1, m, n);
-            scoresWeighted = nan(size(obj.scoresSoftMax), 'like', obj.scoresSoftMax);
-            for y = 1 : size(obj.scoresSoftMax, 1)
-                gts = max(1, labels(y, :)); % just assign the first class if the pixel is irrelevant
-                scoresWeighted(y, :, :) = obj.scoresSoftMax(y, :, :) .* similaritiesR(1, gts, :);
+            if true
+                [m, n] = size(obj.similarities);
+                similaritiesR = reshape(obj.similarities, 1, m, n);
+                scoresWeighted = nan(size(obj.scoresSoftMax), 'like', obj.scoresSoftMax);
+                for y = 1 : size(obj.scoresSoftMax, 1)
+                    gts = max(1, labels(y, :)); % just assign the first class if the pixel has null label
+                    scoresWeighted(y, :, :) = obj.scoresSoftMax(y, :, :) .* similaritiesR(1, gts, :);
+                end
+            elseif true
+                % Slow version
+                [m, n] = size(obj.similarities);
+                similaritiesR = reshape(obj.similarities, 1, m, n);
+                s = obj.scoresSoftMax;
+                scoresWeighted = nan(size(obj.scoresSoftMax), 'like', obj.scoresSoftMax);
+                for y = 1 : size(obj.scoresSoftMax, 1)
+                    for x = 1 : size(obj.scoresSoftMax, 2)
+                        if labels(y, x) == 0
+                            continue
+                        end
+                        scoresWeighted(y, x, :) = s(y, x, :) .* similaritiesR(1, labels(y, x), :);
+                    end
+                end
+                
+                %                 % Edit only the gt entry (others are irrelevant for loss)
+                %                 % (doesn't work because of softmax)
+                %                 gts = max(1, labels);
+                %                 scoresWeighted = nan(size(obj.scoresSoftMax), 'like', obj.scoresSoftMax);
+                %                 for y = 1 : size(obj.scoresSoftMax, 1)
+                %                     for x = 1 : size(obj.scoresSoftMax, 2)
+                %                         scoresWeighted(y, x, gts(y, x)) = s(y, x, :) .* similaritiesR(1, gt, :);
+                %                     end
+                %                 end
+            else
+                % TODO: Undo this
+                assert(isequal(eye(size(obj.similarities, 1)), obj.similarities));
+                scoresWeighted = obj.scoresSoftMax;
             end
             
             % Renormalize probabilities
@@ -50,7 +80,8 @@ classdef SimilarityMap < dagnn.Layer
             obj.scoresWeightedNorm = bsxfun(@rdivide, scoresWeighted, obj.renormFactors);
             
             %%% Undo softmax
-            scoresMixed = log(bsxfun(@mtimes, obj.scoresWeightedNorm, z));
+            scoresMixed = log(eps + obj.scoresWeightedNorm); % No need to multiply the weighting factor bsxfun(@times, obj.scoresWeightedNorm, z)
+            assert(gather(~any(isinf(scoresMixed(:)))));
             
             % Create outputs
             outputs = cell(1, 1);
@@ -67,7 +98,7 @@ classdef SimilarityMap < dagnn.Layer
             %%% Derive unsoftmax
             dzdx = dzdy ./ max(obj.scoresWeightedNorm, 1e-8);
             
-            % Undo renormalization
+            % Undo renormalization of probabilities
             dzdx = bsxfun(@rdivide, dzdx, obj.renormFactors);
             
             %%% Derive similarity mapping

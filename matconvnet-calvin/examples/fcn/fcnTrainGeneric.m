@@ -26,6 +26,7 @@ addParameter(p, 'init', 'zeros'); % Network weight initialization of final class
 addParameter(p, 'maskThings', false); % Use this to mask out
 addParameter(p, 'useSimilarityLoss', false);
 addParameter(p, 'similarityLossNonLinear', false);
+addParameter(p, 'similarityLossClose', true);
 parse(p, varargin{:});
 
 dataset = p.Results.dataset;
@@ -47,6 +48,7 @@ init = p.Results.init;
 maskThings = p.Results.maskThings;
 useSimilarityLoss = p.Results.useSimilarityLoss;
 similarityLossNonLinear = p.Results.similarityLossNonLinear;
+similarityLossClose = p.Results.similarityLossClose;
 callArgs = p.Results; %#ok<NASGU>
 
 % Check settings for consistency
@@ -90,6 +92,7 @@ nnOpts.misc.semiSupervisedRate = semiSupervisedRate;
 nnOpts.misc.semiSupervisedOnlyFS = semiSupervisedOnlyFS;
 nnOpts.misc.useSimilarityLoss = useSimilarityLoss;
 nnOpts.misc.similarityLossNonLinear = similarityLossNonLinear;
+nnOpts.misc.similarityLossClose = similarityLossClose;
 
 % Fix randomness
 rng(randSeed);
@@ -107,8 +110,8 @@ imdbFcn = ImdbFCN(dataset, datasetDir, nnOpts);
 imdbFcn.batchOpts.useInvFreqWeights = useInvFreqWeights;
 
 % Save important settings
-settingsPath = fullfile(nnOpts.expDir, 'settings.mat');
-save(settingsPath, 'callArgs', 'nnOpts', 'imdbFcn');
+netOptsPath = fullfile(nnOpts.expDir, 'net-opts.mat');
+save(netOptsPath, 'callArgs', 'nnOpts', 'imdbFcn');
 
 % Create network
 nnClass = FCNNN(netPath, imdbFcn, nnOpts);

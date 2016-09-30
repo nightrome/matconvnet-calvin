@@ -76,12 +76,21 @@ classdef FCNNN < CalvinNN
                 % Get class similarities from hierarchy
                 similarities = obj.imdb.dataset.hierarchyDistances;
                 
-                % Use a similarity function that scales distances more non-linearly
-                % and attributes ~80% of contributions to the true class
-                % (afterwards mean(diag(similarities)) ~ 0.8)
                 if obj.nnOpts.misc.similarityLossNonLinear
+                    % 2nd setup
+                    % Use a similarity function that scales distances more non-linearly
+                    % and attributes ~80% of contributions to the true class
+                    % (afterwards mean(diag(similarities)) ~ 0.8)
                     similarities = 0.17 .^ (similarities);
+                elseif obj.nnOpts.misc.similarityLossClose
+                    % 3rd setup: TODO: replace dummy values after testing
+                    % equivalence
+                    newSimilarities = zeros(size(similarities));
+                    newSimilarities(similarities == 0) = 1; %0.9;
+                    newSimilarities(similarities == 2) = 0; %0.1;
+                    similarities = newSimilarities;
                 else
+                    % 1st setup
                     similarities = 1 - similarities ./ max(similarities(:));
                 end
                 
@@ -220,7 +229,7 @@ classdef FCNNN < CalvinNN
                 % Change loss input
                 lossIdx = obj.net.getLayerIndex('objective');
                 obj.net.layers(lossIdx).inputs{1} = 'prediction';
-
+                
                 % Remove layer
                 obj.net.removeLayer(simMapName);
             end
