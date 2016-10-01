@@ -121,12 +121,14 @@ classdef FCNNN < CalvinNN
             addParameter(p, 'limitImageCount', Inf);
             addParameter(p, 'findMapping', false);
             addParameter(p, 'storeOutputMaps', false);
+            addParameter(p, 'plotFreq', 15);
             parse(p, varargin{:});
             
             subset = p.Results.subset;
             limitImageCount = p.Results.limitImageCount;
             findMapping = p.Results.findMapping;
             storeOutputMaps = p.Results.storeOutputMaps;
+            plotFreq = p.Results.plotFreq;
             
             % Set the datasetMode to be active
             if strcmp(subset, 'test'),
@@ -137,7 +139,7 @@ classdef FCNNN < CalvinNN
             end
             
             % Run test
-            stats = obj.test('subset', subset, 'limitImageCount', limitImageCount, 'findMapping', findMapping, 'storeOutputMaps', storeOutputMaps);
+            stats = obj.test('subset', subset, 'limitImageCount', limitImageCount, 'findMapping', findMapping, 'storeOutputMaps', storeOutputMaps, 'plotFreq', plotFreq);
             
             % Restore the original test set
             if ~isempty(temp),
@@ -175,7 +177,7 @@ classdef FCNNN < CalvinNN
             
             % Create output folder
             epoch = numel(obj.stats.train);
-            featFolder = fullfile(obj.nnOpts.expDir, sprintf('features-%s-%s-epoch-%d', outputVarName, subset, epoch));
+            featFolder = fullfile(obj.nnOpts.expDir, sprintf('features-%s-%s-epoch%d', outputVarName, subset, epoch));
             if ~exist(featFolder, 'dir')
                 mkdir(featFolder);
             end
@@ -265,7 +267,6 @@ classdef FCNNN < CalvinNN
             addParameter(p, 'doCache', true);
             addParameter(p, 'findMapping', false);
             addParameter(p, 'plotFreq', 15);
-            addParameter(p, 'printFreq', 30);
             addParameter(p, 'storeOutputMaps', false);
             parse(p, varargin{:});
             
@@ -274,13 +275,12 @@ classdef FCNNN < CalvinNN
             doCache = p.Results.doCache;
             findMapping = p.Results.findMapping;
             plotFreq = p.Results.plotFreq;
-            printFreq = p.Results.printFreq;
             storeOutputMaps = p.Results.storeOutputMaps;
             
             epoch = numel(obj.stats.train);
             statsPath = fullfile(obj.nnOpts.expDir, sprintf('stats-%s-epoch%d.mat', subset, epoch));
-            labelingDir = fullfile(obj.nnOpts.expDir, sprintf('labelings-%s-epoch-%d', subset, epoch));
-            mapOutputFolder = fullfile(obj.nnOpts.expDir, sprintf('outputMaps-%s-epoch-%d', subset, epoch));
+            labelingDir = fullfile(obj.nnOpts.expDir, sprintf('labelings-%s-epoch%d', subset, epoch));
+            mapOutputFolder = fullfile(obj.nnOpts.expDir, sprintf('outputMaps-%s-epoch%d', subset, epoch));
             if exist(statsPath, 'file'),
                 % Get stats from disk
                 stats = load(statsPath);
@@ -438,7 +438,7 @@ classdef FCNNN < CalvinNN
                     end
                     
                     % Print message
-                    if mod(imageIdx - 1, printFreq) == 0 || imageIdx == imageCount
+                    if mod(imageIdx - 1, plotFreq) == 0 || imageIdx == imageCount
                         evalTime = toc(evalTimer);
                         fprintf('Processing image %d of %d (%.2f Hz)...\n', imageIdx, imageCount, imageIdx / evalTime);
                     end

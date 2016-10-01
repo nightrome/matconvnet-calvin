@@ -263,7 +263,6 @@ classdef E2S2NN < CalvinNN
             addParameter(p, 'subset', 'test');
             addParameter(p, 'doCache', true);
             addParameter(p, 'plotFreq', 15);
-            addParameter(p, 'printFreq', 30);
             addParameter(p, 'limitImageCount', Inf);
             addParameter(p, 'storeOutputMaps', false);
             parse(p, varargin{:});
@@ -271,7 +270,6 @@ classdef E2S2NN < CalvinNN
             subset = p.Results.subset;
             doCache = p.Results.doCache;
             plotFreq = p.Results.plotFreq;
-            printFreq = p.Results.printFreq;
             limitImageCount = p.Results.limitImageCount;
             storeOutputMaps = p.Results.storeOutputMaps;
             
@@ -398,7 +396,7 @@ classdef E2S2NN < CalvinNN
                     end
                     
                     % Print message
-                    if mod(imageIdx - 1, printFreq) == 0 || imageIdx == imageCount
+                    if mod(imageIdx - 1, plotFreq) == 0 || imageIdx == imageCount
                         evalTime = toc(evalTimer);
                         fprintf('Processing image %d of %d (%.2f Hz)...\n', imageIdx, imageCount, imageIdx / evalTime);
                     end
