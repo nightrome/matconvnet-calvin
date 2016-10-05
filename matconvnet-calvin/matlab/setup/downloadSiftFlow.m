@@ -10,7 +10,8 @@ zipName = 'SiftFlowDataset.zip';
 url = 'http://www.cs.unc.edu/~jtighe/Papers/ECCV10/siftflow/SiftFlowDataset.zip';
 rootFolder = calvin_root();
 datasetFolder = fullfile(rootFolder, 'data', 'Datasets', 'SiftFlow');
-zipFile = fullfile(datasetFolder, zipName);
+downloadFolder = fullfile(rootFolder, 'data', 'Downloads');
+zipFile = fullfile(downloadFolder, zipName);
 semanticLabelFolder = fullfile(datasetFolder, 'SemanticLabels');
 metaFolder = fullfile(datasetFolder, 'Meta');
 
@@ -19,6 +20,9 @@ if ~exist(metaFolder, 'file')
     % Create folder
     if ~exist(datasetFolder, 'dir')
         mkdir(datasetFolder);
+    end
+    if ~exist(downloadFolder, 'dir')
+        mkdir(downloadFolder);
     end
     
     % Download zip file
