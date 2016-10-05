@@ -1,6 +1,14 @@
 function evalDetection(testName, imdb, stats, nnOpts)
+% evalDetection(testName, imdb, stats, nnOpts)
+%
+% Evaluates the detection results on a PASCAL VOC dataset.
+%
+% Copyrights by Jasper Uijlings, 2015
+% Modified by Holger Caesar, 2016
 
+% Settings
 global DATAopts;
+compName = 'FRCN'; % Name under which files are saved in VOC folder
 
 % Get test images
 testIms = imdb.misc.testIms;
@@ -38,7 +46,7 @@ for cI = 1 : 20
     %
     [recall{cI}, prec{cI}, ap(cI,1), upperBound{cI}] = ...
         DetectionToPascalVOCFiles(testName, cI, currBoxes, currFilenames, currScores, ...
-        'Matconvnet-Calvin', 1, nnOpts.misc.overlapNms);
+        compName, 1, nnOpts.misc.overlapNms);
     ap(cI)
 end
 
@@ -79,7 +87,7 @@ if isfield(stats.results(1), 'boxesRegressed')
         %
         [recall{cI}, prec{cI}, apRegressed(cI,1), upperBound{cI}] = ...
             DetectionToPascalVOCFiles(testName, cI, currBoxes, currFilenames, currScores, ...
-            'Matconvnet-Calvin', 1, nnOpts.misc.overlapNms);
+            compName, 1, nnOpts.misc.overlapNms);
         apRegressed(cI)
     end
     
