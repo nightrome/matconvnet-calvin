@@ -170,10 +170,12 @@ classdef FCNN < CalvinNN
             p = inputParser;
             addParameter(p, 'subset', 'test');
             addParameter(p, 'outputVarName', '');
+            addParameter(p, 'featureNameAppend', '');
             parse(p, varargin{:});
             
             subset = p.Results.subset;
             outputVarName = p.Results.outputVarName;
+            featureNameAppend = p.Results.featureNameAppend;
             
             % Init
             imageList = obj.imdb.data.(subset);
@@ -199,7 +201,7 @@ classdef FCNN < CalvinNN
             
             % Create output folder
             epoch = numel(obj.stats.train);
-            featFolder = fullfile(obj.nnOpts.expDir, sprintf('features-%s-%s-epoch%d', outputVarName, subset, epoch));
+            featFolder = fullfile(obj.nnOpts.expDir, sprintf('features-%s-%s-epoch%d%s', outputVarName, subset, epoch, featureNameAppend));
             if ~exist(featFolder, 'dir')
                 mkdir(featFolder);
             end

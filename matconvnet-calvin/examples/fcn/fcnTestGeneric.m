@@ -71,10 +71,13 @@ imdbFcn.numClasses = imdbFcn.dataset.labelCount;
 
 % Evaluate on another dataset if specified
 if ~isempty(datasetEval) && datasetEval ~= dataset
+    featureNameAppend = ['-', datasetEval.name];
     imdbFcn.dataset = datasetEval;
     [imdbFcn.batchOpts.classes, imdbFcn.numClasses] = datasetEval.getLabelNames();
     imdbFcn.data.train = datasetEval.getImageListTrn();
     imdbFcn.data.test = datasetEval.getImageListTst();
+else
+    featureNameAppend = '';
 end
 
 % Overwrite some settings
@@ -90,5 +93,5 @@ if isempty(extractFeatsVarName)
     stats = nnClass.testOnSet('subset', subset, 'findMapping', findMapping, 'storeOutputMaps', storeOutputMaps, 'plotFreq', plotFreq, 'removeSimilarityMap', removeSimilarityMap);
 else
     % Extract the specified features
-    nnClass.extractFeatures('outputVarName', extractFeatsVarName);
+    nnClass.extractFeatures('subset', subset, 'outputVarName', extractFeatsVarName, 'featureNameAppend', featureNameAppend);
 end
