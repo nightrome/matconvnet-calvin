@@ -60,7 +60,7 @@ classdef CalvinNN < handle
         init(obj, varargin);
         plotStats(obj, epochs, stats, plotAccuracy);
         saveState(obj, fileName);
-        stats = test(obj);
+        statsTest = test(obj);
         train(obj);
     end
     

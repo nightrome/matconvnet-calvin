@@ -128,5 +128,5 @@ nnClass = E2S2NN(netPath, imdb, nnOpts);
 nnClass.train();
 
 % Test the network
-stats = nnClass.test();
-disp(stats);
+statsTest = nnClass.test();
+disp(statsTest);

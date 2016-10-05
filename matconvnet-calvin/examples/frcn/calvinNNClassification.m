@@ -68,13 +68,13 @@ imdb = setupImdbClassification(trainName, testName, net);
 imdb.targetImSize = [224, 224];
 
 % Create calvinNN CNN class
-calvinn = CalvinNN(net, imdb, nnOpts);
+nnClass = CalvinNN(net, imdb, nnOpts);
 
 %%% Train
-calvinn.train();
+nnClass.train();
 
 %%% Test
-stats = calvinn.test();
+statsTest = nnClass.test();
 
 %%% Eval
-evalClassification(imdb, stats, nnOpts);
+evalClassification(imdb, statsTest, nnOpts);

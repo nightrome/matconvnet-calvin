@@ -61,13 +61,13 @@ imdb = setupImdbDetection(trainName, testName, net);
 
 % Create calvinNN CNN class
 % By default, network is transformed into fast-rcnn with bbox regression
-calvinn = CalvinNN(net, imdb, nnOpts);
+nnClass = CalvinNN(net, imdb, nnOpts);
 
 %%% Train
-calvinn.train();
+nnClass.train();
 
 %%% Test
-stats = calvinn.test();
+statsTest = nnClass.test();
 
 %%% Eval
-evalDetection(testName, imdb, stats, nnOpts);
+evalDetection(testName, imdb, statsTest, nnOpts);
