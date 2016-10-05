@@ -73,38 +73,52 @@ classdef FCNNN < CalvinNN
             
             % Add similarity mapping layer
             if isfield(obj.nnOpts.misc, 'useSimilarityLoss') && obj.nnOpts.misc.useSimilarityLoss
+                fprintf('Inserting similarity-based loss...\n');
+                
                 % Get class similarities from hierarchy
                 similarities = obj.imdb.dataset.hierarchyDistances;
                 
-                if obj.nnOpts.misc.similarityLossNonLinear
-                    % 2nd setup
-                    % Use a similarity function that scales distances more non-linearly
-                    % and attributes ~80% of contributions to the true class
+                if strcmp(obj.nnOpts.misc.similarityLossType, 'dummy')
+                    similarities = eye(size(similarities));
+                elseif strcmp(obj.nnOpts.misc.similarityLossType, 'distance-nonlinear')
+                    % Long-distance relations, non-linearly scaled
+                    % attributes ~80% of contributions to the true class
                     % (afterwards mean(diag(similarities)) ~ 0.8)
                     similarities = 0.17 .^ (similarities);
-                elseif obj.nnOpts.misc.similarityLossClose
-                    % 3rd setup: TODO: replace dummy values after testing
-                    % equivalence
+                elseif strcmp(obj.nnOpts.misc.similarityLossType, 'close-0.9-0.1')
+                    % Only assign values to target class and sibilings
                     newSimilarities = zeros(size(similarities));
-                    newSimilarities(similarities == 0) = 1; %0.9;
-                    newSimilarities(similarities == 2) = 0; %0.1;
+                    newSimilarities(similarities == 0) = 0.9;
+                    newSimilarities(similarities == 2) = 0.1;
                     similarities = newSimilarities;
-                else
-                    % 1st setup
+                elseif strcmp(obj.nnOpts.misc.similarityLossType, 'close-0.99-0.01')
+                    % Only assign values to target class and sibilings
+                    newSimilarities = zeros(size(similarities));
+                    newSimilarities(similarities == 0) = 0.99;
+                    newSimilarities(similarities == 2) = 0.01;
+                    similarities = newSimilarities;
+                elseif strcmp(obj.nnOpts.misc.similarityLossType, 'distance-linear')
+                    % Long-distance relations, linearly scaled
                     similarities = 1 - similarities ./ max(similarities(:));
+                else
+                    error('Error: Invalid similarity loss type!');
                 end
                 
                 % Renormalize similarities to sum to 1 per class
                 similarities = bsxfun(@rdivide, similarities, sum(similarities, 2));
                 
-                % Add similarity mapping layer
+                % Add similarity mapping layer before deconv [alt: before loss] (for increased
+                % speed)
                 block = dagnn.SimilarityMap('similarities', similarities);
-                obj.net.addLayer('similaritymap', block, {'prediction', 'label'}, {'predictionmixed'});
+                beforeName = 'deconv16';
+                beforeLayer = obj.net.getLayer(beforeName);
+                beforeLayerInput = beforeLayer.inputs{1};
+                beforeLayerIdx = obj.net.getLayerIndex(beforeName);
+                similarityVar = 'predictionmixed';
+                obj.net.addLayer('similaritymap', block, beforeLayerInput, {similarityVar});
                 
-                % Rename loss input
-                lossName = 'objective';
-                lossIdx = obj.net.getLayerIndex(lossName);
-                obj.net.layers(lossIdx).inputs{1} = 'predictionmixed';
+                % Rename following layer's input
+                obj.net.layers(beforeLayerIdx).inputs{1} = similarityVar;
                 obj.net.rebuild();
             end
             
@@ -122,12 +136,14 @@ classdef FCNNN < CalvinNN
             addParameter(p, 'findMapping', false);
             addParameter(p, 'storeOutputMaps', false);
             addParameter(p, 'plotFreq', 15);
+            addParameter(p, 'removeSimilarityMap', true);
             parse(p, varargin{:});
             
             subset = p.Results.subset;
             limitImageCount = p.Results.limitImageCount;
             findMapping = p.Results.findMapping;
             storeOutputMaps = p.Results.storeOutputMaps;
+            removeSimilarityMap = p.Results.removeSimilarityMap;
             plotFreq = p.Results.plotFreq;
             
             % Set the datasetMode to be active
@@ -139,7 +155,7 @@ classdef FCNNN < CalvinNN
             end
             
             % Run test
-            stats = obj.test('subset', subset, 'limitImageCount', limitImageCount, 'findMapping', findMapping, 'storeOutputMaps', storeOutputMaps, 'plotFreq', plotFreq);
+            stats = obj.test('subset', subset, 'limitImageCount', limitImageCount, 'findMapping', findMapping, 'storeOutputMaps', storeOutputMaps, 'plotFreq', plotFreq, 'removeSimilarityMap', removeSimilarityMap);
             
             % Restore the original test set
             if ~isempty(temp),
@@ -206,8 +222,15 @@ classdef FCNNN < CalvinNN
             obj.imdb.data.test = tempTest;
         end
         
-        function[outputVarIdx] = prepareNetForTest(obj)
-            % [outputVarIdx] = prepareNetForTest(obj)
+        function[outputVarIdx] = prepareNetForTest(obj, varargin)
+            % [outputVarIdx] = prepareNetForTest(obj, varargin)
+            
+            % Initial settings
+            p = inputParser;
+            addParameter(p, 'removeSimilarityMap', true);
+            parse(p, varargin{:});
+            
+            removeSimilarityMap = p.Results.removeSimilarityMap;
             
             % Move to GPU
             if ~isempty(obj.nnOpts.gpus),
@@ -227,10 +250,10 @@ classdef FCNNN < CalvinNN
             % Remove SimilarityMap layer
             simMapName = 'similaritymap';
             simMapIdx = obj.net.getLayerIndex(simMapName);
-            if ~isnan(simMapIdx)
-                % Change loss input
-                lossIdx = obj.net.getLayerIndex('objective');
-                obj.net.layers(lossIdx).inputs{1} = 'prediction';
+            if removeSimilarityMap && ~isnan(simMapIdx)
+                % Change input of next layer
+                nextLayerIdx = arrayfun(@(x) strcmp(x.inputs{1}, 'predictionmixed'), obj.net.layers);
+                obj.net.layers(nextLayerIdx).inputs{1} = obj.net.layers(simMapIdx).inputs{1};
                 
                 % Remove layer
                 obj.net.removeLayer(simMapName);
@@ -268,6 +291,7 @@ classdef FCNNN < CalvinNN
             addParameter(p, 'findMapping', false);
             addParameter(p, 'plotFreq', 15);
             addParameter(p, 'storeOutputMaps', false);
+            addParameter(p, 'removeSimilarityMap', true);
             parse(p, varargin{:});
             
             subset = p.Results.subset;
@@ -276,6 +300,7 @@ classdef FCNNN < CalvinNN
             findMapping = p.Results.findMapping;
             plotFreq = p.Results.plotFreq;
             storeOutputMaps = p.Results.storeOutputMaps;
+            removeSimilarityMap = p.Results.removeSimilarityMap;
             
             epoch = numel(obj.stats.train);
             statsPath = fullfile(obj.nnOpts.expDir, sprintf('stats-%s-epoch%d.mat', subset, epoch));
@@ -292,7 +317,7 @@ classdef FCNNN < CalvinNN
                 end;
                 
                 % Set network to testing mode
-                outputVarIdx = obj.prepareNetForTest();
+                outputVarIdx = obj.prepareNetForTest('removeSimilarityMap', removeSimilarityMap);
                 
                 % Create output folder
                 if storeOutputMaps && ~exist(mapOutputFolder, 'dir')

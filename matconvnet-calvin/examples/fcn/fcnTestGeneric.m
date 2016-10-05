@@ -17,6 +17,7 @@ addParameter(p, 'findMapping', false); % Find the best possible label mapping fr
 addParameter(p, 'storeOutputMaps', true);
 addParameter(p, 'extractFeatsVarName', ''); % If used we don't measure performance
 addParameter(p, 'plotFreq', 15);
+addParameter(p, 'removeSimilarityMap', true);
 parse(p, varargin{:});
 
 dataset = p.Results.dataset;
@@ -31,6 +32,7 @@ findMapping = p.Results.findMapping;
 storeOutputMaps = p.Results.storeOutputMaps;
 extractFeatsVarName = p.Results.extractFeatsVarName;
 plotFreq = p.Results.plotFreq;
+removeSimilarityMap = p.Results.removeSimilarityMap;
 callArgs = p.Results; %#ok<NASGU>
 
 % Experiment and data paths
@@ -76,7 +78,7 @@ nnClass = FCNNN(netPath, imdbFcn, nnOpts);
 
 if isempty(extractFeatsVarName)
     % Test the network performance
-    stats = nnClass.testOnSet('subset', subset, 'findMapping', findMapping, 'storeOutputMaps', storeOutputMaps, 'plotFreq', plotFreq);
+    stats = nnClass.testOnSet('subset', subset, 'findMapping', findMapping, 'storeOutputMaps', storeOutputMaps, 'plotFreq', plotFreq, 'removeSimilarityMap', removeSimilarityMap);
 else
     % Extract the specified features
     nnClass.extractFeatures('outputVarName', extractFeatsVarName);

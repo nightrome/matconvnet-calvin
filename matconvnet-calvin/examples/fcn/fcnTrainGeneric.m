@@ -25,8 +25,7 @@ addParameter(p, 'semiSupervisedOnlyFS', false); % use only the x% fully supervis
 addParameter(p, 'init', 'zeros'); % Network weight initialization of final classification layer. Options are zeros (default for fully supervised), best-auto, best-manual, lincomb (all +-autobias)
 addParameter(p, 'maskThings', false); % Use this to mask out
 addParameter(p, 'useSimilarityLoss', false);
-addParameter(p, 'similarityLossNonLinear', false);
-addParameter(p, 'similarityLossClose', true);
+addParameter(p, 'similarityLossType', '');
 parse(p, varargin{:});
 
 dataset = p.Results.dataset;
@@ -47,8 +46,7 @@ semiSupervisedOnlyFS = p.Results.semiSupervisedOnlyFS;
 init = p.Results.init;
 maskThings = p.Results.maskThings;
 useSimilarityLoss = p.Results.useSimilarityLoss;
-similarityLossNonLinear = p.Results.similarityLossNonLinear;
-similarityLossClose = p.Results.similarityLossClose;
+similarityLossType = p.Results.similarityLossType;
 callArgs = p.Results; %#ok<NASGU>
 
 % Check settings for consistency
@@ -91,8 +89,7 @@ nnOpts.misc.semiSupervised = semiSupervised;
 nnOpts.misc.semiSupervisedRate = semiSupervisedRate;
 nnOpts.misc.semiSupervisedOnlyFS = semiSupervisedOnlyFS;
 nnOpts.misc.useSimilarityLoss = useSimilarityLoss;
-nnOpts.misc.similarityLossNonLinear = similarityLossNonLinear;
-nnOpts.misc.similarityLossClose = similarityLossClose;
+nnOpts.misc.similarityLossType = similarityLossType;
 
 % Fix randomness
 rng(randSeed);
