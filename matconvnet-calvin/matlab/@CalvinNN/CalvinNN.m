@@ -23,19 +23,34 @@ classdef CalvinNN < handle
                 nnOpts = struct();
             end
             
-            % Set fields
+            % Set imdb
             obj.imdb = imdb;
             
             % Init options and GPUs
             obj.init(nnOpts);
             
-            % Load network and convert to DAG format
-            obj.loadNetwork(net);
-            
-            if obj.nnOpts.convertToTrain
-                % Convert network from test to train (add loss layer,
-                % dropout etc.)
-                obj.convertNetwork();
+            % Check if previous snapshots exist
+            prevEpoch = obj.nnOpts.continue * CalvinNN.findLastCheckpoint(obj.nnOpts.expDir);
+            if isnan(prevEpoch)
+                % No checkpoint found
+                % Load network and convert to DAG format
+                obj.loadNetwork(net);
+                
+                if obj.nnOpts.convertToTrain
+                    % Convert network from test to train (add loss layer,
+                    % dropout etc.)
+                    obj.convertNetwork();
+                end
+                
+                % Save untrained net
+                fprintf('Saving untrained network...\n');
+                prevEpoch = 0;
+                obj.saveState(obj.nnOpts.modelPath(prevEpoch));
+            else
+                % Load existing checkpoint and continue
+                prevEpoch = obj.nnOpts.continue * prevEpoch;
+                fprintf('Resuming by loading epoch %d...\n', prevEpoch);
+                [obj.net, obj.stats] = CalvinNN.loadState(obj.nnOpts.modelPath(prevEpoch));
             end
         end 
         

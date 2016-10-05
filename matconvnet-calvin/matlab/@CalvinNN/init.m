@@ -36,6 +36,9 @@ defnnOpts.bboxRegress = true;
 % Merge input settings with default settings
 nnOpts = vl_argparse_old(defnnOpts, varargin, 'nonrecursive');
 
+% Define snapshot path function
+nnOpts.modelPath = @(ep) fullfile(obj.nnOpts.expDir, sprintf('net-epoch-%d.mat', ep));
+
 % Check settings
 assert(numel(nnOpts.learningRate) == 1 || numel(nnOpts.learningRate) == nnOpts.numEpochs);
 

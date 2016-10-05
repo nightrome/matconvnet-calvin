@@ -6,29 +6,10 @@ function train(obj)
 % 
 % Copyright by Holger Caesar, 2016
 
-modelPath = @(ep) fullfile(obj.nnOpts.expDir, sprintf('net-epoch-%d.mat', ep));
+startEpoch = obj.nnOpts.continue * CalvinNN.findLastCheckpoint(obj.nnOpts.expDir) + 1;
 modelFigPath = fullfile(obj.nnOpts.expDir, 'net-train.pdf');
-numGpus = numel(obj.nnOpts.gpus);
-assert(numGpus <= 1);
 
-% Load previous training snapshot
-lastCheckPoint = CalvinNN.findLastCheckpoint(obj.nnOpts.expDir);
-if isnan(lastCheckPoint)
-    % No checkpoint found
-    start = 0;
-    
-    % Save untrained net
-    obj.saveState(modelPath(start));
-else
-    % Load existing checkpoint and continue
-    start = obj.nnOpts.continue * lastCheckPoint;
-    fprintf('Resuming by loading epoch %d\n', start);
-    if start >= 1
-        [obj.net, obj.stats] = CalvinNN.loadState(modelPath(start));
-    end
-end
-
-for epoch = start + 1 : obj.nnOpts.numEpochs
+for epoch = startEpoch : obj.nnOpts.numEpochs
     
     % Set epoch and it's learning rate
     state.epoch = epoch;
@@ -55,7 +36,7 @@ for epoch = start + 1 : obj.nnOpts.numEpochs
     end
     
     % Save current snapshot
-    obj.saveState(modelPath(epoch));
+    obj.saveState(obj.nnOpts.modelPath(epoch));
     
     % Plot statistics
     if obj.nnOpts.plotEval
