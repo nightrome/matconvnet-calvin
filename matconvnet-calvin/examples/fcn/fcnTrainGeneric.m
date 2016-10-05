@@ -59,7 +59,6 @@ end
 
 % experiment and data paths
 global glFeaturesFolder;
-datasetDir = dataset.path;
 expName = [modelType, prependNotEmpty(expNameAppend, '-')];
 expDir = fullfile(glFeaturesFolder, 'CNN-Models', 'FCN', dataset.name, expName);
 netPath = fullfile(glFeaturesFolder, 'CNN-Models', 'matconvnet', modelFile);
@@ -103,7 +102,7 @@ end
 diary(logFilePath);
 
 % Create imdb
-imdbFcn = ImdbFCN(dataset, datasetDir, nnOpts);
+imdbFcn = ImdbFCN(dataset, nnOpts);
 imdbFcn.batchOpts.useInvFreqWeights = useInvFreqWeights;
 
 % Save important settings
@@ -111,7 +110,7 @@ netOptsPath = fullfile(nnOpts.expDir, 'net-opts.mat');
 save(netOptsPath, 'callArgs', 'nnOpts', 'imdbFcn');
 
 % Create network
-nnClass = FCNNN(netPath, imdbFcn, nnOpts);
+nnClass = FCNN(netPath, imdbFcn, nnOpts);
 
 % Train the network
 nnClass.train();

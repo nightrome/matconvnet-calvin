@@ -12,14 +12,13 @@ classdef ImdbFCN < ImdbCalvin
         batchOpts = struct();
     end
     methods
-        function obj = ImdbFCN(dataset, dataDir, nnOpts)
+        function obj = ImdbFCN(dataset, nnOpts)
             % Call default constructor
             obj = obj@ImdbCalvin();
             obj.dataset = dataset;
             
             % FCN-specific
             obj.batchOpts.imageSize = [512, 512] - 128;
-            obj.batchOpts.labelStride = 1;
             
             obj.batchOpts.imageFlipping = true;
             obj.batchOpts.rgbMean = single([128; 128; 128]);
@@ -30,12 +29,7 @@ classdef ImdbFCN < ImdbCalvin
             
             obj.batchOpts.useInvFreqWeights = false;
             
-            % Dataset-specific
-            obj.batchOpts.vocAdditionalSegmentations = true;
-            obj.batchOpts.vocEdition = '11';
-            obj.batchOpts.dataDir = dataDir;
-            
-            % Load VOC-style IMDB
+            % Load IMDB
             obj.loadImdb(nnOpts);
         end
         
@@ -47,18 +41,20 @@ classdef ImdbFCN < ImdbCalvin
             %%% VOC specific
             if strStartsWith(obj.dataset.name, 'VOC')
                 % Get PASCAL VOC segmentation dataset plus Berkeley's additional segmentations
+                vocAdditionalSegmentations = true;
                 imdbPath = fullfile(nnOpts.expDir, 'imdbVoc.mat');
                 if exist(imdbPath, 'file')
                     % Load imdbVoc
                     load(imdbPath, 'imdbVoc', 'rgbStats');
                 else
-                    imdbVoc = vocSetup('dataDir', obj.batchOpts.dataDir, ...
-                        'edition', obj.batchOpts.vocEdition, ...
+                    dataDir = obj.dataset.path;
+                    imdbVoc = vocSetup('dataDir', dataDir, ...
+                        'edition', strrep(obj.dataset.name, 'VOC20', ''), ...
                         'includeTest', false, ...
                         'includeSegmentation', true, ...
                         'includeDetection', false);
-                    if obj.batchOpts.vocAdditionalSegmentations
-                        imdbVoc = vocSetupAdditionalSegmentations(imdbVoc, 'dataDir', obj.batchOpts.dataDir);
+                    if vocAdditionalSegmentations
+                        imdbVoc = vocSetupAdditionalSegmentations(imdbVoc, 'dataDir', dataDir);
                     end
                     rgbStats = getDatasetStatistics(imdbVoc);
                     
@@ -186,8 +182,8 @@ classdef ImdbFCN < ImdbCalvin
             
             % Init labels
             if ~testMode
-                lx = 1 : obj.batchOpts.labelStride : obj.batchOpts.imageSize(2);
-                ly = 1 : obj.batchOpts.labelStride : obj.batchOpts.imageSize(1);
+                lx = 1 : obj.batchOpts.imageSize(2);
+                ly = 1 : obj.batchOpts.imageSize(1);
                 labels = zeros(numel(ly), numel(lx), 1, imageCount, 'double'); % must be double for to avoid numerical precision errors in vl_nnloss, when using many classes
                 if nnOpts.misc.weaklySupervised
                     labelsImageCell = cell(imageCount, 1);

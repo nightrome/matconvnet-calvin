@@ -6,6 +6,7 @@ function[stats] = fcnTestGeneric(varargin)
 % Initial settings
 p = inputParser;
 addParameter(p, 'dataset', SiftFlowDatasetMC());
+addParameter(p, 'datasetEval', []); % if not set, datasetEval = dataset;
 addParameter(p, 'modelType', 'fcn16s');
 addParameter(p, 'gpus', 2);
 addParameter(p, 'randSeed', 42);
@@ -21,6 +22,7 @@ addParameter(p, 'removeSimilarityMap', true);
 parse(p, varargin{:});
 
 dataset = p.Results.dataset;
+datasetEval = p.Results.datasetEval;
 modelType = p.Results.modelType;
 gpus = p.Results.gpus;
 randSeed = p.Results.randSeed;
@@ -65,8 +67,15 @@ if ~isfield(imdbFcn.data, 'test')
     imdbFcn.data.test = imdbFcn.data.val;
     imdbFcn.data = rmfield(imdbFcn.data, 'val');
 end
-
 imdbFcn.numClasses = imdbFcn.dataset.labelCount;
+
+% Evaluate on another dataset if specified
+if ~isempty(datasetEval) && datasetEval ~= dataset
+    imdbFcn.dataset = datasetEval;
+    [imdbFcn.batchOpts.classes, imdbFcn.numClasses] = datasetEval.getLabelNames();
+    imdbFcn.data.train = datasetEval.getImageListTrn();
+    imdbFcn.data.test = datasetEval.getImageListTst();
+end
 
 % Overwrite some settings
 nnOpts.gpus = gpus;
@@ -74,7 +83,7 @@ nnOpts.convertToTrain = false;
 nnOpts.expDir = expDir;
 
 % Create network
-nnClass = FCNNN(netPath, imdbFcn, nnOpts);
+nnClass = FCNN(netPath, imdbFcn, nnOpts);
 
 if isempty(extractFeatsVarName)
     % Test the network performance

@@ -1,11 +1,11 @@
-classdef FCNNN < CalvinNN
-    % FCNNN Fully Convolutional Network class implemented as subclass of
+classdef FCNN < CalvinNN
+    % FCNN Fully Convolutional Network class implemented as subclass of
     % CalvinNN.
     %
     % Copyright by Holger Caesar, 2016
     
     methods
-        function obj = FCNNN(net, imdb, nnOpts)
+        function obj = FCNN(net, imdb, nnOpts)
             obj = obj@CalvinNN(net, imdb, nnOpts);
         end
         
@@ -184,10 +184,16 @@ classdef FCNNN < CalvinNN
             obj.imdb.data.test = imageList;
             
             % Set network to testing mode
-            outputVarIdx = obj.prepareNetForTest();
             if exist('outputVarName', 'var') && ~isempty(outputVarName)
+                % Use output specified by name
+                obj.prepareNetForTest();
                 outputVarIdx = obj.net.getVarIndex(outputVarName);
+                if isnan(outputVarIdx)
+                    error('Error: Unknown variable %s!', outputVarName);
+                end
             else
+                % Use default output
+                outputVarIdx = obj.prepareNetForTest();
                 outputVarName = obj.net.vars(outputVarIdx).name;
             end
             
@@ -303,7 +309,12 @@ classdef FCNNN < CalvinNN
             removeSimilarityMap = p.Results.removeSimilarityMap;
             
             epoch = numel(obj.stats.train);
-            statsPath = fullfile(obj.nnOpts.expDir, sprintf('stats-%s-epoch%d.mat', subset, epoch));
+            if removeSimilarityMap
+                statsPathAppend = '-0simMap';
+            else
+                statsPathAppend = '';
+            end
+            statsPath = fullfile(obj.nnOpts.expDir, sprintf('stats-%s-epoch%d%s.mat', subset, epoch, statsPathAppend));
             labelingDir = fullfile(obj.nnOpts.expDir, sprintf('labelings-%s-epoch%d', subset, epoch));
             mapOutputFolder = fullfile(obj.nnOpts.expDir, sprintf('outputMaps-%s-epoch%d', subset, epoch));
             if exist(statsPath, 'file'),
