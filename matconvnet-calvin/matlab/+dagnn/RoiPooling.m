@@ -45,9 +45,6 @@ classdef RoiPooling < dagnn.Layer
                 rois = gpuArray(rois);
             end;
             
-            % Debug: Visualize ROIs
-%             roiPooling_visualizeForward(boxes, oriImSize, convIm, rois, 1, 1);
-            
             % Check size
             channelCount = size(convIm, 3);
             assert(all([size(rois, 1), size(rois, 2), size(rois, 3)] == [obj.poolSize, channelCount]));
@@ -79,11 +76,7 @@ classdef RoiPooling < dagnn.Layer
             % Move outputs to GPU if necessary
             if gpuMode,
                 dzdx = gpuArray(dzdx);
-            end;
-            
-            % Debug: Visualize gradients
-%             oriImSize = inputs{2};
-%             roiPooling_visualizeBackward(oriImSize, boxes, obj.mask, dzdy, dzdx, 1, 1);
+            end
             
             % Store outputs
             derInputs{1} = dzdx;
