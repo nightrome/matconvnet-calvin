@@ -12,8 +12,9 @@ urlData = 'http://host.robots.ox.ac.uk/pascal/VOC/voc2010/VOCtrainval_03-May-201
 urlDevkit = 'http://host.robots.ox.ac.uk/pascal/VOC/voc2010/VOCdevkit_08-May-2010.tar';
 rootFolder = calvin_root();
 datasetFolder = fullfile(rootFolder, 'data', 'Datasets', 'VOC2010');
-zipFileData = fullfile(datasetFolder, zipNameData);
-zipFileDevkit = fullfile(datasetFolder, zipNameDevkit);
+downloadFolder = fullfile(rootFolder, 'data', 'Downloads');
+zipFileData = fullfile(downloadFolder, zipNameData);
+zipFileDevkit = fullfile(downloadFolder, zipNameDevkit);
 dataFolder = fullfile(datasetFolder, 'VOCdevkit', 'VOC2010', 'JPEGImages');
 devkitFolder = fullfile(datasetFolder, 'VOCdevkit', 'VOCcode');
 
@@ -22,6 +23,9 @@ if ~exist(devkitFolder, 'dir')
     % Create folder
     if ~exist(datasetFolder, 'dir')
         mkdir(datasetFolder);
+    end
+    if ~exist(downloadFolder, 'dir')
+        mkdir(downloadFolder);
     end
     
     % Download data

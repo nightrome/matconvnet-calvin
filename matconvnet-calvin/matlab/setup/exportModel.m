@@ -1,5 +1,5 @@
-function export_model(modelName)
-% export_model(modelName)
+function exportModel(modelName)
+% exportModel(modelName)
 %
 % Zips a trained model so that it can be uploaded to our homepage.
 %

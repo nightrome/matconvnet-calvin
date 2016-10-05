@@ -44,11 +44,11 @@ several state of-the-art papers in object detection and semantic segmentation. T
     - `cd ../..;`
   - Add files to Matlab path
     - `setup();`
-- (Optional) Download pretrained models:
-    - FRCN: `wget -N -P data/ http://groups.inf.ed.ac.uk/calvin/caesar16eccv/FRCN_VOC2010_model.zip;  unzip data/FRCN_VOC2010_model.zip -d data/Features/CNN-Models/FRCN/VOC2010/VOC2010-testRelease/`
-    - FCN: `wget -N -P data/ http://groups.inf.ed.ac.uk/calvin/caesar16eccv/FCN_SiftFlow_model.zip;  unzip data/FCN_SiftFlow_model.zip -d data/Features/CNN-Models/FCN/SiftFlow/fcn16s-testRelease/`
-    - E2S2 (Full): `wget -N -P data/ http://groups.inf.ed.ac.uk/calvin/caesar16eccv/E2S2_SiftFlow_model_full.zip; unzip data/E2S2_SiftFlow_model_full.zip -d data/Features/CNN-Models/E2S2/SiftFlow/Run1/SiftFlow_e2s2_run1_exp2/`
-    - E2S2 (Fast): `wget -N -P data/ http://groups.inf.ed.ac.uk/calvin/caesar16eccv/E2S2_SiftFlow_model_fast.zip; unzip data/E2S2_SiftFlow_model_fast.zip -d data/Features/CNN-Models/E2S2/SiftFlow/Run1/SiftFlow_e2s2_run1_exp1/`
+  - (Optional) Download pretrained models:
+    - FRCN: `downloadModel('frcn');`
+    - FCN: `downloadModel('fcn');`
+    - E2S2 (Full): `downloadModel('e2s2_full');`
+    - E2S2 (Fast): `downloadModel('e2s2_fast');`
 
 ## Instructions
 1) **FRCN**

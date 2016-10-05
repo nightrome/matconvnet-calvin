@@ -10,7 +10,8 @@ zipName = 'SelectiveSearchCodeIJCV.zip';
 url = 'http://koen.me/research/downloads/SelectiveSearchCodeIJCV.zip';
 rootFolder = calvin_root();
 codeFolder = fullfile(rootFolder, 'data', 'Code');
-zipFile = fullfile(codeFolder, zipName);
+downloadFolder = fullfile(rootFolder, 'data', 'Downloads');
+zipFile = fullfile(downloadFolder, zipName);
 checkFile = fullfile(codeFolder, 'SelectiveSearchCodeIJCV', 'Image2HierarchicalGrouping.m');
 
 % Download dataset
@@ -18,6 +19,9 @@ if ~exist(checkFile, 'file')
     % Create folder
     if ~exist(codeFolder, 'dir')
         mkdir(codeFolder);
+    end
+    if ~exist(downloadFolder, 'dir')
+        mkdir(downloadFolder);
     end
     
     % Download zip file
