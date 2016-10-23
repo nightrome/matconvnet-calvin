@@ -206,6 +206,9 @@ classdef FCNN < CalvinNN
                 mkdir(featFolder);
             end
             
+            % Set output variable to be precious (not deleted)
+            obj.net.vars(outputVarIdx).precious = true;
+            
             for imageIdx = 1 : imageCount,
                 printProgress('Classifying images', imageIdx, imageCount, 10);
                 
@@ -218,9 +221,23 @@ classdef FCNN < CalvinNN
                 % Extract probs
                 curProbs = obj.net.vars(outputVarIdx).value;
                 curProbs = gather(curProbs);
+                assert(~isempty(curProbs));
+                
+                % For some feature types, resize them to image size (they
+                % are exponents of 2
+                imageName = imageList{imageIdx};
+                if strcmp(outputVarName, 'scores') || strcmp(outputVarName, 'prediction')
+                    imageSize = obj.imdb.dataset.getImageSize(imageName);
+                    curProbs = imresize(curProbs, imageSize, 'method', 'nearest');
+                end
+                
+                % For features before the deconv layer, apply softmax
+                nextLayerName = obj.net.layers(arrayfun(@(x) x.inputIndexes(1) == outputVarIdx, obj.net.layers)).name;
+                if strcmp(nextLayerName, 'deconv16')
+                    curProbs = vl_nnsoftmax(curProbs);
+                end
                 
                 % Store
-                imageName = imageList{imageIdx};
                 featPath = fullfile(featFolder, [imageName, '.mat']);
                 features = double(curProbs); %#ok<NASGU>
                 save(featPath, 'features', '-v7.3');
