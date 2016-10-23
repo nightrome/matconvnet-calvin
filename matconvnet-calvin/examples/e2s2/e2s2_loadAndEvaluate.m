@@ -84,15 +84,17 @@ if ~isempty(testColorSpace)
     netOptsStruct.nnOpts.misc.testOpts.testColorSpace = testColorSpace;
 end
 
+% Compatibility settings
+if isfield(netOptsStruct.nnOpts, 'continue')
+    netOptsStruct.nnOpts = rmfield(netOptsStruct.nnOpts, 'continue');
+end
+
 for epochIdx = 1 : numel(epochs),
     epoch = epochs(epochIdx);
-    netPath = fullfile(netFolder, sprintf('net-epoch-%d.mat', epoch));
-    
-    % Load net
-    netIn = load(netPath, 'net', 'stats');
     
     % Create network
-    nnClass = E2S2NN(netIn, netOptsStruct.imdb, netOptsStruct.nnOpts);
+    netOptsStruct.nnOpts.initEpoch = epoch;
+    nnClass = E2S2NN([], netOptsStruct.imdb, netOptsStruct.nnOpts);
     
     % Test network
     stats{epochIdx} = nnClass.testOnSet('subset', subset, 'doCache', doCache, 'limitImageCount', limitImageCount, 'storeOutputMaps', storeOutputMaps);

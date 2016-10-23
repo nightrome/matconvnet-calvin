@@ -6,10 +6,9 @@ function train(obj)
 % 
 % Copyright by Holger Caesar, 2016
 
-startEpoch = obj.nnOpts.continue * CalvinNN.findLastCheckpoint(obj.nnOpts.expDir) + 1;
 modelFigPath = fullfile(obj.nnOpts.expDir, 'net-train.pdf');
 
-for epoch = startEpoch : obj.nnOpts.numEpochs
+for epoch = obj.nnOpts.initEpoch + 1 : obj.nnOpts.numEpochs
     
     % Set epoch and it's learning rate
     state.epoch = epoch;

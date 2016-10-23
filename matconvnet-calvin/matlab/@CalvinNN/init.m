@@ -7,7 +7,6 @@ function init(obj, varargin)
 % Copyright by Holger Caesar, 2016
 
 defnnOpts.expDir = fullfile('data', 'exp');
-defnnOpts.continue = true;
 defnnOpts.batchSize = 2;
 defnnOpts.numSubBatches = 2;
 defnnOpts.gpus = [];
@@ -22,6 +21,7 @@ defnnOpts.testFn = @(imdb, nnOpts, net, inputs, batchInds) error('Error: Test fu
 defnnOpts.misc = struct(); % fields used by custom layers are stored here
 defnnOpts.plotEval = true;
 defnnOpts.plotAccuracy = true;
+defnnOpts.initEpoch = nan; % nan finds latest epoch in netFolder
 
 % Network options
 defnnOpts.convertToTrain = true;

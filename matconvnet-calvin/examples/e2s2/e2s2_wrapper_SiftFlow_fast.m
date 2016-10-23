@@ -105,7 +105,6 @@ nnOpts.numEpochs = numEpochs;
 nnOpts.batchSize = batchSize;
 nnOpts.numSubBatches = batchSize; % Always the same as batchSize!
 nnOpts.gpus = gpus;
-nnOpts.continue = CalvinNN.findLastCheckpoint(outputFolder) > 0;
 nnOpts.learningRate = learningRate;
 nnOpts.misc.roiPool = roiPool;
 nnOpts.misc.regionToPixel = regionToPixel;

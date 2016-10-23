@@ -17,6 +17,8 @@ classdef CalvinNN < handle
     methods
         function obj = CalvinNN(net, imdb, nnOpts)
             % obj = CalvinNN(net, imdb, [nnOpts])
+            %
+            % If snapshots exist, we load the snapshot for epoch nnOpts.initEpoch.
             
             % Default arguments
             if ~exist('nnOpts', 'var')
@@ -30,9 +32,15 @@ classdef CalvinNN < handle
             obj.init(nnOpts);
             
             % Check if previous snapshots exist
-            prevEpoch = obj.nnOpts.continue * CalvinNN.findLastCheckpoint(obj.nnOpts.expDir);
-            if isnan(prevEpoch)
-                % No checkpoint found
+            if isnan(obj.nnOpts.initEpoch)
+                obj.nnOpts.initEpoch = CalvinNN.findLastCheckpoint(obj.nnOpts.expDir); % nan means no checkpoint was found
+            end
+            if ~isnan(obj.nnOpts.initEpoch)
+                % Load existing checkpoint
+                fprintf('Loading snapshot for epoch %d...\n', obj.nnOpts.initEpoch);
+                [obj.net, obj.stats] = CalvinNN.loadState(obj.nnOpts.modelPath(obj.nnOpts.initEpoch));
+            else
+                % Start from scratch
                 % Load network and convert to DAG format
                 obj.loadNetwork(net);
                 
@@ -44,13 +52,8 @@ classdef CalvinNN < handle
                 
                 % Save untrained net
                 fprintf('Saving untrained network...\n');
-                prevEpoch = 0;
-                obj.saveState(obj.nnOpts.modelPath(prevEpoch));
-            else
-                % Load existing checkpoint and continue
-                prevEpoch = obj.nnOpts.continue * prevEpoch;
-                fprintf('Resuming by loading epoch %d...\n', prevEpoch);
-                [obj.net, obj.stats] = CalvinNN.loadState(obj.nnOpts.modelPath(prevEpoch));
+                obj.nnOpts.initEpoch = 0;
+                obj.saveState(obj.nnOpts.modelPath(obj.nnOpts.initEpoch));
             end
         end 
         

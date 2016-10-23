@@ -41,7 +41,6 @@ callArgs = p.Results; %#ok<NASGU>
 global glFeaturesFolder;
 expName = [modelType, prependNotEmpty(expNameAppend, '-')];
 expDir = fullfile(glFeaturesFolder, 'CNN-Models', 'FCN', dataset.name, expSubFolder, expName);
-netPath = fullfile(expDir, sprintf('net-epoch-%d.mat', epoch));
 netOptsPath = fullfile(expDir, 'net-opts.mat');
 
 % Fix randomness
@@ -84,9 +83,10 @@ end
 nnOpts.gpus = gpus;
 nnOpts.convertToTrain = false;
 nnOpts.expDir = expDir;
+nnOpts.initEpoch = epoch;
 
 % Create network
-nnClass = FCNN(netPath, imdbFcn, nnOpts);
+nnClass = FCNN([], imdbFcn, nnOpts);
 
 if isempty(extractFeatsVarName)
     % Test the network performance
