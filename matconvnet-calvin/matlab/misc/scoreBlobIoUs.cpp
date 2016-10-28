@@ -20,7 +20,7 @@
 #include "mex.h"
 #include "matrix.h" // for structs
 #include <algorithm> // for max,min
-#include <math.h> // for round
+#include <cmath> // for round
 
 // Check whether two rectangles intersect
 bool isBoxIntersect(size_t* aRect, size_t* bRect) {
@@ -152,16 +152,16 @@ void mexFunction(int nlhs, mxArray *plhs[],
             double* bRectData = (double*) mxGetData(bRectPtr);
             
             size_t aRect[4] = {
-                (size_t) lround(aRectData[0]),
-                (size_t) lround(aRectData[1]),
-                (size_t) lround(aRectData[2]),
-                (size_t) lround(aRectData[3])
+                (size_t) std::round(aRectData[0]),
+                (size_t) std::round(aRectData[1]),
+                (size_t) std::round(aRectData[2]),
+                (size_t) std::round(aRectData[3])
             };
             size_t bRect[4] = {
-                (size_t) lround(bRectData[0]),
-                (size_t) lround(bRectData[1]),
-                (size_t) lround(bRectData[2]),
-                (size_t) lround(bRectData[3])
+                (size_t) std::round(bRectData[0]),
+                (size_t) std::round(bRectData[1]),
+                (size_t) std::round(bRectData[2]),
+                (size_t) std::round(bRectData[3])
             };
             
             bool* aMask = (bool*) mxGetData(aMaskPtr);
@@ -170,8 +170,8 @@ void mexFunction(int nlhs, mxArray *plhs[],
             double* aSizeD = (double*) mxGetData(aSizePtr);
             double* bSizeD = (double*) mxGetData(bSizePtr);
             
-            size_t aSize = (size_t) lround(*aSizeD);
-            size_t bSize = (size_t) lround(*bSizeD);
+            size_t aSize = (size_t) std::round(*aSizeD);
+            size_t bSize = (size_t) std::round(*bSizeD);
             
             scores[y + x*nY] = scoreBlobIoU(aRect, aMask, aSize, bRect, bMask, bSize);
         }
