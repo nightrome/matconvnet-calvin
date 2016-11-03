@@ -15,7 +15,7 @@ end
 
 numGpus = gpuDeviceCount;
 
-for id=numGpus:-1:1
+for id = numGpus : -1 : 1
     g = gpuDevice(id);
     
     if isprop(g, 'AvailableMemory')
@@ -31,4 +31,4 @@ for id=numGpus:-1:1
 end
 
 warning('No GPU available');
-id = 0;
+id = [];
