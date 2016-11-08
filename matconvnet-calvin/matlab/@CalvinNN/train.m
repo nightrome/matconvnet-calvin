@@ -41,8 +41,11 @@ for epoch = obj.nnOpts.initEpoch + 1 : obj.nnOpts.numEpochs
     if obj.nnOpts.plotEval
         plotAccuracy = isfield(obj.stats.val, 'accuracy') && obj.nnOpts.plotAccuracy;
         obj.plotStats(1:epoch, obj.stats, plotAccuracy);
-        
         drawnow;
-        print(1, modelFigPath, '-dpdf'); %#ok<MCPRT>
+        
+        % If plot is open, write it to a file
+        if ~isempty(findall(0, 'Type', 'Figure'))
+            print(1, modelFigPath, '-dpdf'); %#ok<MCPRT>
+        end
     end
 end
