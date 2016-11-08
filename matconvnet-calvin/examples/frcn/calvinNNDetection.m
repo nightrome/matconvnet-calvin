@@ -44,6 +44,9 @@ nnOpts.misc.netPath = netPath;
 nnOpts.expDir = outputFolder;
 nnOpts.gpus = 1;
 
+% Change results folder to be in expDir
+DATAopts.resdir = fullfile(nnOpts.expDir, sprintf('results-epoch%d', nnOpts.numEpochs)); 
+
 % Create outputFolder
 if ~exist(outputFolder, 'dir')
     mkdir(outputFolder);

@@ -1,4 +1,6 @@
-function [recall, prec, ap, apUpperBound] = DetectionToPascalVOCFiles(set, class, boxes, boxIms, boxClfs, compName, doEval, overlapNms)
+function[recall, prec, ap, apUpperBound] = DetectionToPascalVOCFiles(set, class, boxes, boxIms, boxClfs, compName, doEval, overlapNms)
+% [recall, prec, ap, apUpperBound] = DetectionToPascalVOCFiles(set, class, boxes, boxIms, boxClfs, compName, doEval, overlapNms)
+%
 % Filters overlapping boxes (near duplicates), creates official VOC
 % detection files. Evaluates results.
 
@@ -37,7 +39,11 @@ if exist('overlapNms', 'var') && overlapNms > 0
 end
 
 % Save detection results using detection results
-savePath = fullfile(DATAopts.resdir, 'Main', ['%s_det_', set, '_%s.txt']);
+saveFolder = fullfile(DATAopts.resdir, 'Main');
+if ~exist(saveFolder, 'dir')
+    mkdir(saveFolder);
+end
+savePath = fullfile(saveFolder, ['%s_det_', set, '_%s.txt']);
 resultsName = sprintf(savePath, compName, className);
 fid = fopen(resultsName, 'w');
 for j = 1 : length(boxIms)
@@ -50,8 +56,8 @@ if doEval
     [recall, prec, ap] = VOCevaldet_modified(DATAopts, className, resultsName, false);
     apUpperBound = max(recall);
 else
-    recall = 0;
-    prec = 0;
-    ap = 0;
-    apUpperBound = 0;
+    recall = nan;
+    prec = nan;
+    ap = nan;
+    apUpperBound = nan;
 end
