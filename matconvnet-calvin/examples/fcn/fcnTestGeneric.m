@@ -19,6 +19,7 @@ addParameter(p, 'storeOutputMaps', true);
 addParameter(p, 'extractFeatsVarName', ''); % If used we don't measure performance
 addParameter(p, 'plotFreq', 15);
 addParameter(p, 'removeSimilarityMap', true);
+addParameter(p, 'featureNameAppend', '');
 parse(p, varargin{:});
 
 dataset = p.Results.dataset;
@@ -35,6 +36,7 @@ storeOutputMaps = p.Results.storeOutputMaps;
 extractFeatsVarName = p.Results.extractFeatsVarName;
 plotFreq = p.Results.plotFreq;
 removeSimilarityMap = p.Results.removeSimilarityMap;
+featureNameAppend = p.Results.featureNameAppend;
 callArgs = p.Results; %#ok<NASGU>
 
 % Experiment and data paths
@@ -70,13 +72,11 @@ imdbFcn.numClasses = imdbFcn.dataset.labelCount;
 
 % Evaluate on another dataset if specified
 if ~isempty(datasetEval) && datasetEval ~= dataset
-    featureNameAppend = ['-', datasetEval.name];
+    featureNameAppend = [featureNameAppend, '-', datasetEval.name];
     imdbFcn.dataset = datasetEval;
     [imdbFcn.batchOpts.classes, imdbFcn.numClasses] = datasetEval.getLabelNames();
     imdbFcn.data.train = datasetEval.getImageListTrn();
     imdbFcn.data.test = datasetEval.getImageListTst();
-else
-    featureNameAppend = '';
 end
 
 % Overwrite some settings
