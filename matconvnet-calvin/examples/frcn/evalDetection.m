@@ -13,7 +13,7 @@ compName = 'FRCN'; % Name under which files are saved in VOC folder
 % Get test images
 testIms = imdb.misc.testIms;
 
-% get image sizes
+% Get image sizes
 testCount = length(testIms);
 imSizesPath = fullfile(nnOpts.expDir, 'imSizes-test.mat');
 if exist(imSizesPath, 'file')
@@ -23,7 +23,7 @@ else
     imSizes = nan(testCount, 2);
     for i = 1 : testCount %testCount : -1 : 1 %TODO: why were these in reverse order?
         im = imread(sprintf(DATAopts.imgpath, testIms{i}));
-        imSizes(i, :) = size(im);
+        imSizes(i, :) = [size(im, 1), size(im, 2)];
     end
     save(imSizesPath, 'imSizes');
 end
@@ -57,17 +57,16 @@ end
 
 if isfield(stats.results(1), 'boxesRegressed')
     for cI = 1 : 20
-        %
         currBoxes  = cell(testCount, 1);
         currScores = cell(testCount, 1);
         
-        for i=1:testCount
+        for i = 1 : testCount
             % Get regressed boxes and refit them to the image
             currBoxes{i} = stats.results(i).boxesRegressed{cI+1};
-            currBoxes{i}(:,1) = max(currBoxes{i}(:, 1), 1);
-            currBoxes{i}(:,2) = max(currBoxes{i}(:, 2), 1);
-            currBoxes{i}(:,3) = min(currBoxes{i}(:, 3), imSizes(i, 2));
-            currBoxes{i}(:,4) = min(currBoxes{i}(:, 4), imSizes(i, 1));
+            currBoxes{i}(:, 1) = max(currBoxes{i}(:, 1), 1);
+            currBoxes{i}(:, 2) = max(currBoxes{i}(:, 2), 1);
+            currBoxes{i}(:, 3) = min(currBoxes{i}(:, 3), imSizes(i, 2));
+            currBoxes{i}(:, 4) = min(currBoxes{i}(:, 4), imSizes(i, 1));
             
             currScores{i} = stats.results(i).scoresRegressed{cI+1};
         end
@@ -97,7 +96,8 @@ fprintf('Per-class results (default): \n');
 disp(ap);
 fprintf('Per-class results (regressed): \n');
 disp(apRegressed);
-fprintf('mAP: %.2f%% (default), %.2f%% (regressed)\n', mean(ap)*100, mean(apRegressed)*100);
+fprintf('mAP: %.2f%% (default), %.2f%% (regressed)\n', mean(ap) * 100, mean(apRegressed) * 100);
 
 % Save results to disk
-save([nnOpts.expDir, '/', 'resultsEpochFinalTest.mat'], 'ap', 'apRegressed');
+resultsPath = fullfile(nnOpts.expDir, 'resultsEpochFinalTest.mat');
+save(resultsPath, 'ap', 'apRegressed');
