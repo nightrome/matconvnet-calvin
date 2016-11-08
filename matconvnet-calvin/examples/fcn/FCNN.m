@@ -171,11 +171,13 @@ classdef FCNN < CalvinNN
             addParameter(p, 'subset', 'test');
             addParameter(p, 'outputVarName', '');
             addParameter(p, 'featureNameAppend', '');
+            addParameter(p, 'applySoftmax', false);
             parse(p, varargin{:});
             
             subset = p.Results.subset;
             outputVarName = p.Results.outputVarName;
             featureNameAppend = p.Results.featureNameAppend;
+            applySoftmax = p.Results.applySoftmax;
             
             % Init
             imageList = obj.imdb.data.(subset);
@@ -233,7 +235,7 @@ classdef FCNN < CalvinNN
                 
                 % For features before the deconv layer, apply softmax
                 nextLayerName = obj.net.layers(arrayfun(@(x) x.inputIndexes(1) == outputVarIdx, obj.net.layers)).name;
-                if strcmp(nextLayerName, 'deconv16')
+                if applySoftmax && strcmp(nextLayerName, 'deconv16')
                     curProbs = vl_nnsoftmax(curProbs);
                 end
                 
@@ -328,8 +330,8 @@ classdef FCNN < CalvinNN
             removeSimilarityMap = p.Results.removeSimilarityMap;
             
             epoch = numel(obj.stats.train);
-            if removeSimilarityMap
-                statsPathAppend = '-0simMap';
+            if ~removeSimilarityMap
+                statsPathAppend = '-1simMap';
             else
                 statsPathAppend = '';
             end
@@ -351,7 +353,7 @@ classdef FCNN < CalvinNN
                 
                 % Create output folder
                 if storeOutputMaps && ~exist(mapOutputFolder, 'dir')
-                    mkdir(mapOutputFolder)
+                    mkdir(mapOutputFolder);
                 end
                 if ~exist(labelingDir, 'dir')
                     mkdir(labelingDir);
@@ -414,11 +416,11 @@ classdef FCNN < CalvinNN
                     % If a folder was specified, output the predicted label maps
                     if storeOutputMaps
                         outputPath = fullfile(mapOutputFolder, [imageName, '.mat']);
-                        if obj.imdb.numClasses > 70
+%                         if obj.imdb.numClasses > 70
                             save(outputPath, 'outputMap');
-                        else
-                            save(outputPath, 'outputMap', 'scores');
-                        end
+%                         else
+%                             save(outputPath, 'outputMap', 'scores');
+%                         end
                     end;
                     
                     % Plot example images
