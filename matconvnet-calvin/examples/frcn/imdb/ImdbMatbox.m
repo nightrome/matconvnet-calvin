@@ -93,8 +93,8 @@ classdef ImdbMatbox < ImdbCalvin
         end
         
         % Load gStruct
-        function gStruct = LoadGStruct(obj,imI)
-            gStruct = load([obj.matBoxDir obj.data.(obj.datasetMode){imI} '.mat']);
+        function gStruct = LoadGStruct(obj, imI)
+            gStruct = load([obj.matBoxDir, obj.data.(obj.datasetMode){imI}, '.mat']);
             
             % Make sure that no GT boxes/labels/etc are given when using test phase
             if strcmp(obj.datasetMode, 'test')

@@ -31,7 +31,7 @@ end
 
 % Display warning once
 warning('NotTested:regressloss', ...
-    'No loss has been thoroughly tested yet');
+    'Warning: Loss has not been thoroughly tested yet');
 warning('off', 'NotTested:regressloss');
 
 assert(isequal(size(X), size(t)));

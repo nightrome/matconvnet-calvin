@@ -1,4 +1,5 @@
-function [rec,prec,ap] = VOCevaldet_modified(DATAopts, cls, loadName, draw, flipBoxes)
+function[rec,prec,ap] = VOCevaldet_modified(DATAopts, cls, loadName, draw, flipBoxes)
+% [rec,prec,ap] = VOCevaldet_modified(DATAopts, cls, loadName, draw, flipBoxes)
 
 % load test set
 tic;
@@ -7,7 +8,6 @@ if exist(cp,'file')
     fprintf('%s: pr: loading ground truth\n',cls);
     load(cp,'gtids','recs');
 else
-%     [gtids,t]=textread(sprintf(DATAopts.imgsetpath,DATAopts.testset),'%s %d');
     gtids = GetImagesPlusLabels(DATAopts.testset);
     for i=1:length(gtids)
         % display progress

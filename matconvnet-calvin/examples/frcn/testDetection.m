@@ -32,7 +32,7 @@ end
 % Get scores
 vI = net.getVarIndex('scores');
 scoresStruct = net.vars(vI);
-scores = permute(scoresStruct.value, [4 3 2 1]);
+scores = permute(scoresStruct.value, [4, 3, 2, 1]);
 
 % Get boxes
 inputNames = inputs(1:2:end);
@@ -44,23 +44,23 @@ boxes = inputs{boxI}';
 if imdb.boxRegress
     vI = net.getVarIndex('regressionScore');
     regressStruct = net.vars(vI);
-    regressFactors = permute(regressStruct.value, [4 3 2 1]);
+    regressFactors = permute(regressStruct.value, [4, 3, 2, 1]);
 else
-    regressFactors = zeros(size(boxes,1), size(boxes,2) * imdb.numClasses);
+    regressFactors = zeros(size(boxes, 1), size(boxes, 2) * imdb.numClasses);
 end
 
 % Get top boxes for each category. Perform NMS. Thresholds defined at top of function
 currMaxBoxes = min(maxNumBoxesPerImTest, size(boxes, 1));
-for cI = size(scores,2) : -1 : 1
+for cI = size(scores, 2) : -1 : 1
     % Get top scores and boxes
-    [currScoresT, sI] = sort(scores(:,cI), 'descend');
-    currScoresT = currScoresT(1:currMaxBoxes);
-    sI = sI(1:currMaxBoxes);
-    currBoxes = boxes(sI,:);
+    [currScoresT, sI] = sort(scores(:, cI), 'descend');
+    currScoresT = currScoresT(1 : currMaxBoxes);
+    sI = sI(1 : currMaxBoxes);
+    currBoxes = boxes(sI, :);
     
     % Do regression
-    regressFRange = (cI*4)-3:cI*4;
-    currRegressF = gather(regressFactors(sI,regressFRange));
+    regressFRange = (cI * 4) - 3 : cI * 4;
+    currRegressF = gather(regressFactors(sI, regressFRange));
     currBoxesReg = BoxRegresssGirshick(currBoxes, currRegressF);
     
     % Get scores (w boxes) above certain threshold
