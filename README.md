@@ -35,13 +35,9 @@ several state of-the-art papers in object detection and semantic segmentation. T
   - `git submodule update --init`
 - Execute the following Matlab commands
   - Setup MatConvNet
-    - `cd matconvnet/matlab;`
-    - `vl_compilenn('EnableGpu', true);`
-    - `cd ../..;`
+    - `cd matconvnet/matlab; vl_compilenn('EnableGpu', true); cd ../..;`
   - Setup MatConvNet-Calvin
-    - `cd matconvnet-calvin/matlab;`
-    - `vl_compilenn_calvin();`
-    - `cd ../..;`
+    - `cd matconvnet-calvin/matlab; vl_compilenn_calvin(); cd ../..;`
   - Add files to Matlab path
     - `setup();`
   - (Optional) Download pretrained models:
