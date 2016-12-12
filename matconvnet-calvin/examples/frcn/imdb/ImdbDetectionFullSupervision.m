@@ -11,7 +11,7 @@ classdef ImdbDetectionFullSupervision < ImdbMatbox
             obj@ImdbMatbox(imageDir, imExt, matboxDir, filenames, datasetIdx, meanIm);
         end
         
-        function [batchData, numElements] = getBatch(obj, batchInds, net, ~)
+        function [batchData, numElements] = getBatch(obj, batchInds, net, nnOpts)
             if length(batchInds) > 1
                 error('Error: Only supports subbatches of 1!');
             end
@@ -39,15 +39,14 @@ classdef ImdbDetectionFullSupervision < ImdbMatbox
                 image = currImT;
             end
             
+            idx = 1; % Indicates the current dimension of batchData
             if ismember(obj.datasetMode, {'train', 'val'})
                 [boxes, labels, ~, overlapScores, regressionFactors] = obj.SamplePosAndNegFromGstruct(gStruct, obj.boxesPerIm);
 
                 % Assign elements to cell array for use in training the network
                 numElements = obj.boxesPerIm;
-                
                 numBatchFields = 2 * (4 + obj.boxRegress + obj.instanceWeighting);
                 batchData = cell(numBatchFields, 1);
-                idx = 1;
                 batchData{idx} = 'input';       idx = idx + 1;
                 batchData{idx} = image;         idx = idx + 1;
                 batchData{idx} = 'label';       idx = idx + 1;
@@ -66,20 +65,61 @@ classdef ImdbDetectionFullSupervision < ImdbMatbox
                     instanceWeights(labels == 1) = 1;
                     instanceWeights = reshape(instanceWeights, [1 1 1 length(instanceWeights)]); % VL-Feat way :-S
                     batchData{idx} = 'instanceWeights';     idx = idx + 1;
-                    batchData{idx} = instanceWeights;       %idx = idx + 1;
+                    batchData{idx} = instanceWeights;       idx = idx + 1;
                 end
                 
             else
                 % Test set. Get all boxes
-                numElements = size(gStruct.boxes,1);
-                batchData{6} = oriImSize;
-                batchData{5} = 'oriImSize';
-                batchData{4} = gStruct.boxes';
-                batchData{3} = 'boxes';
-                batchData{2} = image;
-                batchData{1} = 'input';
+                numElements = size(gStruct.boxes, 1);
+                batchData{idx} = 'input';                   idx = idx + 1;
+                batchData{idx} = image;                     idx = idx + 1;
+                batchData{idx} = 'boxes';                   idx = idx + 1;
+                batchData{idx} = gStruct.boxes';            idx = idx + 1;
+                batchData{idx} = 'oriImSize';               idx = idx + 1;
+                batchData{idx} = oriImSize;                 idx = idx + 1;
             end
             
+            % Holger's modifications to get stuff labels
+            if isfield(nnOpts.misc, 'useStuffScores') && nnOpts.misc.useStuffScores
+                boxIdx = 1 + find(strcmp(batchData, 'boxes'));
+                boxes = batchData{boxIdx};
+                assert(numel(batchInds) == 1);
+                imageName = obj.data.(obj.datasetMode){batchInds};
+                
+                stuffScores = imageCropStuffBoxes(boxes', nnOpts.misc.stuffScoresFolder, obj.datasetMode, imageName)';
+                stuffScores = reshape(stuffScores, [1, 1, size(stuffScores)]);
+                
+                if isfield(nnOpts.misc, 'contextOnly') && nnOpts.misc.contextOnly
+                    keepVars = {'label'};
+                    if strcmp(obj.datasetMode, 'test')
+                        global tempBoxes; %#ok<TLEV>
+                        tempBoxes = batchData{1+find(strcmp(batchData, 'boxes'))};
+                    end
+                    varInds = 1:2:numel(batchData);
+                    vars = batchData(varInds);
+                    keepInds = varInds(ismember(vars, keepVars));
+                    keepInds = [keepInds, keepInds+1];
+                    
+                    batchData = batchData(keepInds);
+                    idx = numel(batchData) + 1;
+                end
+                
+                batchData{idx} = 'stuffScores';             idx = idx + 1;
+                batchData{idx} = stuffScores;               idx = idx + 1; %#ok<NASGU>
+            elseif isfield(nnOpts.misc, 'useStuffScoresContextOnly') && nnOpts.misc.useStuffScoresContextOnly
+                scoresFolder = nnOpts.misc.stuffScoresFolder;
+                subset = obj.datasetMode;
+                imageName = obj.data.(obj.datasetMode){batchInds};
+                scoresPath = fullfile(scoresFolder(subset), [imageName, '.mat']);
+                
+                % Remove input
+                assert(strcmp(batchData{1}, 'input'));
+                batchData = batchData(3:end);
+                idx = numel(batchData) + 1;
+                
+                batchData{idx} = 'scoresPath';             idx = idx + 1;
+                batchData{idx} = scoresPath;               idx = idx + 1; %#ok<NASGU>
+            end
         end
         
         function [image, oriImSize] = LoadImage(obj, batchIdx, gpuMode)
@@ -117,7 +157,7 @@ classdef ImdbDetectionFullSupervision < ImdbMatbox
             gtKeys = find(gStruct.class > 0);
 
             % Get correct number of positive and negative samples
-            numExtraPos = numSamples * obj.posFraction - length(gtKeys);
+            numExtraPos = floor(numSamples * obj.posFraction) - length(gtKeys);
             numExtraPos = min(numExtraPos, length(posKeys));
             if numExtraPos > 0
                 posKeys = posKeys(randperm(length(posKeys), numExtraPos));
