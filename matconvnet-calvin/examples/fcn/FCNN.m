@@ -260,11 +260,7 @@ classdef FCNN < CalvinNN
             storeOutputMaps = p.Results.storeOutputMaps;
             
             epoch = numel(obj.stats.train);
-            if ~removeSimilarityMap
-                statsPathAppend = '-1simMap';
-            else
-                statsPathAppend = '';
-            end
+            statsPathAppend = '';
             statsPath = fullfile(obj.nnOpts.expDir, sprintf('stats-%s-epoch%d%s.mat', subset, epoch, statsPathAppend));
             labelingDir = fullfile(obj.nnOpts.expDir, sprintf('labelings-%s-epoch%d', subset, epoch));
             mapOutputFolder = fullfile(obj.nnOpts.expDir, sprintf('outputMaps-%s-epoch%d', subset, epoch));
@@ -279,7 +275,7 @@ classdef FCNN < CalvinNN
                 end;
                 
                 % Set network to testing mode
-                outputVarIdx = obj.prepareNetForTest('removeSimilarityMap', removeSimilarityMap);
+                outputVarIdx = obj.prepareNetForTest();
                 
                 % Create output folder
                 if storeOutputMaps && ~exist(mapOutputFolder, 'dir')
