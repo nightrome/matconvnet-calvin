@@ -78,48 +78,6 @@ classdef ImdbDetectionFullSupervision < ImdbMatbox
                 batchData{idx} = 'oriImSize';               idx = idx + 1;
                 batchData{idx} = oriImSize;                 idx = idx + 1;
             end
-            
-            % Holger's modifications to get stuff labels
-            if isfield(nnOpts.misc, 'useStuffScores') && nnOpts.misc.useStuffScores
-                boxIdx = 1 + find(strcmp(batchData, 'boxes'));
-                boxes = batchData{boxIdx};
-                assert(numel(batchInds) == 1);
-                imageName = obj.data.(obj.datasetMode){batchInds};
-                
-                stuffScores = imageCropStuffBoxes(boxes', nnOpts.misc.stuffScoresFolder, obj.datasetMode, imageName)';
-                stuffScores = reshape(stuffScores, [1, 1, size(stuffScores)]);
-                
-                if isfield(nnOpts.misc, 'contextOnly') && nnOpts.misc.contextOnly
-                    keepVars = {'label'};
-                    if strcmp(obj.datasetMode, 'test')
-                        global tempBoxes; %#ok<TLEV>
-                        tempBoxes = batchData{1+find(strcmp(batchData, 'boxes'))};
-                    end
-                    varInds = 1:2:numel(batchData);
-                    vars = batchData(varInds);
-                    keepInds = varInds(ismember(vars, keepVars));
-                    keepInds = [keepInds, keepInds+1];
-                    
-                    batchData = batchData(keepInds);
-                    idx = numel(batchData) + 1;
-                end
-                
-                batchData{idx} = 'stuffScores';             idx = idx + 1;
-                batchData{idx} = stuffScores;               idx = idx + 1; %#ok<NASGU>
-            elseif isfield(nnOpts.misc, 'useStuffScoresContextOnly') && nnOpts.misc.useStuffScoresContextOnly
-                scoresFolder = nnOpts.misc.stuffScoresFolder;
-                subset = obj.datasetMode;
-                imageName = obj.data.(obj.datasetMode){batchInds};
-                scoresPath = fullfile(scoresFolder(subset), [imageName, '.mat']);
-                
-                % Remove input
-                assert(strcmp(batchData{1}, 'input'));
-                batchData = batchData(3:end);
-                idx = numel(batchData) + 1;
-                
-                batchData{idx} = 'scoresPath';             idx = idx + 1;
-                batchData{idx} = scoresPath;               idx = idx + 1; %#ok<NASGU>
-            end
         end
         
         function [image, oriImSize] = LoadImage(obj, batchIdx, gpuMode)

@@ -71,57 +71,6 @@ classdef FCNN < CalvinNN
                 obj.net.removeLayer('accuracy');
             end
             
-            % Add similarity mapping layer
-            if isfield(obj.nnOpts.misc, 'useSimilarityLoss') && obj.nnOpts.misc.useSimilarityLoss
-                fprintf('Inserting similarity-based loss...\n');
-                
-                % Get class similarities from hierarchy
-                similarities = obj.imdb.dataset.hierarchyDistances;
-                
-                if strcmp(obj.nnOpts.misc.similarityLossType, 'dummy')
-                    similarities = eye(size(similarities));
-                elseif strcmp(obj.nnOpts.misc.similarityLossType, 'distance-nonlinear')
-                    % Long-distance relations, non-linearly scaled
-                    % attributes ~80% of contributions to the true class
-                    % (afterwards mean(diag(similarities)) ~ 0.8)
-                    similarities = 0.17 .^ (similarities);
-                elseif strcmp(obj.nnOpts.misc.similarityLossType, 'close-0.9-0.1')
-                    % Only assign values to target class and sibilings
-                    newSimilarities = zeros(size(similarities));
-                    newSimilarities(similarities == 0) = 0.9;
-                    newSimilarities(similarities == 2) = 0.1;
-                    similarities = newSimilarities;
-                elseif strcmp(obj.nnOpts.misc.similarityLossType, 'close-0.99-0.01')
-                    % Only assign values to target class and sibilings
-                    newSimilarities = zeros(size(similarities));
-                    newSimilarities(similarities == 0) = 0.99;
-                    newSimilarities(similarities == 2) = 0.01;
-                    similarities = newSimilarities;
-                elseif strcmp(obj.nnOpts.misc.similarityLossType, 'distance-linear')
-                    % Long-distance relations, linearly scaled
-                    similarities = 1 - similarities ./ max(similarities(:));
-                else
-                    error('Error: Invalid similarity loss type!');
-                end
-                
-                % Renormalize similarities to sum to 1 per class
-                similarities = bsxfun(@rdivide, similarities, sum(similarities, 2));
-                
-                % Add similarity mapping layer before deconv [alt: before loss] (for increased
-                % speed)
-                block = dagnn.SimilarityMap('similarities', similarities);
-                beforeName = 'deconv16';
-                beforeLayer = obj.net.getLayer(beforeName);
-                beforeLayerInput = beforeLayer.inputs{1};
-                beforeLayerIdx = obj.net.getLayerIndex(beforeName);
-                similarityVar = 'predictionmixed';
-                obj.net.addLayer('similaritymap', block, beforeLayerInput, {similarityVar});
-                
-                % Rename following layer's input
-                obj.net.layers(beforeLayerIdx).inputs{1} = similarityVar;
-                obj.net.rebuild();
-            end
-            
             % Sort layers by their first occurrence
             sortLayers(obj.net);
         end
@@ -136,14 +85,12 @@ classdef FCNN < CalvinNN
             addParameter(p, 'findMapping', false);
             addParameter(p, 'storeOutputMaps', false);
             addParameter(p, 'plotFreq', 15);
-            addParameter(p, 'removeSimilarityMap', true);
             parse(p, varargin{:});
             
             subset = p.Results.subset;
             limitImageCount = p.Results.limitImageCount;
             findMapping = p.Results.findMapping;
             storeOutputMaps = p.Results.storeOutputMaps;
-            removeSimilarityMap = p.Results.removeSimilarityMap;
             plotFreq = p.Results.plotFreq;
             
             % Set the datasetMode to be active
@@ -155,7 +102,7 @@ classdef FCNN < CalvinNN
             end
             
             % Run test
-            stats = obj.test('subset', subset, 'limitImageCount', limitImageCount, 'findMapping', findMapping, 'storeOutputMaps', storeOutputMaps, 'plotFreq', plotFreq, 'removeSimilarityMap', removeSimilarityMap);
+            stats = obj.test('subset', subset, 'limitImageCount', limitImageCount, 'findMapping', findMapping, 'storeOutputMaps', storeOutputMaps, 'plotFreq', plotFreq);
             
             % Restore the original test set
             if ~isempty(temp),
@@ -254,11 +201,8 @@ classdef FCNN < CalvinNN
             
             % Initial settings
             p = inputParser;
-            addParameter(p, 'removeSimilarityMap', true);
             parse(p, varargin{:});
-            
-            removeSimilarityMap = p.Results.removeSimilarityMap;
-            
+                        
             % Move to GPU
             if ~isempty(obj.nnOpts.gpus),
                 obj.net.move('gpu');
@@ -272,18 +216,6 @@ classdef FCNN < CalvinNN
             accuracyIdx = obj.net.getLayerIndex('accuracy');
             if ~isnan(accuracyIdx),
                 obj.net.removeLayer('accuracy');
-            end;
-            
-            % Remove SimilarityMap layer
-            simMapName = 'similaritymap';
-            simMapIdx = obj.net.getLayerIndex(simMapName);
-            if removeSimilarityMap && ~isnan(simMapIdx)
-                % Change input of next layer
-                nextLayerIdx = arrayfun(@(x) strcmp(x.inputs{1}, 'predictionmixed'), obj.net.layers);
-                obj.net.layers(nextLayerIdx).inputs{1} = obj.net.layers(simMapIdx).inputs{1};
-                
-                % Remove layer
-                obj.net.removeLayer(simMapName);
             end
             
             % Remove loss or replace by normal softmax
@@ -318,7 +250,6 @@ classdef FCNN < CalvinNN
             addParameter(p, 'findMapping', false);
             addParameter(p, 'plotFreq', 15);
             addParameter(p, 'storeOutputMaps', false);
-            addParameter(p, 'removeSimilarityMap', true);
             parse(p, varargin{:});
             
             subset = p.Results.subset;
@@ -327,7 +258,6 @@ classdef FCNN < CalvinNN
             findMapping = p.Results.findMapping;
             plotFreq = p.Results.plotFreq;
             storeOutputMaps = p.Results.storeOutputMaps;
-            removeSimilarityMap = p.Results.removeSimilarityMap;
             
             epoch = numel(obj.stats.train);
             if ~removeSimilarityMap
