@@ -20,6 +20,7 @@ several state of-the-art papers in object detection and semantic segmentation. T
 - **Region-based semantic segmentation with end-to-end training (E2S2)** \[5\]: State-of-the-art semantic segmentation method that brings together the advantages of region-based methods and end-to-end trainable FCNs. This implementation is based on our implementation of Fast R-CNN and adds the free-form region of interest pooling and region-to-pixel layers.
 
 ## Dependencies
+- **Note:** This software does _not_ work on Windows. 
 - **MatConvNet:** beta20 (http://github.com/vlfeat/matconvnet)
 - **MatConvNet-FCN:** (http://github.com/vlfeat/matconvnet-fcn)
 - **Selective Search:** for Fast R-CNN and E2S2 (http://koen.me/research/selectivesearch/)
