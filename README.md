@@ -93,4 +93,4 @@ several state of-the-art papers in object detection and semantic segmentation. T
 Except for \[5\], none of the methods implemented in MatConvNet-Calvin is authorized by the original authors. These are (possibly simplified) reimplementations of parts of the described methods and they might vary in terms of performance. This software is covered by the FreeBSD License. See LICENSE.MD for more details.
 
 ## Contact
-If you run into any problems with this code, please submit a bug report on the Github site of the project. For other inquiries contact holger.caesar-at-ed.ac.uk.
+If you run into any problems with this code, please submit a bug report on the Github site of the project. For other inquiries contact holger-at-it-caesar.com.
