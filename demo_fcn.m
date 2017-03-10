@@ -12,7 +12,7 @@ expNameAppend = 'testRelease';
 
 % Define global variables
 global glFeaturesFolder;
-labelingsFolder = fullfile(glFeaturesFolder, 'CNN-Models', 'FCN', 'SiftFlow', sprintf('fcn16s-%s', expNameAppend), 'labelings-test-epoch-50');
+labelingsFolder = fullfile(glFeaturesFolder, 'CNN-Models', 'FCN', 'SiftFlow', sprintf('fcn16s-%s', expNameAppend), 'labelings-test-epoch50');
 
 % Download dataset
 downloadSiftFlow();
