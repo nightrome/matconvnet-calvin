@@ -42,7 +42,7 @@ nnOpts.numEpochs = 16;
 nnOpts.learningRate = [repmat(1e-3, 12, 1); repmat(1e-4, 4, 1)];
 nnOpts.misc.netPath = netPath;
 nnOpts.expDir = outputFolder;
-nnOpts.gpus = SelectIdleGpu();
+nnOpts.gpus = 1; % for automatic selection use: SelectIdleGpu();
 
 % Create outputFolder
 if ~exist(outputFolder, 'dir')
