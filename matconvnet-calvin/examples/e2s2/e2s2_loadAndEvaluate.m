@@ -12,7 +12,7 @@ addParameter(p, 'weaklySupervised', false);
 addParameter(p, 'run', 28);
 addParameter(p, 'exp', 25);
 addParameter(p, 'epochs', [1, 5:5:30]);
-addParameter(p, 'gpus', 3);
+addParameter(p, 'gpus', 1);
 addParameter(p, 'subset', 'test');
 addParameter(p, 'plotStats', true);
 addParameter(p, 'minSize', []); % typically 100
