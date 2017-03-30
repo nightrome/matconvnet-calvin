@@ -10,10 +10,6 @@ setup();
 % Settings
 expNameAppend = 'testRelease';
 
-% Define global variables
-global glFeaturesFolder;
-labelingsFolder = fullfile(glFeaturesFolder, 'CNN-Models', 'FCN', 'SiftFlow', sprintf('fcn16s-%s', expNameAppend), 'labelings-test-epoch50');
-
 % Download dataset
 downloadSiftFlow();
 
@@ -29,6 +25,8 @@ stats = fcnTestGeneric('expNameAppend', expNameAppend, 'dataset', dataset);
 disp(stats);
 
 % Show example segmentation
+global glFeaturesFolder;
+labelingsFolder = fullfile(glFeaturesFolder, 'CNN-Models', 'FCN', dataset.name, sprintf('fcn16s-%s', expNameAppend), 'labelings-test-epoch50');
 fileList = dirSubfolders(labelingsFolder);
 image = imread(fullfile(labelingsFolder, fileList{1}));
 figure();
