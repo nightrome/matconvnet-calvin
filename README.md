@@ -81,6 +81,14 @@ several state of-the-art papers in object detection and semantic segmentation. T
  | Full         | 66.2%          | 25              | 75h           | 8.5GB
  | Fast         | 62.5%          | 10              | 20h           | 6.0GB
  | \[5\]        | 64.0%          | 30              | -             | -
+ 
+ 
+## Training for different datasets
+- The FCN and E2S2 code can be easily trained for different datasets.
+- Create your own dataset class "MyDataset", e.g. by copying from [SiftFlowDatasetMC](https://github.com/nightrome/matconvnet-calvin/blob/master/matconvnet-calvin/matlab/misc/SiftFlowDatasetMC.m). The [labelCount](https://github.com/nightrome/matconvnet-calvin/blob/master/matconvnet-calvin/matlab/misc/SiftFlowDatasetMC.m#L26) field should correspond to *all* classes (incl. background if it exists in your dataset). Note that it has to inherit from the [DatasetMC](https://github.com/nightrome/matconvnet-calvin/blob/master/matconvnet-calvin/matlab/misc/DatasetMC.m) class. It has all the relevant methods: getImage(), getImLabelMap(), etc.
+- **FCN**: Change the dataset in [demo_fcn.m](https://github.com/nightrome/matconvnet-calvin/blob/master/demo_fcn.m#L24).
+- **E2S2**: Modify [setupE2S2Regions.m](https://github.com/nightrome/matconvnet-calvin/blob/master/matconvnet-calvin/matlab/setup/setupE2S2Regions.m) and [e2s2_wrapper_SiftFlow_fast.m](https://github.com/nightrome/matconvnet-calvin/blob/master/matconvnet-calvin/examples/e2s2/e2s2_wrapper_SiftFlow_fast.m).
+
 
 ## References
 - \[1\] **Fast R-CNN (FRCN)** by Girshick et al., ICCV 2015, http://arxiv.org/abs/1504.08083
