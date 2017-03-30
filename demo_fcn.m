@@ -21,10 +21,11 @@ downloadSiftFlow();
 downloadNetwork();
 
 % Train network
-fcnTrainGeneric('expNameAppend', expNameAppend);
+dataset = SiftFlowDatasetMC();
+fcnTrainGeneric('expNameAppend', expNameAppend, 'dataset', dataset);
 
 % Test network
-stats = fcnTestGeneric('expNameAppend', expNameAppend);
+stats = fcnTestGeneric('expNameAppend', expNameAppend, 'dataset', dataset);
 disp(stats);
 
 % Show example segmentation
