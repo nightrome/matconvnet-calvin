@@ -28,7 +28,7 @@ if ~exist(metaFolder, 'file')
     % Download zip file
     if ~exist(zipFile, 'file')
         fprintf('Downloading SIFT Flow dataset (140MB)...\n');
-        urlwrite(url, zipFile);
+        websave(zipFile, url);
     end
     
     % Unzip it

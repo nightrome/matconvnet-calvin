@@ -27,7 +27,7 @@ if ~exist(checkFile, 'file')
     % Download zip file
     if ~exist(zipFile, 'file')
         fprintf('Downloading Selective Search (0.3MB)...\n');
-        urlwrite(url, zipFile);
+        websave(zipFile, url);
     end
     
     % Unzip it

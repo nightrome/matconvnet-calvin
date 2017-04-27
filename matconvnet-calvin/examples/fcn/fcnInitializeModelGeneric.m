@@ -21,7 +21,7 @@ opts = vl_argparse(opts, varargin);
 if ~exist(opts.sourceModelPath, 'file')
     fprintf('%s: downloading %s\n', opts.sourceModelUrl);
     mkdir(fileparts(opts.sourceModelPath));
-    urlwrite(opts.sourceModelUrl, opts.sourceModelPath);
+    urlwrite(opts.sourceModelPath, opts.sourceModelUrl);
 end
 net = load(opts.sourceModelPath);
 

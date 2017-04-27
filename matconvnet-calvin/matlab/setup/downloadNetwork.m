@@ -30,6 +30,6 @@ if ~exist(modelPath, 'file')
     % Download model
     if ~exist(modelPath, 'dir')
         fprintf('Downloading model (0.5GB)...\n');
-        urlwrite(url, modelPath);
+        websave(modelPath, url);
     end
 end
